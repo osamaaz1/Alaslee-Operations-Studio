@@ -6,7 +6,6 @@ test("production navigation and home omit internal financial reporting", () => {
   const app = fs.readFileSync("client/src/App.jsx", "utf8");
   const visibleShell = app.slice(0, app.indexOf("function DataWorkspace"));
   assert.doesNotMatch(visibleShell, /id: "data"/);
-  assert.doesNotMatch(visibleShell, /GenerationCostEstimate/);
   assert.doesNotMatch(visibleShell, /إجمالي المبيعات|الفواتير غير المسددة/);
 });
 

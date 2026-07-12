@@ -58,6 +58,49 @@ export async function validateUploadedImage(file, role, maxImageBytes) {
   };
 }
 
+export async function optimizeUploadedImage(image) {
+  const metadata = await sharp(image.buffer, { failOn: "error" }).metadata();
+  const source = orientedDimensions(metadata);
+  const bounds = optimizationBounds(source.width, source.height);
+  let pipeline = sharp(image.buffer, { failOn: "error" })
+    .rotate()
+    .resize({ width: bounds.width, height: bounds.height, fit: "inside", withoutEnlargement: true, kernel: sharp.kernel.lanczos3 })
+    .toColorspace("srgb");
+
+  if (source.width > bounds.width || source.height > bounds.height) pipeline = pipeline.sharpen({ sigma: 0.6 });
+  const optimized = await encodeLikeSource(pipeline, image.mimeType).toBuffer({ resolveWithObject: true });
+  return {
+    ...image,
+    buffer: optimized.data,
+    sizeBytes: optimized.data.length,
+    width: optimized.info.width,
+    height: optimized.info.height,
+    sourceBuffer: image.buffer,
+    sourceSizeBytes: image.sizeBytes,
+    sourceWidth: source.width,
+    sourceHeight: source.height,
+    optimizationApplied: optimized.info.width !== source.width || optimized.info.height !== source.height || optimized.data.length < image.sizeBytes,
+    orientation: source.width > source.height ? "landscape" : source.height > source.width ? "portrait" : "square",
+  };
+}
+
+function optimizationBounds(width, height) {
+  if (width > height) return { width: 1536, height: 1152 };
+  if (height > width) return { width: 1152, height: 1536 };
+  return { width: 1536, height: 1536 };
+}
+
+function orientedDimensions(metadata) {
+  const quarterTurn = [5, 6, 7, 8].includes(Number(metadata.orientation));
+  return { width: quarterTurn ? metadata.height : metadata.width, height: quarterTurn ? metadata.width : metadata.height };
+}
+
+function encodeLikeSource(pipeline, mimeType) {
+  if (mimeType === "image/png") return pipeline.png({ compressionLevel: 9, adaptiveFiltering: true });
+  if (mimeType === "image/webp") return pipeline.webp({ quality: 90, smartSubsample: true });
+  return pipeline.jpeg({ quality: 90, chromaSubsampling: "4:4:4", mozjpeg: true });
+}
+
 export async function normalizeGeneratedPng(buffer, outputSize) {
   const normalized = await sharp(buffer, { failOn: "error" })
     .resize(outputSize, outputSize, {

@@ -5,7 +5,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { config } from "../config.js";
 import { PRODUCT_STATUSES, INPUT_MODES } from "../domain/statuses.js";
-import { validateUploadedImage } from "../utils/imageValidation.js";
+import { validateUploadedImage, optimizeUploadedImage } from "../utils/imageValidation.js";
 import { AppError } from "../utils/errors.js";
 import { writeFileEnsured } from "../utils/files.js";
 import { resolveAllowedDirectory } from "../utils/pathSecurity.js";
@@ -77,10 +77,14 @@ async function copyOriginals(files, originalsDir) {
   for (const file of files) {
     const buffer = await fs.readFile(file.path);
     const stats = await fs.stat(file.path);
-    const image = await validateUploadedImage(toUploadFile(file, buffer, stats), file.role, config.maxImageBytes);
+    const validated = await validateUploadedImage(toUploadFile(file, buffer, stats), file.role, config.maxImageBytes);
+    const image = await optimizeUploadedImage(validated);
     const outputPath = path.join(originalsDir, file.filename);
+    const sourceFilename = `${path.parse(file.filename).name}-source${path.extname(file.filename)}`;
+    const sourcePath = path.join(originalsDir, "source", sourceFilename);
+    await writeFileEnsured(sourcePath, image.sourceBuffer);
     await writeFileEnsured(outputPath, image.buffer);
-    originals.push({ ...image, filename: file.filename, path: outputPath });
+    originals.push({ ...image, filename: file.filename, path: outputPath, sourceFilename, sourcePath });
   }
 
   return originals;

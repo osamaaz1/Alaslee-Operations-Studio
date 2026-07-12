@@ -39,6 +39,8 @@ after(async () => {
 test("Free Test creates mock Output 1 and local-preview Output 2 without AI credentials", async () => {
   const product = await uploadSingleProduct();
   assert.equal(product.originalImages.length, 3);
+  assert.equal(product.originalImages.every((image) => image.sourceUrl), true);
+  assert.equal(product.originalImages.every((image) => image.sourceWidth && image.sourceHeight), true);
 
   const estimate = await getJson(`/v1/products/${product.id}/output-1/estimate`);
   assert.equal(estimate.provider, "gpt");
@@ -47,6 +49,8 @@ test("Free Test creates mock Output 1 and local-preview Output 2 without AI cred
   assert.equal(estimate.outputCount, 4);
   assert.equal(estimate.estimatedUsd > 0, true);
   assert.equal(estimate.safetyCeilingUsd >= estimate.estimatedUsd, true);
+  assert.equal(Boolean(estimate.optimizationComparison?.before), true);
+  assert.equal(Boolean(estimate.optimizationComparison?.after), true);
   assert.equal(estimate.requestBreakdown.every((item) => item.referenceCount <= 3), true);
 
   const output1 = await postForm(`/v1/products/${product.id}/output-1/mock`, new FormData());
@@ -121,6 +125,17 @@ test("Free Test creates mock Output 1 and local-preview Output 2 without AI cred
   assert.equal(output2[0].height, 1080);
 });
 
+test("large uploaded references use optimized files and reduce the GPT input estimate", async () => {
+  const product = await uploadSingleProduct(1200, 1600);
+  assert.equal(product.originalImages.every((image) => image.width === 1152 && image.height === 1536), true);
+  assert.equal(product.originalImages.every((image) => image.sourceWidth === 1200 && image.sourceHeight === 1600), true);
+  const estimate = await getJson(`/v1/products/${product.id}/output-1/estimate`);
+  const comparison = estimate.optimizationComparison;
+  assert.equal(comparison.before.inputPixels > comparison.after.inputPixels, true);
+  assert.equal(comparison.before.imageInputTokens > comparison.after.imageInputTokens, true);
+  assert.equal(comparison.before.estimatedUsd > comparison.after.estimatedUsd, true);
+});
+
 test("Direct Instagram upload creates selectable Output 1 sources without generation", async () => {
   const formData = new FormData();
   formData.append("images", await fileBlob(360, 220, "#245f72"), "ready-front.png");
@@ -190,11 +205,11 @@ test("Batch Free Test Output 2 is saved under uploads/products/batch/product/ins
   assert.match(normalizedPath, new RegExp(`/uploads/products/${escapeRegExp(imported.batch.id)}/P100/instagram/`));
 });
 
-async function uploadSingleProduct() {
+async function uploadSingleProduct(width = 300, height = 180) {
   const formData = new FormData();
-  formData.append("front", await fileBlob(300, 180, "#204f45"), "front.png");
-  formData.append("side", await fileBlob(300, 180, "#365a91"), "side.png");
-  formData.append("angle", await fileBlob(300, 180, "#7a3e64"), "angle.png");
+  formData.append("front", await fileBlob(width, height, "#204f45"), "front.png");
+  formData.append("side", await fileBlob(width, height, "#365a91"), "side.png");
+  formData.append("angle", await fileBlob(width, height, "#7a3e64"), "angle.png");
   return postForm("/v1/products/upload", formData);
 }
 

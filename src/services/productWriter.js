@@ -39,6 +39,13 @@ function originalRow(product, image) {
     sizeBytes: image.sizeBytes,
     width: image.width,
     height: image.height,
+    sourceFilename: image.sourceFilename || image.filename,
+    sourcePath: image.sourcePath || image.path,
+    sourceMimeType: image.sourceMimeType || image.mimeType,
+    sourceSizeBytes: image.sourceSizeBytes || image.sizeBytes,
+    sourceWidth: image.sourceWidth || image.width,
+    sourceHeight: image.sourceHeight || image.height,
+    optimizationApplied: image.optimizationApplied ? 1 : 0,
     now: product.now,
     actor: product.actor,
   };
@@ -56,8 +63,10 @@ const productSql = `
 const originalSql = `
   INSERT INTO product_original_images
     (product_id, role, filename, path, mime_type, size_bytes, width, height,
+     source_filename, source_path, source_mime_type, source_size_bytes, source_width, source_height, optimization_applied,
      created_at, updated_at, created_by, updated_by)
   VALUES
     (@productId, @role, @filename, @path, @mimeType, @sizeBytes, @width, @height,
+     @sourceFilename, @sourcePath, @sourceMimeType, @sourceSizeBytes, @sourceWidth, @sourceHeight, @optimizationApplied,
      @now, @now, @actor, @actor)
 `;

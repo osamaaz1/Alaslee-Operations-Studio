@@ -28,6 +28,7 @@ const safetyMultiplier = 2.5;
 export function estimateProductOutputOneCost(productId) {
   const product = getProductById(productId);
   const estimate = estimateProduct(product);
+  const beforeOptimization = estimateProduct(sourceDimensionProduct(product));
 
   return {
     provider: "gpt",
@@ -36,6 +37,7 @@ export function estimateProductOutputOneCost(productId) {
     requestSize: config.openai.imageRequestSize,
     pricingUsdPerMillion,
     ...estimate,
+    optimizationComparison: optimizationComparison(product, beforeOptimization, estimate),
     note:
       "Estimate only. OpenAI bills final GPT image usage from model-side image/text tokens, so actual cost can differ.",
   };
@@ -71,6 +73,7 @@ export function estimateBatchOutputOneCost(products) {
     pricingUsdPerMillion,
     ...roundMoney(totals),
     perProduct,
+    optimizationComparison: aggregateOptimizationComparisons(perProduct),
     note:
       "Estimate only. OpenAI bills final GPT image usage from model-side image/text tokens, so actual cost can differ.",
   };
@@ -175,6 +178,66 @@ function estimateProduct(product) {
     ...rounded,
     requestBreakdown: requestBreakdown.map((item) => roundMoney(item)),
   };
+}
+
+function sourceDimensionProduct(product) {
+  return {
+    ...product,
+    originalImages: (product.originalImages || []).map((image) => ({
+      ...image,
+      width: image.sourceWidth || image.width,
+      height: image.sourceHeight || image.height,
+      sizeBytes: image.sourceSizeBytes || image.sizeBytes,
+    })),
+  };
+}
+
+function optimizationComparison(product, before, after) {
+  const images = product.originalImages || [];
+  const beforePixels = images.reduce((sum, image) => sum + Number(image.sourceWidth || image.width || 0) * Number(image.sourceHeight || image.height || 0), 0);
+  const afterPixels = images.reduce((sum, image) => sum + Number(image.width || 0) * Number(image.height || 0), 0);
+  const beforeBytes = images.reduce((sum, image) => sum + Number(image.sourceSizeBytes || image.sizeBytes || 0), 0);
+  const afterBytes = images.reduce((sum, image) => sum + Number(image.sizeBytes || 0), 0);
+  return comparisonResult(
+    { ...before, inputPixels: beforePixels, inputBytes: beforeBytes },
+    { ...after, inputPixels: afterPixels, inputBytes: afterBytes },
+  );
+}
+
+function aggregateOptimizationComparisons(estimates) {
+  const before = estimates.reduce((sum, item) => sumComparison(sum, item.optimizationComparison.before), emptyComparison());
+  const after = estimates.reduce((sum, item) => sumComparison(sum, item.optimizationComparison.after), emptyComparison());
+  return comparisonResult(before, after);
+}
+
+function comparisonResult(before, after) {
+  const costSavings = Math.max(0, Number(before.estimatedUsd || 0) - Number(after.estimatedUsd || 0));
+  const pixelSavingsPercent = before.inputPixels > 0 ? Math.max(0, (1 - after.inputPixels / before.inputPixels) * 100) : 0;
+  const byteSavingsPercent = before.inputBytes > 0 ? Math.max(0, (1 - after.inputBytes / before.inputBytes) * 100) : 0;
+  return {
+    before: compactComparison(before),
+    after: compactComparison(after),
+    costSavingsUsd: Number(costSavings.toFixed(4)),
+    costSavingsPercent: before.estimatedUsd > 0 ? Number(((costSavings / before.estimatedUsd) * 100).toFixed(1)) : 0,
+    pixelSavingsPercent: Number(pixelSavingsPercent.toFixed(1)),
+    byteSavingsPercent: Number(byteSavingsPercent.toFixed(1)),
+  };
+}
+
+function compactComparison(value) {
+  return {
+    estimatedUsd: Number(Number(value.estimatedUsd || 0).toFixed(4)),
+    safetyCeilingUsd: Number(Number(value.safetyCeilingUsd || 0).toFixed(4)),
+    imageInputTokens: Number(value.imageInputTokens || 0),
+    inputPixels: Number(value.inputPixels || 0),
+    inputBytes: Number(value.inputBytes || 0),
+  };
+}
+
+function emptyComparison() { return { estimatedUsd: 0, safetyCeilingUsd: 0, imageInputTokens: 0, inputPixels: 0, inputBytes: 0 }; }
+function sumComparison(sum, value) {
+  for (const key of Object.keys(sum)) sum[key] += Number(value?.[key] || 0);
+  return sum;
 }
 
 function estimateTextTokens(text) {

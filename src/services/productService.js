@@ -5,7 +5,7 @@ import path from "node:path";
 import { db } from "../db/database.js";
 import { config, storagePaths } from "../config.js";
 import { ensureDir, removeFilesBestEffort, writeFileEnsured } from "../utils/files.js";
-import { validateUploadedImage, imageRoles, requiredImageRoles } from "../utils/imageValidation.js";
+import { validateUploadedImage, optimizeUploadedImage, imageRoles, requiredImageRoles } from "../utils/imageValidation.js";
 import { AppError } from "../utils/errors.js";
 import { toUploadUrl, absoluteUrl } from "../utils/urls.js";
 import { INPUT_MODES, PRODUCT_STATUSES } from "../domain/statuses.js";
@@ -19,7 +19,9 @@ export async function createProductFromUpload(files) {
   const productId = crypto.randomUUID();
   const now = new Date().toISOString();
   const originalDir = path.join(storagePaths.originalsDir, productId);
+  const sourceDir = path.join(originalDir, "source");
   await ensureDir(originalDir);
+  await ensureDir(sourceDir);
 
   const validatedImages = [];
   for (const role of imageRoles) {
@@ -28,15 +30,21 @@ export async function createProductFromUpload(files) {
       continue;
     }
 
-    const image = await validateUploadedImage(file, role, config.maxImageBytes);
+    const validated = await validateUploadedImage(file, role, config.maxImageBytes);
+    const image = await optimizeUploadedImage(validated);
     const filename = `${role}.${image.extension}`;
     const filePath = path.join(originalDir, filename);
+    const sourceFilename = `${role}-source.${image.extension}`;
+    const sourcePath = path.join(sourceDir, sourceFilename);
+    await writeFileEnsured(sourcePath, image.sourceBuffer);
     await writeFileEnsured(filePath, image.buffer);
 
     validatedImages.push({
       ...image,
       filename,
       path: filePath,
+      sourceFilename,
+      sourcePath,
     });
   }
 
@@ -118,6 +126,13 @@ export function getOriginalImagesForGeneration(productId) {
     width: image.width,
     height: image.height,
     sizeBytes: image.size_bytes,
+    sourceFilename: image.source_filename,
+    sourcePath: image.source_path,
+    sourceMimeType: image.source_mime_type,
+    sourceSizeBytes: image.source_size_bytes,
+    sourceWidth: image.source_width,
+    sourceHeight: image.source_height,
+    optimizationApplied: Boolean(image.optimization_applied),
   }));
 }
 
@@ -245,6 +260,13 @@ function serializeImage(image, req, product = undefined) {
     width: image.width,
     height: image.height,
     url: req ? absoluteUrl(req, relativeUrl) : relativeUrl,
+    sourceFilename: image.source_filename,
+    sourceMimeType: image.source_mime_type,
+    sourceSizeBytes: image.source_size_bytes,
+    sourceWidth: image.source_width,
+    sourceHeight: image.source_height,
+    sourceUrl: image.source_path ? (req ? absoluteUrl(req, toUploadUrl(image.source_path)) : toUploadUrl(image.source_path)) : undefined,
+    optimizationApplied: Boolean(image.optimization_applied),
     path: image.path,
     finalPath: image.output_stage === "output_2" ? image.path : undefined,
     provider: image.provider,

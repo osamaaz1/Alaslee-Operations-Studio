@@ -212,6 +212,28 @@ const migrations = [
       `);
     },
   },
+  {
+    id: "202607120001_input_image_optimization",
+    up(db) {
+      addColumn(db, "product_original_images", "source_filename", "TEXT");
+      addColumn(db, "product_original_images", "source_path", "TEXT");
+      addColumn(db, "product_original_images", "source_mime_type", "TEXT");
+      addColumn(db, "product_original_images", "source_size_bytes", "INTEGER");
+      addColumn(db, "product_original_images", "source_width", "INTEGER");
+      addColumn(db, "product_original_images", "source_height", "INTEGER");
+      addColumn(db, "product_original_images", "optimization_applied", "INTEGER NOT NULL DEFAULT 0");
+      db.exec(`
+        UPDATE product_original_images
+        SET source_filename = COALESCE(source_filename, filename),
+            source_path = COALESCE(source_path, path),
+            source_mime_type = COALESCE(source_mime_type, mime_type),
+            source_size_bytes = COALESCE(source_size_bytes, size_bytes),
+            source_width = COALESCE(source_width, width),
+            source_height = COALESCE(source_height, height)
+      `);
+    },
+    down() {},
+  },
 ];
 
 export function runMigrations(db) {
