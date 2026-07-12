@@ -6,8 +6,6 @@ import { crmApi } from "./crmApi.js";
 import { CustomerForm } from "./CustomerForm.jsx";
 import { CustomerImport } from "./CustomerImport.jsx";
 
-const money = new Intl.NumberFormat("ar-SA-u-nu-latn", { style: "currency", currency: "SAR", maximumFractionDigits: 0 });
-
 export function CustomerList({ session, inform }) {
   const [customers, setCustomers] = useState([]);
   const [sources, setSources] = useState([]);
@@ -49,9 +47,9 @@ export function CustomerList({ session, inform }) {
   return <section className="crm-stack">
     <div className="crm-toolbar panel"><form onSubmit={(event) => { event.preventDefault(); load(query).catch((error) => inform(error.message, "warning")); }} className="crm-search"><Search size={17} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="ابحث بالاسم أو الهاتف أو الهوية" /><button type="submit">بحث</button></form>
       <div className="crm-toolbar-actions"><button className="button secondary" type="button" onClick={() => setMode("import")}><FileUp size={17} />استيراد بيانات</button><button className="button secondary" type="button" disabled={Boolean(exporting)} onClick={() => exportCustomers("csv")}><Download size={17} />{exporting === "csv" ? "جارٍ التصدير…" : "تصدير CSV"}</button><button className="button secondary" type="button" disabled={Boolean(exporting)} onClick={() => exportCustomers("xlsx")}><FileDown size={17} />{exporting === "xlsx" ? "جارٍ التصدير…" : "تصدير Excel"}</button><button className="button primary" type="button" onClick={() => setMode("new")}><Plus size={17} />إضافة عميل</button></div></div>
-    <article className="panel crm-table-panel"><header className="crm-panel-title"><div><p className="eyebrow">سجل العملاء</p><h2>العملاء والتصنيف</h2></div><span>{customers.length} عميل</span></header>
-      <div className="crm-table-scroll"><table className="crm-table"><thead><tr><th>العميل</th><th>الهاتف</th><th>المصدر</th><th>التصنيف</th><th>القيمة</th><th></th></tr></thead><tbody>
-        {customers.length ? customers.map((customer) => <tr key={customer.id}><td><strong>{customer.name}</strong></td><td dir="ltr">•••• {customer.phone_last4}</td><td>{customer.source_label}</td><td><span className={`segment-badge ${customer.segment_code || "unscored"}`}>{customer.segment_label_ar || "غير مصنف"}</span></td><td>{money.format(Number(customer.metrics?.monetary || 0))}</td><td><button className="row-action" type="button" onClick={() => { setSelected(customer); setMode("profile"); }}>عرض<ChevronLeft size={15} /></button></td></tr>) : <tr><td colSpan="6"><EmptyCustomers /></td></tr>}
+    <article className="panel crm-table-panel"><header className="crm-panel-title"><div><p className="eyebrow">سجل العملاء</p><h2>بيانات العملاء</h2></div><span>{customers.length} عميل</span></header>
+      <div className="crm-table-scroll"><table className="crm-table"><thead><tr><th>العميل</th><th>الهاتف</th><th>المصدر</th><th></th></tr></thead><tbody>
+        {customers.length ? customers.map((customer) => <tr key={customer.id}><td><strong>{customer.name}</strong></td><td dir="ltr">•••• {customer.phone_last4}</td><td>{customer.source_label}</td><td><button className="row-action" type="button" onClick={() => { setSelected(customer); setMode("profile"); }}>عرض<ChevronLeft size={15} /></button></td></tr>) : <tr><td colSpan="4"><EmptyCustomers /></td></tr>}
       </tbody></table></div>
     </article>
   </section>;

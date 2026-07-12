@@ -1,15 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  BarChart3,
   Bell,
   Boxes,
   Check,
   ChevronLeft,
-  CircleAlert,
   CloudCog,
   Download,
   FolderUp,
-  Gauge,
   ImagePlus,
   KeyRound,
   LayoutDashboard,
@@ -31,14 +28,12 @@ import { get, post, put } from "./api.js";
 import { CrmWorkspace } from "./features/crm/CrmWorkspace.jsx";
 import { AccountVault } from "./features/accounts/AccountVault.jsx";
 import { FeedbackWidget } from "./features/feedback/FeedbackWidget.jsx";
-import { GenerationCostEstimate } from "./features/production/GenerationCostEstimate.jsx";
 import logoEyesUrl from "../../Logo Eyes.png";
 
 const sections = [
   { id: "home", path: "/", label: "الرئيسية", icon: LayoutDashboard },
   { id: "production", path: "/products", label: "المنتجات والإنتاج", icon: Boxes },
   { id: "campaigns", path: "/campaigns", label: "الحملات", icon: Palette },
-  { id: "data", path: "/data", label: "البيانات", icon: BarChart3 },
   { id: "crm", path: "/crm", label: "إدارة العملاء", icon: UsersRound },
   { id: "accounts", path: "/accounts", label: "الحسابات وكلمات المرور", icon: KeyRound },
   { id: "settings", path: "/settings", label: "التكاملات والإعدادات", icon: Settings2 },
@@ -104,7 +99,6 @@ export default function App() {
     const props = { workspace, health, salla, branding, product, setProduct, refreshOverview, inform, open };
     if (section === "production") return <Production {...props} />;
     if (section === "campaigns") return <Campaigns {...props} />;
-    if (section === "data") return <DataWorkspace {...props} />;
     if (section === "crm") return <CrmWorkspace inform={inform} />;
     if (section === "accounts") return <AccountVault inform={inform} />;
     if (section === "settings") return <Settings {...props} />;
@@ -172,10 +166,10 @@ function ConnectionBadge({ salla, health }) {
 function Home({ workspace, health, salla, branding, open }) {
   const kpis = workspace?.kpis || {};
   const cards = [
-    { label: "إجمالي المبيعات", value: money.format(kpis.revenue || 0), icon: Gauge, hint: "من ملفات البيانات الحالية", tone: "gold" },
     { label: "المنتجات", value: number.format(kpis.products || 0), icon: Boxes, hint: "جاهزة للتحليل والإنتاج", tone: "ink" },
     { label: "العملاء", value: number.format(kpis.clients || 0), icon: Store, hint: "سجل العملاء المتاح", tone: "soft" },
-    { label: "الفواتير غير المسددة", value: number.format(workspace?.quality?.unpaidInvoices || 0), icon: CircleAlert, hint: "تحتاج إلى متابعة", tone: "alert" },
+    { label: "عملاء بلا هاتف", value: number.format(workspace?.quality?.clientsWithoutPhone || 0), icon: UsersRound, hint: "تحتاج بيانات تواصل", tone: "alert" },
+    { label: "سجلات عملاء مكررة", value: number.format(workspace?.quality?.duplicateClientNumbers || 0), icon: Search, hint: "تحتاج إلى مراجعة", tone: "gold" },
   ];
   return <>
     <section className="hero-card">
@@ -183,13 +177,13 @@ function Home({ workspace, health, salla, branding, open }) {
         <p className="eyebrow">مركز عمليات موحّد</p>
         <h1>كل ما يحتاجه متجرك،<br /><em>من رؤية واحدة.</em></h1>
         <p>تابع الأداء، جهّز منتجاتك، وأنشئ أصول الحملات المتوافقة مع هوية الأصلي من دون التنقل بين أدوات منفصلة.</p>
-        <div className="hero-actions"><button type="button" className="button primary" onClick={() => open("production")}><Sparkles size={18} />ابدأ إنتاج منتج</button><button type="button" className="button quiet" onClick={() => open("data")}>استعرض البيانات<ChevronLeft size={17} /></button></div>
+        <div className="hero-actions"><button type="button" className="button primary" onClick={() => open("production")}><Sparkles size={18} />ابدأ إنتاج منتج</button><button type="button" className="button quiet" onClick={() => open("crm")}>إدارة العملاء<ChevronLeft size={17} /></button></div>
       </div>
       <div className="hero-visual" aria-hidden="true"><div className="orbit one"></div><div className="orbit two"></div><div className="lens-card"><span>ALASLEE</span><b>01</b><i></i></div><div className="visual-chip left">البيانات</div><div className="visual-chip right">المنتج</div></div>
     </section>
     <section className="metric-grid" aria-label="ملخص الأعمال">{cards.map((card) => <MetricCard key={card.label} {...card} />)}</section>
     <section className="home-grid">
-      <article className="panel workflow-panel"><PanelHeading kicker="خطوة تالية" title="سير عمل الإنتاج" action="كل المنتجات" onAction={() => open("production")} /><div className="workflow-list"><WorkflowRow number="01" title="أضف مرجع المنتج" text="صور أمامية وجانبية وزاوية 45°" active /><WorkflowRow number="02" title="أنشئ صور المتجر" text="مخرجات مدعومة بالذكاء الاصطناعي" /><WorkflowRow number="03" title="جهّز الحملة" text="صورة اجتماعية بسعر وهوية معتمدة" /></div></article>
+      <article className="panel workflow-panel"><PanelHeading kicker="خطوة تالية" title="سير عمل الإنتاج" action="كل المنتجات" onAction={() => open("production")} /><div className="workflow-list"><WorkflowRow number="01" title="أضف مرجع المنتج" text="صور أمامية وجانبية وزاوية 45°" active /><WorkflowRow number="02" title="أنشئ صور المتجر" text="مخرجات مدعومة بالذكاء الاصطناعي" /><WorkflowRow number="03" title="جهّز الحملة" text="صورة اجتماعية بهوية معتمدة" /></div></article>
       <article className="panel signal-panel"><PanelHeading kicker="حالة العمل" title="جاهزية الاستوديو" /><Readiness label="موفر الذكاء الاصطناعي" ready={Boolean(health?.ok)} value={health?.provider || "غير متاح"} /><Readiness label="حزمة العلامة التجارية" ready={Boolean(branding?.ready)} value={branding?.ready ? "جاهزة للإنتاج" : "تحتاج إلى أصول"} /><Readiness label="تكامل سلة" ready={Boolean(salla?.connected)} value={salla?.message || "قيد التحقق"} /></article>
     </section>
   </>;
@@ -228,7 +222,7 @@ function Production({ product, setProduct, inform, open }) {
   };
   const images = product?.generatedImages || [];
   return <section className="section-stack"><PageTitle kicker="المنتجات والإنتاج" title="أنشئ أصولاً دقيقة للمنتج." text="ابدأ بمراجع واضحة، ثم راجع صور المتجر قبل نقل الأفضل إلى الحملة." action={<label className="provider-select">المحرك<select value={provider} onChange={(event) => setProvider(event.target.value)}><option value="gemini">Gemini</option><option value="gpt">GPT</option><option value="free-test">Try Free</option></select></label>} />
-    <div className="production-layout"><article className="panel intake-panel"><div className="segmented" role="tablist"><button type="button" className={mode === "single" ? "selected" : ""} onClick={() => setMode("single")}>منتج واحد</button><button type="button" className={mode === "batch" ? "selected" : ""} onClick={() => setMode("batch")}>دفعة منتجات</button></div>{mode === "single" ? <form onSubmit={submitUpload}><PanelHeading kicker="01 — مراجع المنتج" title="أضف الصور الأصلية" /><p className="panel-copy">الصور الواضحة والمحايدة تحافظ على تفاصيل الإطار ولونه.</p><div className="upload-slots"><FileSlot name="front" label="الواجهة الأمامية" required /><FileSlot name="side" label="الجانب" required /><FileSlot name="angle" label="زاوية 45°" required /><FileSlot name="temple" label="تفاصيل الذراع" /></div><GenerationCostEstimate provider={provider} productId={product?.id} /><button className="button primary wide" type="submit" disabled={busy}><Upload size={18} />{busy ? "جارٍ الرفع…" : "حفظ مراجع المنتج"}</button></form> : <form className="batch-form" onSubmit={importBatch}><PanelHeading kicker="01 — إنتاج متسلسل" title="استيراد مجلد دفعة" /><p className="panel-copy">استخدم مجلداً منظماً بأسماء صور متكررة لكل منتج.</p><label className="field-label">مسار المجلد<input value={folder} onChange={(event) => setFolder(event.target.value)} placeholder="E:\\Products\\Batch-01" required /></label><GenerationCostEstimate provider={provider} batchId={batchResult?.batch?.id} /><button className="button primary wide" type="submit" disabled={busy}><FolderUp size={18} />استيراد الدفعة</button></form>}</article>
+    <div className="production-layout"><article className="panel intake-panel"><div className="segmented" role="tablist"><button type="button" className={mode === "single" ? "selected" : ""} onClick={() => setMode("single")}>منتج واحد</button><button type="button" className={mode === "batch" ? "selected" : ""} onClick={() => setMode("batch")}>دفعة منتجات</button></div>{mode === "single" ? <form onSubmit={submitUpload}><PanelHeading kicker="01 — مراجع المنتج" title="أضف الصور الأصلية" /><p className="panel-copy">الصور الواضحة والمحايدة تحافظ على تفاصيل الإطار ولونه.</p><div className="upload-slots"><FileSlot name="front" label="الواجهة الأمامية" required /><FileSlot name="side" label="الجانب" required /><FileSlot name="angle" label="زاوية 45°" required /><FileSlot name="temple" label="تفاصيل الذراع" /></div><button className="button primary wide" type="submit" disabled={busy}><Upload size={18} />{busy ? "جارٍ الرفع…" : "حفظ مراجع المنتج"}</button></form> : <form className="batch-form" onSubmit={importBatch}><PanelHeading kicker="01 — إنتاج متسلسل" title="استيراد مجلد دفعة" /><p className="panel-copy">استخدم مجلداً منظماً بأسماء صور متكررة لكل منتج.</p><label className="field-label">مسار المجلد<input value={folder} onChange={(event) => setFolder(event.target.value)} placeholder="E:\\Products\\Batch-01" required /></label><button className="button primary wide" type="submit" disabled={busy}><FolderUp size={18} />استيراد الدفعة</button></form>}</article>
       {mode === "single" ? <article className="panel output-panel"><PanelHeading kicker="02 — صور المتجر" title="معرض المنتج" action={product ? "تجهيز الحملة" : undefined} onAction={() => open("campaigns")} />{product ? <><div className="product-summary"><div><span>معرّف المنتج</span><strong dir="ltr">{product.id}</strong></div><div><span>الحالة</span><strong>{product.status || "جاهز"}</strong></div></div>{images.length ? <GeneratedImageGallery images={images} productId={product.id} inform={inform} /> : <EmptyState icon={ImagePlus} title="لم تُنشأ صور بعد" text="بعد حفظ المراجع، أنشئ أربع صور مهيأة لواجهة المتجر." /> }<button className="button primary wide" type="button" disabled={busy || provider === "free-test"} onClick={createOutput}><WandSparkles size={18} />{busy ? "جارٍ إنشاء الصور…" : "إنشاء صور المتجر"}</button></> : <EmptyState icon={ImagePlus} title="أضف منتجاً للبدء" text="ستظهر صور المتجر والنتائج هنا بعد رفع المراجع." />}</article> : <BatchOutputPanel batchResult={batchResult} products={batchProducts} busy={busy} onGenerate={generateBatch} inform={inform} />}</div>
   </section>;
 }
