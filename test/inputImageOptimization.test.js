@@ -35,6 +35,8 @@ test("production UI explains landscape preference, supported ratios, previews, a
   assert.match(review, /قبل التصغير/);
   assert.match(review, /بعد التصغير/);
   assert.match(review, /معاينة الصورة بعد التصغير/);
+  assert.doesNotMatch(review, /provider !== "gpt"/);
+  assert.match(review, /get\(`\/\$\{resource\}\/output-1\/estimate`\)/);
 });
 
 async function preparedImage(width, height) {

@@ -6,14 +6,14 @@ const usd = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD",
 const integer = new Intl.NumberFormat("ar-SA-u-nu-latn", { maximumFractionDigits: 0 });
 const decimal = new Intl.NumberFormat("ar-SA-u-nu-latn", { maximumFractionDigits: 1 });
 
-export function GenerationCostEstimate({ provider, productId, batchId, images = [] }) {
+export function GenerationCostEstimate({ productId, batchId, images = [] }) {
   const [state, setState] = useState({ loading: false, estimate: null, error: "" });
   const [activeImage, setActiveImage] = useState(null);
   const resource = batchId ? `batches/${encodeURIComponent(batchId)}` : productId ? `products/${encodeURIComponent(productId)}` : "";
 
   useEffect(() => {
     let active = true;
-    if (provider !== "gpt" || !resource) {
+    if (!resource) {
       setState({ loading: false, estimate: null, error: "" });
       return () => { active = false; };
     }
@@ -22,7 +22,7 @@ export function GenerationCostEstimate({ provider, productId, batchId, images = 
       .then((estimate) => active && setState({ loading: false, estimate, error: "" }))
       .catch((error) => active && setState({ loading: false, estimate: null, error: error.message }));
     return () => { active = false; };
-  }, [provider, resource]);
+  }, [resource]);
 
   useEffect(() => {
     if (!activeImage) return undefined;
@@ -40,10 +40,10 @@ export function GenerationCostEstimate({ provider, productId, batchId, images = 
       <img src={mediaUrl(image.url)} alt={`النسخة المحسنة لصورة ${roleLabel(image.role)}`} />
       <span><b>{roleLabel(image.role)}</b><small dir="ltr">{dimensions(image.sourceWidth, image.sourceHeight)} → {dimensions(image.width, image.height)}</small></span><Maximize2 size={15} />
     </button>)}</div>}
-    {provider !== "gpt" ? <p className="optimization-provider-note">مقارنة التكلفة تظهر عند اختيار محرك GPT؛ تحسين الأبعاد مطبّق مع جميع المحركات.</p> : state.loading ? <p className="generation-cost-loading"><LoaderCircle className="spin" size={18} />جارٍ حساب التكلفة قبل التحسين وبعده…</p> : state.error ? <p className="generation-cost-error">تعذر حساب التكلفة: {state.error}</p> : comparison ? <>
+    {state.loading ? <p className="generation-cost-loading"><LoaderCircle className="spin" size={18} />جارٍ حساب التكلفة فوراً بعد معالجة الصور…</p> : state.error ? <p className="generation-cost-error">تعذر حساب التكلفة: {state.error}</p> : comparison ? <>
       <div className="cost-comparison-grid"><CostCard title="قبل التصغير" value={comparison.before} /><CostCard title="بعد التصغير" value={comparison.after} optimized /></div>
       <p className="optimization-savings">خفض البكسلات <b>{decimal.format(comparison.pixelSavingsPercent)}%</b> · خفض حجم الملفات <b>{decimal.format(comparison.byteSavingsPercent)}%</b> · فرق التكلفة التقريبي <b dir="ltr">{usd.format(comparison.costSavingsUsd)}</b></p>
-      <p className="generation-cost-detail">التقدير مبني على رموز صور الإدخال والإخراج الحالية، وقد تتساوى التكلفة رغم انخفاض البكسلات عندما تقع الصورتان ضمن شريحة الرموز نفسها.</p>
+      <p className="generation-cost-detail">تقدير GPT يظهر تلقائياً بعد الرفع، بغض النظر عن المحرك المختار. وقد تتساوى التكلفة رغم انخفاض البكسلات عندما تقع الصورتان ضمن شريحة الرموز نفسها.</p>
     </> : null}
     {activeImage && <div className="image-lightbox" role="dialog" aria-modal="true" aria-label="معاينة الصورة بعد التصغير" onMouseDown={(event) => event.target === event.currentTarget && setActiveImage(null)}><div className="image-lightbox-dialog"><header><div><strong>الصورة بعد التصغير</strong><span dir="ltr">{dimensions(activeImage.width, activeImage.height)} · {formatBytes(activeImage.sizeBytes)}</span></div><button className="image-lightbox-close" type="button" onClick={() => setActiveImage(null)} aria-label="إغلاق المعاينة"><X size={22} /></button></header><div className="image-lightbox-stage"><img src={mediaUrl(activeImage.url)} alt={`معاينة ${roleLabel(activeImage.role)} بعد التصغير`} /></div><footer><span className="optimized-lightbox-note">اضغط للتكبير وراجع تفاصيل الإطار قبل بدء التوليد.</span></footer></div></div>}
   </section>;
