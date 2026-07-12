@@ -1,0 +1,18 @@
+/* Maps the existing Alaslee palette into semantic CRM component tokens. */
+
+:root {
+  --color-text: var(--ink);
+  --color-text-muted: var(--muted);
+  --color-brand: var(--gold);
+  --color-brand-strong: var(--gold-deep);
+  --color-brand-soft: var(--gold-soft);
+  --color-surface: var(--surface);
+  --color-canvas: var(--paper);
+  --color-border: var(--line);
+  --color-success: var(--success);
+  --color-danger: var(--alert);
+  --control-height: 44px;
+  --control-radius: 10px;
+  --panel-radius: 16px;
+  --focus-ring: 0 0 0 3px color-mix(in srgb, var(--color-brand) 45%, transparent);
+}

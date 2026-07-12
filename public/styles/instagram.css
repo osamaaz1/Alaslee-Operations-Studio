@@ -1,0 +1,186 @@
+/* Styles the explicit Instagram selection and metadata workflow. */
+
+.instagram-planner {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 14px;
+  background: #fbfcfc;
+}
+
+.stage-separation {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 14px 0;
+}
+
+.stage-separation span {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 11px 12px;
+  background: #ffffff;
+}
+
+.stage-separation i {
+  color: var(--accent-dark);
+  font-size: 0.66rem;
+  font-style: normal;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.stage-separation strong,
+.stage-separation small {
+  overflow-wrap: anywhere;
+}
+
+.stage-separation small {
+  color: var(--muted);
+  font-size: 0.74rem;
+}
+
+.try-free-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+  border: 1px solid color-mix(in srgb, var(--lime) 55%, var(--line));
+  border-radius: 8px;
+  padding: 11px 12px;
+  background: var(--lime-soft);
+}
+
+.try-free-banner strong {
+  color: var(--forest);
+  font-size: 0.86rem;
+}
+
+.try-free-banner span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.planner-head {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.planner-head h3 {
+  margin: 0;
+  font-size: 1rem;
+  letter-spacing: 0;
+}
+
+.direct-instagram-upload {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 0.9fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.direct-instagram-upload h3,
+.direct-instagram-upload p {
+  margin: 0;
+}
+
+.direct-instagram-upload h3 {
+  font-size: 0.96rem;
+  letter-spacing: 0;
+}
+
+.direct-instagram-upload p {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.direct-instagram-file-slot {
+  min-height: 86px;
+}
+
+.selected-instagram-list {
+  display: grid;
+  gap: 10px;
+}
+
+.selected-product-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(130px, 0.6fr) minmax(130px, 0.6fr);
+  gap: 10px;
+  align-items: end;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px;
+  background: #ffffff;
+}
+
+.selected-product-row > div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.selected-product-row strong,
+.selected-product-row span {
+  overflow-wrap: anywhere;
+}
+
+.selected-product-row span {
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
+.inline-field {
+  gap: 4px;
+}
+
+.validation-message {
+  margin: 0;
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.instagram-select {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border-top: 1px solid var(--line);
+  padding: 10px 11px;
+  color: var(--accent-dark);
+  font-weight: 800;
+}
+
+.instagram-select input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+}
+
+@media (max-width: 760px) {
+  .planner-head,
+.direct-instagram-upload,
+  .selected-product-row,
+  .stage-separation {
+    grid-template-columns: 1fr;
+  }
+
+  .planner-head {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

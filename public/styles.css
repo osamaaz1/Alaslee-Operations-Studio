@@ -1,0 +1,8 @@
+/* Imports the split CSS modules for the browser UI. */
+
+@import url("./styles/base.css");
+@import url("./styles/controls.css");
+@import url("./styles/data.css");
+@import url("./styles/gallery.css");
+@import url("./styles/instagram.css");
+@import url("./styles/prompts.css");

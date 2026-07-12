@@ -1,0 +1,896 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="OriginalEye professional product and social image production workspace." />
+    <title>OriginalEye Studio</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <a class="brand-mark" href="/" aria-label="OriginalEye Studio home">
+          <span class="brand-symbol">OE</span>
+          <span>
+            <strong>OriginalEye</strong>
+            <small>AI Production Studio</small>
+          </span>
+        </a>
+        <div class="system-status">
+          <span class="status-dot"></span>
+          <strong id="provider-pill">Checking workspace</strong>
+        </div>
+        <div class="system-status salla-status missing" id="salla-status-pill">
+          <span class="status-dot"></span>
+          <strong id="salla-status-text">Salla checking</strong>
+        </div>
+      </header>
+
+      <section class="hero-panel" aria-labelledby="page-title">
+        <div>
+          <p class="eyebrow">Unified workspace</p>
+          <h1 id="page-title">Run store data and visual generation from one clean tool.</h1>
+          <p class="hero-copy">
+            Output 1 is the four ecommerce images. Output 2 is Instagram preparation from selected Output 1 images.
+          </p>
+        </div>
+        <div class="output-contract" aria-label="Output contract">
+          <article>
+            <strong>Output 1</strong>
+            <span>4 ecommerce product images</span>
+          </article>
+          <span class="contract-plus">+</span>
+          <article>
+            <strong>Output 2</strong>
+            <span>Selected Instagram images</span>
+          </article>
+        </div>
+      </section>
+
+      <nav class="partition-switch" aria-label="OriginalEye tool sections">
+        <button class="partition-button" type="button" data-partition="data">
+          <strong>Data</strong>
+          <span>Sales, customers, products</span>
+        </button>
+        <button class="partition-button active" type="button" data-partition="generation">
+          <strong>Generation</strong>
+          <span>Output 1 and Instagram</span>
+        </button>
+      </nav>
+
+      <section class="tool-partition" data-partition-panel="data" hidden>
+        <section class="data-workspace" aria-labelledby="data-title">
+          <div class="data-head">
+            <div>
+              <p class="eyebrow">Data workspace</p>
+              <h2 id="data-title">Business snapshot</h2>
+              <p>Loaded from the local OriginalEye Data Analysis exports.</p>
+            </div>
+            <div class="data-actions">
+              <label class="field compact-field">
+                <span>Dashboard</span>
+                <select id="data-profile-select"></select>
+              </label>
+              <label class="field data-search-field">
+                <span>Search data</span>
+                <input id="data-search-input" type="search" autocomplete="off" placeholder="Customer, invoice, product" />
+              </label>
+              <button type="button" class="secondary-button" id="data-search-button">Search</button>
+              <button type="button" class="primary-button" id="data-refresh-button">Refresh data</button>
+              <button type="button" class="secondary-button" id="data-customize-button">Customize</button>
+              <button type="button" class="primary-button" id="data-save-layout-button" hidden>Save layout</button>
+              <button type="button" class="secondary-button" id="data-cancel-edit-button" hidden>Cancel</button>
+            </div>
+          </div>
+
+          <section class="data-edit-panel" id="data-edit-panel" hidden>
+            <div>
+              <p class="section-kicker">Widget builder</p>
+              <h3>Add or edit a window</h3>
+            </div>
+            <div class="data-builder-grid">
+              <label class="field">
+                <span>Window type</span>
+                <select id="data-widget-preset"></select>
+              </label>
+              <label class="field">
+                <span>Title</span>
+                <input id="data-widget-title" type="text" autocomplete="off" />
+              </label>
+              <label class="field">
+                <span>Size</span>
+                <select id="data-widget-size"></select>
+              </label>
+              <label class="field">
+                <span>View</span>
+                <select id="data-widget-view"></select>
+              </label>
+              <label class="field">
+                <span>Query limit</span>
+                <input id="data-widget-limit" type="number" min="1" max="500" step="1" />
+              </label>
+              <label class="field">
+                <span>Visible rows</span>
+                <input id="data-widget-page-size" type="number" min="1" max="100" step="1" />
+              </label>
+              <div class="data-builder-actions">
+                <button type="button" class="primary-button" id="data-add-widget-button">Add window</button>
+                <button type="button" class="secondary-button" id="data-update-widget-button" hidden>Update window</button>
+                <button type="button" class="text-button" id="data-clear-widget-button">Clear edit</button>
+              </div>
+            </div>
+          </section>
+
+          <div class="data-toolbar-line">
+            <span id="data-status">Loading data</span>
+            <span id="data-layout-status">Default layout</span>
+          </div>
+
+          <section class="data-merge-panel" aria-labelledby="data-merge-title">
+            <div class="data-panel-head">
+              <div>
+                <p class="section-kicker">Data cleanup</p>
+                <h3 id="data-merge-title">Merge duplicate product rows</h3>
+              </div>
+              <span id="data-merge-status">Loading products</span>
+            </div>
+            <div class="data-merge-controls">
+              <label class="field">
+                <span>Find product</span>
+                <input id="data-merge-search" type="search" autocomplete="off" placeholder="Spectra, Lens, code..." />
+              </label>
+              <label class="field">
+                <span>Merge this row</span>
+                <select id="data-merge-source"></select>
+              </label>
+              <label class="field">
+                <span>Into this row</span>
+                <select id="data-merge-target"></select>
+              </label>
+              <button type="button" class="primary-button" id="data-merge-apply-button">Merge and update CSV</button>
+            </div>
+            <div class="data-merge-results" id="data-merge-results"></div>
+          </section>
+
+          <div class="data-widget-grid" id="data-widget-grid"></div>
+
+          <div class="data-grid">
+            <section class="data-panel data-panel-wide">
+              <div class="data-panel-head">
+                <h3>Search results</h3>
+                <span id="data-search-status">Type and search</span>
+              </div>
+              <div class="data-search-results" id="data-search-results"></div>
+            </section>
+          </div>
+        </section>
+      </section>
+
+      <section class="tool-partition active" data-partition-panel="generation">
+        <section class="readiness-bar" aria-labelledby="readiness-title">
+          <div class="readiness-copy">
+            <span class="step-number">01</span>
+            <div>
+              <strong id="readiness-title">Brand kit access</strong>
+              <span id="brand-readiness-message">Checking background, logo, and footer…</span>
+            </div>
+          </div>
+          <div class="asset-pills" aria-label="Brand asset access">
+            <span class="asset-pill pending" id="background-access"><i></i>Background</span>
+            <span class="asset-pill pending" id="logo-access"><i></i>Logo</span>
+            <span class="asset-pill pending" id="footer-access"><i></i>Footer</span>
+            <span class="asset-pill pending" id="priceLabelReference-access"><i></i>Price label reference</span>
+          </div>
+          <button class="text-button" type="button" id="open-brand-kit">Manage assets</button>
+        </section>
+
+      <section class="console">
+        <div class="command-bar" aria-label="Generation controls">
+          <label class="field compact-field">
+            <span>Generation mode</span>
+            <select id="provider-select">
+              <option value="gemini">Gemini</option>
+              <option value="gpt">GPT</option>
+              <option value="free-test">Try Free</option>
+            </select>
+            <small id="provider-help">Gemini/GPT may use paid AI generation.</small>
+          </label>
+          <p class="mode-helper" id="mode-helper">
+            Gemini and ChatGPT generate paid Output 1 images. Try Free runs only the local Output 2 preview.
+          </p>
+
+          <label class="toggle-row">
+            <input type="checkbox" id="debugging-enabled" />
+            <span>Debugging</span>
+          </label>
+
+          <button type="button" class="secondary-button compact-action-button" id="open-prompts-button">
+            Stage prompts
+          </button>
+
+          <label class="toggle-row">
+            <input type="checkbox" id="force-generate" />
+            <span>Regenerate existing outputs</span>
+          </label>
+        </div>
+
+        <div class="metrics-grid" id="summary" hidden>
+          <article class="metric-card">
+            <span class="summary-label">References</span>
+            <strong id="original-count">0</strong>
+          </article>
+          <article class="metric-card">
+            <span class="summary-label">Saved outputs</span>
+            <strong id="generated-count">0</strong>
+          </article>
+          <article class="metric-card">
+            <span class="summary-label">Product status</span>
+            <strong id="product-status">—</strong>
+          </article>
+          <article class="metric-card">
+            <span class="summary-label">Batch status</span>
+            <strong id="batch-status">—</strong>
+          </article>
+        </div>
+
+        <div class="workspace-grid">
+          <aside class="panel rail-panel" aria-label="Workflow navigation">
+            <p class="rail-label">Workflow</p>
+            <button class="rail-button active" type="button" data-view="single">
+              <span>1</span>Product Upload
+            </button>
+            <button class="rail-button" type="button" data-view="brand">
+              <span>2</span>Brand Kit
+            </button>
+            <button class="rail-button debug-rail-button" type="button" data-view="debug" hidden>
+              <span>3</span>Debugging
+            </button>
+            <button class="rail-button" type="button" data-view="output1">
+              <span>4</span>Output 1
+            </button>
+            <button class="rail-button" type="button" data-view="instagram-selection">
+              <span>5</span>Instagram Selection / Preparation
+            </button>
+            <button class="rail-button" type="button" data-view="output2">
+              <span>6</span>Output 2
+            </button>
+            <button class="rail-button" type="button" data-view="coming-soon">
+              <span>7</span>Coming Soon
+            </button>
+          </aside>
+
+          <section class="view-stack">
+            <form class="panel view-panel active" id="upload-form" data-panel="single">
+              <div class="panel-head">
+                <div>
+                  <p class="section-kicker">Product input</p>
+                  <h2>Product Upload</h2>
+                  <p>Clear, consistent references improve frame geometry and color accuracy.</p>
+                </div>
+                <button type="submit" class="primary-button" id="upload-button">Upload references</button>
+              </div>
+
+              <div class="mode-switch" aria-label="Product upload mode">
+                <label>
+                  <input type="radio" name="product-upload-mode" value="single" checked />
+                  <span><strong>One Product</strong><small>Upload one product reference set</small></span>
+                </label>
+                <label>
+                  <input type="radio" name="product-upload-mode" value="batch" />
+                  <span><strong>Batch</strong><small>Import grouped product files from a folder</small></span>
+                </label>
+              </div>
+
+              <div class="upload-grid">
+                <label class="file-slot">
+                  <span class="slot-icon">01</span>
+                  <span class="slot-title">Front view</span>
+                  <span class="slot-meta required">Required</span>
+                  <input type="file" name="front" accept="image/jpeg,image/png,image/webp" required />
+                  <span class="file-name" data-file-name="front">Choose JPG, PNG, or WEBP</span>
+                </label>
+                <label class="file-slot">
+                  <span class="slot-icon">02</span>
+                  <span class="slot-title">Side view</span>
+                  <span class="slot-meta required">Required</span>
+                  <input type="file" name="side" accept="image/jpeg,image/png,image/webp" required />
+                  <span class="file-name" data-file-name="side">Choose JPG, PNG, or WEBP</span>
+                </label>
+                <label class="file-slot">
+                  <span class="slot-icon">03</span>
+                  <span class="slot-title">45-degree view</span>
+                  <span class="slot-meta required">Required</span>
+                  <input type="file" name="angle" accept="image/jpeg,image/png,image/webp" required />
+                  <span class="file-name" data-file-name="angle">Choose JPG, PNG, or WEBP</span>
+                </label>
+                <label class="file-slot">
+                  <span class="slot-icon">04</span>
+                  <span class="slot-title">Temple detail</span>
+                  <span class="slot-meta">Recommended</span>
+                  <input type="file" name="temple" accept="image/jpeg,image/png,image/webp" />
+                  <span class="file-name" data-file-name="temple">Improves logo and arm accuracy</span>
+                </label>
+              </div>
+
+              <div class="quality-note">
+                <strong>Quality check</strong>
+                <span>Use sharp images, neutral lighting, and keep the full frame inside every shot.</span>
+              </div>
+            </form>
+
+            <form class="panel view-panel" id="batch-form" data-panel="batch">
+              <div class="panel-head">
+                <div>
+                  <p class="section-kicker">High-volume production</p>
+                  <h2>Product Upload</h2>
+                  <p>Name files product-1.jpg, product-2.jpg, product-3.jpg, then repeat for each product.</p>
+                </div>
+                <button type="submit" class="primary-button" id="batch-import-button">Import folder</button>
+              </div>
+
+              <div class="mode-switch" aria-label="Product upload mode">
+                <label>
+                  <input type="radio" name="product-upload-mode" value="single" />
+                  <span><strong>One Product</strong><small>Upload one product reference set</small></span>
+                </label>
+                <label>
+                  <input type="radio" name="product-upload-mode" value="batch" checked />
+                  <span><strong>Batch</strong><small>Import grouped product files from a folder</small></span>
+                </label>
+              </div>
+
+              <label class="field">
+                <span>Folder path</span>
+                <input id="batch-folder-path" type="text" autocomplete="off" placeholder="E:\Products\Batch-01" />
+              </label>
+
+              <div class="batch-toolbar" id="batch-summary" hidden>
+                <span id="batch-id">No batch imported</span>
+                <button type="button" class="primary-button" id="batch-generate-button" disabled>Generate Output 1 images</button>
+              </div>
+
+              <div class="progress-track" aria-label="Batch progress">
+                <span id="batch-progress"></span>
+              </div>
+              <div class="batch-table" id="batch-products"></div>
+            </form>
+
+            <form class="panel view-panel" id="branding-form" data-panel="brand">
+              <div class="panel-head">
+                <div>
+                  <p class="section-kicker">Instagram composition</p>
+                  <h2>Brand kit assets</h2>
+                  <p>Uploaded files are stored locally and checked for real server access before generation.</p>
+                </div>
+                <button type="submit" class="primary-button" id="branding-upload-button">Save brand assets</button>
+              </div>
+
+              <div class="brand-assets-grid">
+                <label class="brand-asset-card" data-asset-card="background">
+                  <div class="asset-preview">
+                    <img id="background-preview" alt="Uploaded background preview" hidden />
+                    <span>BG</span>
+                  </div>
+                  <div class="asset-card-copy">
+                    <span class="asset-card-title">Campaign background</span>
+                    <span class="asset-card-status" id="background-status">Checking access…</span>
+                    <span class="asset-card-meta" id="background-meta">Required · recommended 1080 × 1350</span>
+                  </div>
+                  <input type="file" name="background" accept="image/jpeg,image/png,image/webp" />
+                  <span class="secondary-button file-trigger">Choose background</span>
+                  <span class="selected-asset-name" data-asset-file-name="background"></span>
+                </label>
+
+                <label class="brand-asset-card" data-asset-card="logo">
+                  <div class="asset-preview contain">
+                    <img id="logo-preview" alt="Uploaded logo preview" hidden />
+                    <span>LOGO</span>
+                  </div>
+                  <div class="asset-card-copy">
+                    <span class="asset-card-title">Corner logo</span>
+                    <span class="asset-card-status" id="logo-status">Checking access…</span>
+                    <span class="asset-card-meta" id="logo-meta">Required · transparent PNG recommended</span>
+                  </div>
+                  <input type="file" name="logo" accept="image/jpeg,image/png,image/webp" />
+                  <span class="secondary-button file-trigger">Choose logo</span>
+                  <span class="selected-asset-name" data-asset-file-name="logo"></span>
+                </label>
+
+                <label class="brand-asset-card" data-asset-card="footer">
+                  <div class="asset-preview contain footer-preview">
+                    <img id="footer-preview" alt="Uploaded footer preview" hidden />
+                    <span>FOOTER</span>
+                  </div>
+                  <div class="asset-card-copy">
+                    <span class="asset-card-title">Footer artwork</span>
+                    <span class="asset-card-status" id="footer-status">Checking access…</span>
+                    <span class="asset-card-meta" id="footer-meta">Required · wide transparent PNG recommended</span>
+                  </div>
+                  <input type="file" name="footer" accept="image/jpeg,image/png,image/webp" />
+                  <span class="secondary-button file-trigger">Choose footer</span>
+                  <span class="selected-asset-name" data-asset-file-name="footer"></span>
+                </label>
+
+                <label class="brand-asset-card" data-asset-card="priceLabelReference">
+                  <div class="asset-preview contain">
+                    <img id="priceLabelReference-preview" alt="Uploaded price label reference preview" hidden />
+                    <span>PRICE</span>
+                  </div>
+                  <div class="asset-card-copy">
+                    <span class="asset-card-title">Price label reference</span>
+                    <span class="asset-card-status" id="priceLabelReference-status">Checking access…</span>
+                    <span class="asset-card-meta" id="priceLabelReference-meta">Required for GPT price insertion</span>
+                  </div>
+                  <input type="file" name="priceLabelReference" accept="image/jpeg,image/png,image/webp" />
+                  <span class="secondary-button file-trigger">Choose price style</span>
+                  <span class="selected-asset-name" data-asset-file-name="priceLabelReference"></span>
+                </label>
+              </div>
+
+              <div class="access-explanation">
+                <span class="access-icon">i</span>
+                <p>
+                  <strong>What “accessible” means</strong>
+                  The backend found the file, opened it as a valid image, and can use it during Instagram composition.
+                </p>
+              </div>
+            </form>
+
+            <section class="panel view-panel" id="debugging-panel" data-panel="debug" hidden>
+              <div class="panel-head">
+                <div>
+                  <p class="section-kicker">Zero-credit calibration</p>
+                  <h2>Try Free Output 2 preview</h2>
+                  <p>Upload a ready product image and test Instagram composition locally. This does not generate Output 1.</p>
+                </div>
+                <span class="no-cost-badge">No API cost</span>
+              </div>
+              <div class="try-free-banner">
+                <strong>Try Free mode</strong>
+                <span>Use this only to test Output 2 layout. Gemini and ChatGPT are not called.</span>
+              </div>
+
+              <div class="debug-workspace">
+                <form id="debugging-form" class="debug-controls">
+                  <label class="debug-sample-slot">
+                    <span class="debug-sample-icon">1:1</span>
+                    <span>
+                      <strong>Sample product image</strong>
+                      <small id="debug-sample-name">Transparent PNG recommended · any dimensions</small>
+                    </span>
+                    <input id="debug-sample" type="file" name="sample" accept="image/jpeg,image/png,image/webp" required />
+                    <span class="secondary-button file-trigger">Choose image</span>
+                  </label>
+
+                  <div class="format-selector">
+                    <div class="format-selector-head">
+                      <span>
+                        <strong>Output format</strong>
+                        <small>Each format remembers its own saved layout.</small>
+                      </span>
+                      <span class="smart-memory-badge">Smart memory</span>
+                    </div>
+                    <div class="format-options">
+                      <label>
+                        <input type="radio" name="format" value="portrait-4x5" checked />
+                        <span><strong>4:5</strong><small>Feed portrait</small><em>1080×1350</em></span>
+                      </label>
+                      <label>
+                        <input type="radio" name="format" value="square-1x1" />
+                        <span><strong>1:1</strong><small>Square post</small><em>1080×1080</em></span>
+                      </label>
+                      <label>
+                        <input type="radio" name="format" value="story-9x16" />
+                        <span><strong>9:16</strong><small>Story / Reel</small><em>1080×1920</em></span>
+                      </label>
+                      <label>
+                        <input type="radio" name="format" value="landscape-1.91x1" />
+                        <span><strong>1.91:1</strong><small>Landscape</small><em>1080×566</em></span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div class="debug-control-list">
+                    <fieldset class="control-group">
+                      <legend><span>01</span>Background</legend>
+                      <p>Control the crop without stretching the artwork.</p>
+                      <div class="control-group-grid">
+                        <label class="range-control">
+                          <span><strong>Zoom</strong><output id="backgroundZoomPercent-value">100%</output></span>
+                          <input type="range" name="backgroundZoomPercent" min="100" max="180" value="100" />
+                        </label>
+                        <label class="range-control">
+                          <span><strong>Horizontal crop</strong><output id="backgroundOffsetXPercent-value">0%</output></span>
+                          <input type="range" name="backgroundOffsetXPercent" min="-30" max="30" value="0" />
+                        </label>
+                        <label class="range-control">
+                          <span><strong>Vertical crop</strong><output id="backgroundOffsetYPercent-value">0%</output></span>
+                          <input type="range" name="backgroundOffsetYPercent" min="-30" max="30" value="0" />
+                        </label>
+                      </div>
+                    </fieldset>
+
+                    <fieldset class="control-group">
+                      <legend><span>02</span>Product & shadow</legend>
+                      <p>A soft silhouette shadow adds depth without looking artificial.</p>
+                      <div class="control-group-grid">
+                        <label class="range-control">
+                          <span><strong>Product width</strong><output id="productWidthPercent-value">94%</output></span>
+                          <input type="range" name="productWidthPercent" min="50" max="110" value="94" />
+                        </label>
+                        <label class="range-control">
+                          <span><strong>Vertical position</strong><output id="productOffsetYPercent-value">0%</output></span>
+                          <input type="range" name="productOffsetYPercent" min="-25" max="25" value="0" />
+                        </label>
+                        <label class="feature-toggle">
+                          <span><strong>Product shadow</strong><small>Follow product transparency</small></span>
+                          <input type="checkbox" name="shadowEnabled" value="true" checked />
+                        </label>
+                        <label class="range-control">
+                          <span><strong>Shadow softness</strong><output id="shadowBlurPercent-value">3%</output></span>
+                          <input type="range" name="shadowBlurPercent" min="0" max="8" value="3" />
+                        </label>
+                        <label class="range-control">
+                          <span><strong>Shadow opacity</strong><output id="shadowOpacityPercent-value">14%</output></span>
+                          <input type="range" name="shadowOpacityPercent" min="0" max="70" value="14" />
+                        </label>
+                        <label class="range-control">
+                          <span><strong>Shadow horizontal</strong><output id="shadowOffsetXPercent-value">0%</output></span>
+                          <input type="range" name="shadowOffsetXPercent" min="-10" max="10" value="0" />
+                        </label>
+                        <label class="range-control">
+                          <span><strong>Shadow vertical</strong><output id="shadowOffsetYPercent-value">2%</output></span>
+                          <input type="range" name="shadowOffsetYPercent" min="-10" max="15" value="2" />
+                        </label>
+                      </div>
+                    </fieldset>
+
+                    <fieldset class="control-group">
+                      <legend><span>03</span>Logo</legend>
+                      <p>Logo height stays proportional automatically.</p>
+                      <div class="control-group-grid">
+                        <label class="range-control">
+                          <span><strong>Width</strong><output id="logoWidthPercent-value">16%</output></span>
+                          <input type="range" name="logoWidthPercent" min="5" max="35" value="16" />
+                        </label>
+                        <label class="range-control">
+                          <span><strong>Opacity</strong><output id="logoOpacityPercent-value">100%</output></span>
+                          <input type="range" name="logoOpacityPercent" min="10" max="100" value="100" />
+                        </label>
+                        <label class="range-control">
+                          <span><strong>Edge margin</strong><output id="logoMarginPercent-value">5%</output></span>
+                          <input type="range" name="logoMarginPercent" min="0" max="15" value="5" />
+                        </label>
+                        <label class="range-control">
+                          <span><strong>Horizontal nudge</strong><output id="logoOffsetXPercent-value">0%</output></span>
+                          <input type="range" name="logoOffsetXPercent" min="-30" max="30" value="0" />
+                        </label>
+                        <label class="range-control">
+                          <span><strong>Vertical nudge</strong><output id="logoOffsetYPercent-value">0%</output></span>
+                          <input type="range" name="logoOffsetYPercent" min="-30" max="30" value="0" />
+                        </label>
+                        <label class="field">
+                          <span>Anchor corner</span>
+                          <select name="logoCorner">
+                            <option value="top-right">Top right</option>
+                            <option value="top-left">Top left</option>
+                            <option value="bottom-right">Bottom right</option>
+                            <option value="bottom-left">Bottom left</option>
+                          </select>
+                        </label>
+                      </div>
+                    </fieldset>
+
+                    <fieldset class="control-group">
+                      <legend><span>04</span>Footer</legend>
+                      <p>Transparent padding is removed automatically before proportional sizing.</p>
+                      <div class="control-group-grid">
+                        <label class="range-control">
+                          <span><strong>Width</strong><output id="footerWidthPercent-value">100%</output></span>
+                          <input type="range" name="footerWidthPercent" min="30" max="100" value="100" />
+                        </label>
+                        <label class="range-control">
+                          <span><strong>Maximum height</strong><output id="footerMaxHeightPercent-value">20%</output></span>
+                          <input type="range" name="footerMaxHeightPercent" min="5" max="60" value="20" />
+                        </label>
+                        <label class="range-control">
+                          <span><strong>Opacity</strong><output id="footerOpacityPercent-value">100%</output></span>
+                          <input type="range" name="footerOpacityPercent" min="10" max="100" value="100" />
+                        </label>
+                        <label class="range-control">
+                          <span><strong>Horizontal nudge</strong><output id="footerOffsetXPercent-value">0%</output></span>
+                          <input type="range" name="footerOffsetXPercent" min="-30" max="30" value="0" />
+                        </label>
+                        <label class="range-control">
+                          <span><strong>Distance from bottom</strong><output id="footerBottomMarginPercent-value">3%</output></span>
+                          <input type="range" name="footerBottomMarginPercent" min="0" max="30" value="3" />
+                        </label>
+                      </div>
+                    </fieldset>
+                  </div>
+
+                  <div class="debug-actions">
+                    <button type="submit" class="primary-button" id="debug-preview-button">Generate free preview</button>
+                    <button type="button" class="secondary-button" id="debug-save-button">Save as production defaults</button>
+                  </div>
+                  <p class="settings-source" id="debug-settings-source">Loading production defaults…</p>
+                </form>
+
+                <div class="debug-preview-panel">
+                  <div class="debug-preview-frame">
+                    <div id="debug-preview-placeholder" class="debug-preview-placeholder">
+                      <span>PREVIEW</span>
+                      <strong id="debug-preview-dimensions">1080 × 1350</strong>
+                      <small>Your composed Instagram post will appear here.</small>
+                    </div>
+                    <img id="debug-preview-image" alt="Instagram composition preview" hidden />
+                  </div>
+                  <div class="debug-preview-meta">
+                    <span id="debug-live-status"><i></i><b id="debug-live-message">Waiting for sample</b></span>
+                    <span id="debug-format-label">4:5 Feed portrait</span>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section class="panel view-panel" data-panel="output1">
+              <div class="panel-head">
+                <div>
+                  <p class="section-kicker">Output 1</p>
+                  <h2>Ecommerce product generation</h2>
+                  <p>Generate the four ecommerce product images with the selected paid AI provider.</p>
+                </div>
+                <button type="button" class="secondary-button" id="refresh-button" disabled>Refresh</button>
+              </div>
+
+              <div class="stage-separation" aria-label="Separated production stages">
+                <span><i>Output 1</i><strong>Ecommerce generation</strong><small>Front, side, 45-degree, and hero product images.</small></span>
+                <span><i>Output 2</i><strong>Instagram preparation</strong><small>Manual selection, local Brand Kit composition, optional GPT price label.</small></span>
+              </div>
+
+              <div class="lookup-row">
+                <label class="field">
+                  <span>Product ID</span>
+                  <input id="product-id" type="text" autocomplete="off" placeholder="Upload or paste an ID" />
+                </label>
+                <button type="button" class="secondary-button" id="load-button">Load</button>
+                <button type="button" class="primary-button" id="generate-button" disabled>Generate Output 1 images</button>
+              </div>
+
+              <div class="deliverables">
+                <span><i>1</i>Output 1 front studio</span>
+                <span><i>2</i>Output 1 side studio</span>
+                <span><i>3</i>Output 1 45-degree</span>
+                <span><i>4</i>Output 1 premium hero</span>
+              </div>
+
+              <section class="cost-estimate-panel" id="gpt-cost-estimate" hidden aria-live="polite">
+                <div>
+                  <p class="section-kicker">GPT cost estimate</p>
+                  <h3 id="gpt-cost-title">Estimate unavailable</h3>
+                  <p id="gpt-cost-summary">Load a product and select GPT to preview paid generation cost.</p>
+                </div>
+                <div class="cost-estimate-grid">
+                  <article>
+                    <span>Estimated</span>
+                    <strong id="gpt-cost-estimated">$0.0000</strong>
+                  </article>
+                  <article>
+                    <span>Safety ceiling</span>
+                    <strong id="gpt-cost-ceiling">$0.0000</strong>
+                  </article>
+                  <article>
+                    <span>Requests</span>
+                    <strong id="gpt-cost-requests">0</strong>
+                  </article>
+                  <article>
+                    <span>Quality</span>
+                    <strong id="gpt-cost-quality">medium</strong>
+                  </article>
+                </div>
+                <p class="cost-estimate-detail" id="gpt-cost-detail"></p>
+              </section>
+
+            </section>
+
+            <section class="panel view-panel" data-panel="instagram-selection">
+              <div class="instagram-planner">
+                <div class="planner-head">
+                  <div>
+                    <p class="section-kicker">Instagram Selection / Preparation</p>
+                    <h2>Select Output 1 images for Instagram</h2>
+                    <p>Upload ready images here when Output 1 generation is not needed, then enter SKU and Price once per product.</p>
+                  </div>
+                  <label class="field compact-field">
+                    <span>Output profile</span>
+                    <select id="instagram-profile">
+                      <option value="">Choose profile</option>
+                    </select>
+                  </label>
+                </div>
+                <form class="direct-instagram-upload" id="direct-instagram-upload-form">
+                  <div>
+                    <h3>Direct Instagram source</h3>
+                    <p>Use existing product images as ready Output 1 sources for this stage.</p>
+                  </div>
+                  <label class="file-slot direct-instagram-file-slot">
+                    <span class="slot-icon">UP</span>
+                    <span class="slot-title">Ready image(s)</span>
+                    <span class="slot-meta">No Output 1 generation</span>
+                    <input
+                      type="file"
+                      id="direct-instagram-upload-images"
+                      name="images"
+                      accept="image/jpeg,image/png,image/webp"
+                      multiple
+                    />
+                    <span class="file-name" id="direct-instagram-upload-name">Choose JPG, PNG, or WEBP</span>
+                  </label>
+                  <button type="submit" class="secondary-button" id="direct-instagram-upload-button">
+                    Add to Instagram Selection
+                  </button>
+                </form>
+                <div class="selected-instagram-list" id="selected-instagram-list"></div>
+                <section class="cost-estimate-panel" id="output2-cost-estimate" hidden aria-live="polite">
+                  <div>
+                    <p class="section-kicker">Output 2 cost estimate</p>
+                    <h3 id="output2-cost-title">Estimate unavailable</h3>
+                    <p id="output2-cost-summary">Select Output 1 images and a profile to preview GPT price-label cost.</p>
+                  </div>
+                  <div class="cost-estimate-grid">
+                    <article>
+                      <span>Estimated</span>
+                      <strong id="output2-cost-estimated">$0.0000</strong>
+                    </article>
+                    <article>
+                      <span>Safety ceiling</span>
+                      <strong id="output2-cost-ceiling">$0.0000</strong>
+                    </article>
+                    <article>
+                      <span>GPT requests</span>
+                      <strong id="output2-cost-requests">0</strong>
+                    </article>
+                    <article>
+                      <span>Local previews</span>
+                      <strong id="output2-cost-local">0</strong>
+                    </article>
+                  </div>
+                  <p class="cost-estimate-detail" id="output2-cost-detail"></p>
+                </section>
+                <p class="validation-message" id="instagram-validation-message">
+                  Select at least one Output 1 ecommerce image.
+                </p>
+                <button type="button" class="primary-button" id="generate-instagram-button" disabled>
+                  Generate Output 2 Instagram images
+                </button>
+              </div>
+            </section>
+
+            <section class="panel view-panel" data-panel="output2">
+              <div class="panel-head">
+                <div>
+                  <p class="section-kicker">Output 2</p>
+                  <h2>Final Instagram images</h2>
+                  <p>Output 2 is created only from selected Output 1 images. Try Free results are local previews.</p>
+                </div>
+                <button type="button" class="secondary-button" id="refresh-output2-button" disabled>Refresh</button>
+              </div>
+              <div class="metrics-grid output-stage-summary">
+                <article class="metric-card">
+                  <span class="summary-label">Output 2 images</span>
+                  <strong id="output2-count">0</strong>
+                </article>
+                <article class="metric-card">
+                  <span class="summary-label">Latest status</span>
+                  <strong id="output2-status">Waiting</strong>
+                </article>
+              </div>
+              <div class="quality-note">
+                <strong>Output 2 rule</strong>
+                <span>The number of Output 2 images must match the number of selected Output 1 images for each generation run.</span>
+              </div>
+            </section>
+
+            <section class="panel view-panel" data-panel="coming-soon">
+              <div class="panel-head">
+                <div>
+                  <p class="section-kicker">Coming Soon</p>
+                  <h2>Coming Soon</h2>
+                  <p>This placeholder is reserved for future production workflow features.</p>
+                </div>
+              </div>
+            </section>
+
+            <section class="panel view-panel" data-panel="prompts" id="prompts-panel">
+              <div class="panel-head">
+                <div>
+                  <p class="section-kicker">Stage prompts</p>
+                  <h2>Prompts used by each AI stage</h2>
+                  <p>Output 1 prompts generate ecommerce images. Output 2 prompts are used only for real GPT price-label insertion.</p>
+                </div>
+                <div class="prompts-toolbar">
+                  <button type="button" class="secondary-button" id="prompts-reset-button">Reset to defaults</button>
+                  <button type="button" class="primary-button" id="prompts-save-button">Save all prompts</button>
+                </div>
+              </div>
+              <p class="prompts-status" id="prompts-status"></p>
+              <div class="prompts-list" id="prompts-list"></div>
+            </section>
+          </section>
+          <aside class="panel activity-panel">
+            <div class="panel-head compact">
+              <div>
+                <p class="section-kicker">Session</p>
+                <h2>Activity</h2>
+              </div>
+            </div>
+            <div class="status-box" id="status-box">
+              <span class="status-dot"></span>
+              <span id="status-text">Waiting for input</span>
+            </div>
+            <ol class="activity-list" id="activity-list"></ol>
+          </aside>
+        </div>
+      </section>
+
+      <section class="gallery-section" aria-labelledby="gallery-title">
+        <div class="gallery-head">
+          <div>
+            <p class="eyebrow">Campaign delivery</p>
+            <h2 id="gallery-title">Output browser</h2>
+          </div>
+          <div class="gallery-tools">
+            <button class="filter-button active" type="button" data-filter="all">All</button>
+            <button class="filter-button" type="button" data-filter="gallery">Output 1</button>
+            <button class="filter-button" type="button" data-filter="instagram">Output 2</button>
+            <span id="gallery-count">0 images</span>
+          </div>
+        </div>
+
+        <div class="empty-state" id="empty-state">
+          <span class="empty-icon">◇</span>
+          <strong>No generated images yet</strong>
+          <span>Upload a product, verify the Brand Kit, then create Output 1 and selected Output 2 images.</span>
+        </div>
+        <div class="gallery-grid" id="gallery-grid" hidden></div>
+      </section>
+      </section>
+    </main>
+
+    <template id="gallery-item-template">
+      <article class="gallery-item">
+        <a target="_blank" rel="noreferrer">
+          <img alt="" loading="lazy" />
+          <span class="view-output">Open full size ↗</span>
+        </a>
+        <div class="gallery-caption">
+          <strong></strong>
+          <em class="image-badge" hidden></em>
+          <span></span>
+        </div>
+        <label class="instagram-select" hidden>
+          <input type="checkbox" />
+          <span>Use for Output 2</span>
+        </label>
+      </article>
+    </template>
+
+    <template id="prompt-editor-template">
+      <div class="prompt-card">
+        <div class="prompt-card-head">
+          <span class="prompt-category"></span>
+          <strong class="prompt-title"></strong>
+          <button type="button" class="text-button prompt-restore" hidden>Restore default</button>
+        </div>
+        <textarea class="prompt-text" rows="8"></textarea>
+        <details class="prompt-details">
+          <summary>Where this prompt is sent →</summary>
+          <div class="prompt-metadata"></div>
+        </details>
+      </div>
+    </template>
+
+    <script src="/app.js" type="module"></script>
+  </body>
+</html>
