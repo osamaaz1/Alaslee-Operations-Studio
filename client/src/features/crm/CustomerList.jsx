@@ -72,7 +72,7 @@ function CustomerProfile({ customerId, session, inform, onBack, onEdit }) {
 function RxSummary({ item }) { const value = item.values || {}; return <article className="rx-summary"><header><strong>{new Date(item.exam_date).toLocaleDateString("ar-SA-u-nu-latn")}</strong>{item.exceptional && <span>قيمة استثنائية</span>}</header><div><b>Right</b><small>SPH {value.right?.sph ?? "—"}</small><small>CYL {value.right?.cyl ?? "—"}</small><small>Axis {value.right?.axis || "—"}</small><small>ADD {value.right?.add || "—"}</small></div><div><b>Left</b><small>SPH {value.left?.sph ?? "—"}</small><small>CYL {value.left?.cyl ?? "—"}</small><small>Axis {value.left?.axis || "—"}</small><small>ADD {value.left?.add || "—"}</small></div><footer>IPD: {value.pdMode === "binocular" ? value.binocularPd : `${value.rightPd} / ${value.leftPd}`}</footer></article>; }
 function PanelTitle({ title, icon: Icon }) { return <header className="crm-panel-title"><div>{Icon && <Icon size={18} />}<h2>{title}</h2></div></header>; }
 function Detail({ label, value, ltr }) { return <div><dt>{label}</dt><dd dir={ltr ? "ltr" : undefined}>{value}</dd></div>; }
-function EmptyCustomers() { return <div className="crm-empty"><UserRound size={28} /><strong>لا توجد نتائج</strong><span>أضف أول عميل أو غيّر عبارة البحث.</span></div>; }
+function EmptyCustomers() { return <div className="crm-empty"><UserRound size={28} /><strong>لا توجد نتائج</strong><span>أضف أول عميل، أو استورد بيانات التحليل من الإعدادات، أو غيّر عبارة البحث.</span></div>; }
 
 function customerFormValue(customer) {
   return {

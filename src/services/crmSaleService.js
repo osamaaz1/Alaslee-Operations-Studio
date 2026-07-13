@@ -10,10 +10,12 @@ export async function listSales(actor) {
   return withCrmTransaction(actor, async (client) => {
     const result = await client.query(
       `SELECT s.id,s.customer_id,c.name AS customer_name,s.status,s.occurred_at,s.total_amount,s.warning_reason,
+              s.payment_tracking_enabled,s.delivery_status,s.scheduled_delivery_at,s.delivered_at,
               COUNT(i.id)::int AS items_count FROM crm_sales s JOIN crm_customers c ON c.id=s.customer_id
        LEFT JOIN crm_sale_items i ON i.sale_id=s.id GROUP BY s.id,c.name ORDER BY s.occurred_at DESC LIMIT 200`,
     );
-    return result.rows;
+    const totals = await paymentTotalsBySale(client, result.rows.map((row) => row.id));
+    return result.rows.map((row) => exposePaymentState(row, totals.get(row.id)));
   });
 }
 
@@ -30,16 +32,79 @@ export async function createSale(input, actor, ipAddress) {
   });
 }
 
+export async function addSalePayment(saleId, input, actor, ipAddress) {
+  return withCrmTransaction(actor, async (client) => {
+    const sale = await trackedPostedSaleForUpdate(client, saleId);
+    const paid = await netPaidAmount(client, saleId);
+    const amount = money(input.amount);
+    const remaining = money(Number(sale.total_amount) - paid);
+    if (amount > remaining) throw new AppError(`الدفعة تتجاوز المتبقي ${remaining.toFixed(2)} ر.س.`, 422);
+    await insertPaymentEntry(client, saleId, "payment", amount, input.occurredAt, null, actor.id);
+    await writeAudit(client, actor, "sale.payment", "sale", saleId, { amount }, ipAddress);
+    return readSale(client, saleId);
+  });
+}
+
+export async function refundSalePayment(saleId, input, actor, ipAddress) {
+  return withCrmTransaction(actor, async (client) => {
+    await trackedSaleForUpdate(client, saleId);
+    const paid = await netPaidAmount(client, saleId);
+    const amount = money(input.amount);
+    if (amount > paid) throw new AppError(`مبلغ الرد يتجاوز صافي المدفوع ${paid.toFixed(2)} ر.س.`, 422);
+    await insertPaymentEntry(client, saleId, "refund", amount, input.occurredAt, input.reason, actor.id);
+    await writeAudit(client, actor, "sale.refund", "sale", saleId, { amount, reason: input.reason }, ipAddress);
+    return readSale(client, saleId);
+  });
+}
+
+export async function updateSaleDelivery(saleId, input, actor, ipAddress) {
+  return withCrmTransaction(actor, async (client) => {
+    const sale = await postedSaleForUpdate(client, saleId);
+    assertDeliveryTransition(sale.delivery_status, input.status, actor, input.reason);
+    const scheduledAt = input.scheduledDeliveryAt || sale.scheduled_delivery_at;
+    if (["pending", "ready"].includes(input.status) && !scheduledAt) {
+      throw new AppError("حدد موعد تسليم الطلب.", 422);
+    }
+    if (scheduledAt && new Date(scheduledAt) < new Date(sale.occurred_at)) {
+      throw new AppError("موعد التسليم يجب ألا يسبق وقت البيع.", 422);
+    }
+    const deliveredAt = input.status === "delivered"
+      ? sale.delivered_at || new Date()
+      : null;
+    await client.query(
+      `UPDATE crm_sales SET delivery_status=$1,scheduled_delivery_at=$2,delivered_at=$3,
+         updated_at=now(),updated_by=$4 WHERE id=$5`,
+      [input.status, scheduledAt || null, deliveredAt, actor.id, saleId],
+    );
+    await writeAudit(client, actor, "sale.delivery", "sale", saleId,
+      { from: sale.delivery_status, to: input.status, scheduledDeliveryAt: scheduledAt || null, reason: input.reason || null }, ipAddress);
+    return readSale(client, saleId);
+  });
+}
+
 export async function correctSale(saleId, input, actor, ipAddress) {
   return withCrmTransaction(actor, async (client) => {
+    await saleRowForUpdate(client, saleId);
     const before = await readSale(client, saleId);
+    const paid = await netPaidAmount(client, saleId);
+    if (paid > 0 && ["edit", "void", "delete"].includes(input.action)) {
+      throw new AppError("يجب تسجيل رد كامل للمبلغ المدفوع قبل تعديل البيع أو إلغائه.", 422);
+    }
     const replacement = input.action === "edit"
       ? await createSaleInTransaction(client, { ...input.replacement, correctionOf: saleId }, actor)
       : null;
     const nextStatus = correctionStatus(input.action);
+    const restoredDelivery = input.action === "restore" ? await deliveryBeforeCancellation(client, saleId) : null;
+    const nextDelivery = input.action === "restore"
+      ? restoredDelivery?.delivery_status || "pending"
+      : "cancelled";
     await client.query(
-      "UPDATE crm_sales SET status=$1,deleted_at=$2,updated_at=now(),updated_by=$3 WHERE id=$4",
-      [nextStatus, nextStatus === "deleted" ? new Date() : null, actor.id, saleId],
+      `UPDATE crm_sales SET status=$1,deleted_at=$2,delivery_status=$3,scheduled_delivery_at=$4,
+         delivered_at=$5,updated_at=now(),updated_by=$6 WHERE id=$7`,
+      [nextStatus, nextStatus === "deleted" ? new Date() : null, nextDelivery,
+        restoredDelivery?.scheduled_delivery_at || before.scheduled_delivery_at,
+        nextDelivery === "delivered" ? restoredDelivery?.delivered_at || before.delivered_at : null,
+        actor.id, saleId],
     );
     const after = replacement ? await readSale(client, replacement.id) : { status: nextStatus };
     await client.query(
@@ -56,28 +121,65 @@ export async function correctSale(saleId, input, actor, ipAddress) {
 
 async function createSaleInTransaction(client, input, actor) {
   await requireCustomer(client, input.customerId);
-  const products = await saleProducts(client, input.items.map((item) => item.productId));
+  const products = await saleProducts(client, input.items.map((item) => item.productId), input.correctionOf);
   const lines = input.items.map((item) => buildLine(item, products.get(item.productId)));
   requireWarningReason(lines, input.warningReason);
   const total = lines.reduce((sum, line) => sum + line.lineTotal, 0);
+  const initialPaidAmount = money(input.initialPaidAmount || 0);
+  if (initialPaidAmount > total) throw new AppError("المبلغ المدفوع لا يمكن أن يتجاوز إجمالي البيع.", 422);
+  const deliveryMode = input.deliveryMode || "immediate";
+  const deliveryStatus = deliveryMode === "scheduled" ? "pending" : "delivered";
+  if (deliveryMode === "scheduled" && !input.scheduledDeliveryAt) throw new AppError("حدد موعد تسليم الطلب.", 422);
+  const occurredAt = input.occurredAt ? new Date(input.occurredAt) : new Date();
+  if (input.scheduledDeliveryAt && new Date(input.scheduledDeliveryAt) < occurredAt) {
+    throw new AppError("موعد التسليم يجب ألا يسبق وقت البيع.", 422);
+  }
   const result = await client.query(
-    `INSERT INTO crm_sales(customer_id,occurred_at,total_amount,warning_reason,correction_of,created_by,updated_by)
-     VALUES($1,COALESCE($2::timestamptz,now()),$3,$4,$5,$6,$6) RETURNING *`,
-    [input.customerId, input.occurredAt || null, total, input.warningReason || null, input.correctionOf || null, actor.id],
+    `INSERT INTO crm_sales(customer_id,occurred_at,total_amount,warning_reason,correction_of,
+       payment_tracking_enabled,delivery_status,scheduled_delivery_at,delivered_at,created_by,updated_by)
+     VALUES($1,$2,$3,$4,$5,true,$6,$7,$8,$9,$9) RETURNING *`,
+    [input.customerId, occurredAt, total, input.warningReason || null, input.correctionOf || null,
+      deliveryStatus, input.scheduledDeliveryAt || null, deliveryStatus === "delivered" ? occurredAt : null, actor.id],
   );
   await insertLines(client, result.rows[0].id, lines, actor.id);
+  if (initialPaidAmount > 0) {
+    await insertPaymentEntry(client, result.rows[0].id, "payment", initialPaidAmount, input.occurredAt, null, actor.id);
+  }
   return result.rows[0];
 }
 
-async function saleProducts(client, ids) {
+async function saleProducts(client, ids, excludedSaleId = null) {
+  const productIds = [...new Set(ids)].sort();
+  await client.query(
+    "SELECT external_id FROM daftra_products WHERE external_id=ANY($1::text[]) ORDER BY external_id FOR UPDATE",
+    [productIds],
+  );
   const result = await client.query(
     `SELECT p.*,COALESCE(jsonb_agg(jsonb_build_object('storeId',s.external_id,'storeName',s.name,'quantity',l.quantity))
        FILTER(WHERE s.external_id IS NOT NULL),'[]'::jsonb) AS warehouses
      FROM daftra_products p LEFT JOIN daftra_stock_levels l ON l.product_id=p.external_id
      LEFT JOIN daftra_stores s ON s.external_id=l.store_id WHERE p.external_id=ANY($1::text[])
-     GROUP BY p.external_id`, [ids],
+     GROUP BY p.external_id`, [productIds],
   );
-  return new Map(result.rows.map((row) => [row.external_id, row]));
+  const reservations = await reservedQuantities(client, productIds, excludedSaleId);
+  return new Map(result.rows.map((row) => [row.external_id, {
+    ...row,
+    reserved_quantity: reservations.get(row.external_id) || 0,
+  }]));
+}
+
+async function reservedQuantities(client, productIds, excludedSaleId = null) {
+  if (!productIds.length) return new Map();
+  const result = await client.query(
+    `SELECT i.daftra_product_id,COALESCE(SUM(i.quantity),0)::numeric AS reserved_quantity
+     FROM crm_sale_items i JOIN crm_sales s ON s.id=i.sale_id
+     WHERE i.daftra_product_id=ANY($1::text[]) AND s.status='posted'
+       AND s.delivery_status IN ('pending','ready')
+       AND ($2::uuid IS NULL OR s.id<>$2::uuid)
+     GROUP BY i.daftra_product_id`,
+    [productIds, excludedSaleId],
+  );
+  return new Map(result.rows.map((row) => [row.daftra_product_id, Number(row.reserved_quantity)]));
 }
 
 function buildLine(item, product) {
@@ -92,19 +194,24 @@ function buildLine(item, product) {
     throw new AppError(`سعر ${product.name} يجب أن يكون بين ${appliedMinimum.toFixed(2)} و${reference.toFixed(2)} ر.س.`, 422);
   }
   const stock = product.stock_balance == null ? null : Number(product.stock_balance);
+  const reserved = Number(product.reserved_quantity || 0);
+  const available = stock == null ? null : Math.max(0, stock - reserved);
+  if (product.track_stock !== false && available != null && item.quantity > available) {
+    throw new AppError(`الكمية المتاحة للمنتج ${product.name} هي ${available} بعد الحجوزات الحالية.`, 422);
+  }
   const ageHours = (Date.now() - new Date(product.synced_at).getTime()) / 3_600_000;
   return {
     productId: product.external_id, productCode: product.product_code, sku: product.sku, productName: product.name,
     brand: product.brand, category: product.category, quantity: item.quantity, unitPrice: price, referencePrice: reference,
     daftraMinimum, appliedMinimum, minimumSource: validMinimum ? "daftra" : "fallback_50_percent",
     stockBalance: stock, stockSnapshot: product.warehouses, syncedAt: product.synced_at,
-    overStock: stock != null && item.quantity > stock, expiredSnapshot: ageHours > 24,
+    expiredSnapshot: ageHours > 24,
     lineTotal: Math.round(item.quantity * price * 100) / 100,
   };
 }
 
 function requireWarningReason(lines, reason) {
-  const warning = lines.some((line) => line.overStock || line.expiredSnapshot || line.minimumSource === "fallback_50_percent");
+  const warning = lines.some((line) => line.expiredSnapshot || line.minimumSource === "fallback_50_percent");
   if (warning && String(reason || "").trim().length < 3) {
     throw new AppError("سبب التأكيد مطلوب بسبب تحذير السعر أو المخزون أو قدم المزامنة.", 422);
   }
@@ -156,7 +263,110 @@ async function readSale(client, id) {
   const saleResult = await client.query("SELECT * FROM crm_sales WHERE id=$1", [id]);
   if (!saleResult.rows[0]) throw new AppError("عملية البيع غير موجودة.", 404);
   const items = await client.query("SELECT * FROM crm_sale_items WHERE sale_id=$1 ORDER BY created_at", [id]);
-  return { ...saleResult.rows[0], items: items.rows };
+  const payments = await client.query(
+    `SELECT id,entry_type,amount,occurred_at,reason,created_at,created_by
+     FROM crm_sale_payments WHERE sale_id=$1 ORDER BY occurred_at,created_at`, [id],
+  );
+  return exposePaymentState({ ...saleResult.rows[0], items: items.rows, payments: payments.rows }, paymentSummary(payments.rows));
+}
+
+async function insertPaymentEntry(client, saleId, entryType, amount, occurredAt, reason, actor) {
+  await client.query(
+    `INSERT INTO crm_sale_payments(sale_id,entry_type,amount,occurred_at,reason,created_by)
+     VALUES($1,$2,$3,COALESCE($4::timestamptz,now()),$5,$6)`,
+    [saleId, entryType, money(amount), occurredAt || null, reason || null, actor],
+  );
+}
+
+async function paymentTotalsBySale(client, saleIds) {
+  if (!saleIds.length) return new Map();
+  const result = await client.query(
+    `SELECT sale_id,
+       COALESCE(SUM(amount) FILTER (WHERE entry_type='payment'),0)::numeric AS payments,
+       COALESCE(SUM(amount) FILTER (WHERE entry_type='refund'),0)::numeric AS refunds
+     FROM crm_sale_payments WHERE sale_id=ANY($1::uuid[]) GROUP BY sale_id`, [saleIds],
+  );
+  return new Map(result.rows.map((row) => [row.sale_id, {
+    payments: Number(row.payments), refunds: Number(row.refunds),
+    net: money(Number(row.payments) - Number(row.refunds)),
+  }]));
+}
+
+async function netPaidAmount(client, saleId) {
+  const result = await client.query(
+    `SELECT COALESCE(SUM(CASE WHEN entry_type='payment' THEN amount ELSE -amount END),0)::numeric AS net
+     FROM crm_sale_payments WHERE sale_id=$1`, [saleId],
+  );
+  return money(result.rows[0].net);
+}
+
+function paymentSummary(rows) {
+  const payments = rows.filter((row) => row.entry_type === "payment").reduce((sum, row) => sum + Number(row.amount), 0);
+  const refunds = rows.filter((row) => row.entry_type === "refund").reduce((sum, row) => sum + Number(row.amount), 0);
+  return { payments: money(payments), refunds: money(refunds), net: money(payments - refunds) };
+}
+
+function exposePaymentState(row, summary = { payments: 0, refunds: 0, net: 0 }) {
+  const total = Number(row.total_amount || 0);
+  const net = money(summary?.net || 0);
+  const remaining = money(Math.max(0, total - net));
+  let paymentStatus = "legacy_untracked";
+  if (row.payment_tracking_enabled) {
+    if ((summary?.refunds || 0) > 0 && net === 0) paymentStatus = "refunded";
+    else if (net <= 0) paymentStatus = "unpaid";
+    else if (remaining <= 0) paymentStatus = "paid";
+    else paymentStatus = "partially_paid";
+  }
+  return {
+    ...row,
+    paid_amount: net,
+    remaining_amount: row.payment_tracking_enabled ? remaining : null,
+    payment_status: paymentStatus,
+  };
+}
+
+async function saleRowForUpdate(client, id) {
+  const result = await client.query("SELECT * FROM crm_sales WHERE id=$1 FOR UPDATE", [id]);
+  if (!result.rows[0]) throw new AppError("عملية البيع غير موجودة.", 404);
+  return result.rows[0];
+}
+
+async function trackedSaleForUpdate(client, id) {
+  const sale = await saleRowForUpdate(client, id);
+  if (!sale.payment_tracking_enabled) throw new AppError("تتبع الدفعات غير متاح لهذه العملية التاريخية.", 422);
+  return sale;
+}
+
+async function postedSaleForUpdate(client, id) {
+  const sale = await saleRowForUpdate(client, id);
+  if (sale.status !== "posted") throw new AppError("لا يمكن تحديث عملية بيع ملغاة أو محذوفة.", 422);
+  return sale;
+}
+
+async function trackedPostedSaleForUpdate(client, id) {
+  const sale = await postedSaleForUpdate(client, id);
+  if (!sale.payment_tracking_enabled) throw new AppError("تتبع الدفعات غير متاح لهذه العملية التاريخية.", 422);
+  return sale;
+}
+
+function assertDeliveryTransition(current, next, actor, reason) {
+  if (current === "cancelled") throw new AppError("لا يمكن تحديث تسليم عملية ملغاة.", 422);
+  const order = { pending: 0, ready: 1, delivered: 2 };
+  const backwards = order[next] < order[current];
+  if (backwards && (actor.role !== "superuser" || String(reason || "").trim().length < 3)) {
+    throw new AppError("التراجع عن حالة التسليم متاح للمشرف مع كتابة السبب.", 403);
+  }
+}
+
+async function deliveryBeforeCancellation(client, saleId) {
+  const result = await client.query(
+    `SELECT before_snapshot->>'delivery_status' AS delivery_status,
+            before_snapshot->>'scheduled_delivery_at' AS scheduled_delivery_at,
+            before_snapshot->>'delivered_at' AS delivered_at
+     FROM crm_sale_corrections WHERE sale_id=$1 AND action IN ('edit','void','delete')
+     ORDER BY created_at DESC LIMIT 1`, [saleId],
+  );
+  return result.rows[0] || null;
 }
 
 async function requireCustomer(client, id) {
@@ -168,4 +378,9 @@ function correctionStatus(action) {
   if (action === "delete") return "deleted";
   if (action === "restore") return "posted";
   return "voided";
+}
+
+function money(value) {
+  const parsed = Number(value);
+  return Math.round((Number.isFinite(parsed) ? parsed : 0) * 100) / 100;
 }

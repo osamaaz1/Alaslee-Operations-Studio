@@ -1,6 +1,8 @@
 node_modules/
 .env
 .env.backup-*
+temp.env
+correct.env
 node_modules/
 client/dist/
 .migration/

@@ -64,12 +64,55 @@ test("CRM creates encrypted customers and enforces staff/superuser boundaries", 
   await request(`/v1/crm/customers/${customer.id}/restore`, { method: "POST", auth: superuser, body: {} });
 
   await insertProduct(`test-${suffix}`);
+  const scheduledDeliveryAt = new Date(Date.now() + 86_400_000).toISOString();
   const sale = await request("/v1/crm/sales", {
     method: "POST", auth: staff,
-    body: { customerId: customer.id, warningReason: "تمت مراجعة الحد المؤقت", items: [{ productId: `test-${suffix}`, quantity: 1, unitPrice: 750 }] },
+    body: {
+      customerId: customer.id, warningReason: "تمت مراجعة الحد المؤقت",
+      initialPaidAmount: 200, deliveryMode: "scheduled", scheduledDeliveryAt,
+      items: [{ productId: `test-${suffix}`, quantity: 2, unitPrice: 750 }],
+    },
   });
-  assert.equal(Number(sale.total_amount), 750);
+  assert.equal(Number(sale.total_amount), 1500);
   assert.equal(sale.items[0].minimum_source, "fallback_50_percent");
+  assert.equal(sale.delivery_status, "pending");
+  assert.equal(Number(sale.paid_amount), 200);
+  assert.equal(Number(sale.remaining_amount), 1300);
+
+  const productsWhileReserved = await request("/v1/daftra/products?availableOnly=1", { auth: staff });
+  const reservedProduct = productsWhileReserved.find((item) => item.external_id === `test-${suffix}`);
+  assert.equal(Number(reservedProduct.reserved_quantity), 2);
+  assert.equal(Number(reservedProduct.available_quantity), 3);
+
+  const oversold = await rawRequest("/v1/crm/sales", {
+    method: "POST", auth: staff,
+    body: { customerId: customer.id, warningReason: "اختبار الحجز", items: [{ productId: `test-${suffix}`, quantity: 4, unitPrice: 750 }] },
+  });
+  assert.equal(oversold.status, 422);
+
+  const paid = await request(`/v1/crm/sales/${sale.id}/payments`, {
+    method: "POST", auth: staff, body: { amount: 300 },
+  });
+  assert.equal(Number(paid.paid_amount), 500);
+  assert.equal(paid.payment_status, "partially_paid");
+  const overpayment = await rawRequest(`/v1/crm/sales/${sale.id}/payments`, {
+    method: "POST", auth: staff, body: { amount: 1001 },
+  });
+  assert.equal(overpayment.status, 422);
+  const staffRefund = await rawRequest(`/v1/crm/sales/${sale.id}/refunds`, {
+    method: "POST", auth: staff, body: { amount: 500, reason: "رد اختباري" },
+  });
+  assert.equal(staffRefund.status, 403);
+  const refunded = await request(`/v1/crm/sales/${sale.id}/refunds`, {
+    method: "POST", auth: superuser, body: { amount: 500, reason: "رد اختباري كامل" },
+  });
+  assert.equal(Number(refunded.paid_amount), 0);
+  assert.equal(refunded.payment_status, "refunded");
+
+  const ready = await request(`/v1/crm/sales/${sale.id}/delivery`, {
+    method: "PUT", auth: staff, body: { status: "ready", scheduledDeliveryAt },
+  });
+  assert.equal(ready.delivery_status, "ready");
 
   const belowFloor = await rawRequest("/v1/crm/sales", {
     method: "POST", auth: staff,
@@ -77,9 +120,28 @@ test("CRM creates encrypted customers and enforces staff/superuser boundaries", 
   });
   assert.equal(belowFloor.status, 422);
   const corrected = await request(`/v1/crm/sales/${sale.id}/corrections`, {
-    method: "POST", auth: superuser, body: { action: "void", reason: "اختبار صلاحية المشرف" },
+    method: "POST", auth: superuser,
+    body: {
+      action: "edit", reason: "اختبار تعديل الطلب المحجوز",
+      replacement: {
+        customerId: customer.id, warningReason: "تمت مراجعة الحد المؤقت",
+        deliveryMode: "scheduled", scheduledDeliveryAt,
+        items: [{ productId: `test-${suffix}`, quantity: 2, unitPrice: 750 }],
+      },
+    },
   });
   assert.equal(corrected.original.status, "voided");
+  assert.equal(corrected.original.delivery_status, "cancelled");
+  assert.equal(corrected.replacement.delivery_status, "pending");
+
+  const delivered = await request(`/v1/crm/sales/${corrected.replacement.id}/delivery`, {
+    method: "PUT", auth: staff, body: { status: "delivered", scheduledDeliveryAt },
+  });
+  assert.equal(delivered.delivery_status, "delivered");
+  const productsAfterDelivery = await request("/v1/daftra/products?availableOnly=1", { auth: staff });
+  const releasedProduct = productsAfterDelivery.find((item) => item.external_id === `test-${suffix}`);
+  assert.equal(Number(releasedProduct.reserved_quantity), 0);
+  assert.equal(Number(releasedProduct.available_quantity), 5);
 });
 
 test("superuser account vault encrypts secrets and excludes staff", { skip: !databaseUrl }, async () => {

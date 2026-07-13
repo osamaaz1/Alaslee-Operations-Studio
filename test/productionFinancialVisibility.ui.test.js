@@ -9,12 +9,13 @@ test("production navigation and home omit internal financial reporting", () => {
   assert.doesNotMatch(visibleShell, /إجمالي المبيعات|الفواتير غير المسددة/);
 });
 
-test("CRM navigation and visible tables omit financial values", () => {
+test("CRM exposes product sales while non-sale tables omit financial values", () => {
   const workspace = fs.readFileSync("client/src/features/crm/CrmWorkspace.jsx", "utf8");
   const customers = fs.readFileSync("client/src/features/crm/CustomerList.jsx", "utf8");
   const inventory = fs.readFileSync("client/src/features/crm/InventoryWorkspace.jsx", "utf8");
   const settings = fs.readFileSync("client/src/features/crm/CrmSettings.jsx", "utf8");
-  assert.doesNotMatch(workspace, /SaleWorkspace|المبيعات اليدوية/);
+  assert.match(workspace, /SaleWorkspace/);
+  assert.match(workspace, /بيع منتج/);
   assert.doesNotMatch(customers, /monetary|money\.format|<th>القيمة<\/th>/);
   assert.doesNotMatch(inventory, /money\.format|سعر البيع|أقل سعر|ضوابط السعر/);
   assert.doesNotMatch(settings, /RfmEditor|monetary|المبيعات|sales_count/);

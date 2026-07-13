@@ -50,6 +50,15 @@ export const openapiSpec = {
     "/v1/crm/sales/{id}/corrections": {
       post: { summary: "Superuser: edit, void, delete, or restore a sale with audit history" },
     },
+    "/v1/crm/sales/{id}/payments": {
+      post: { summary: "Add an immutable payment to a tracked sale" },
+    },
+    "/v1/crm/sales/{id}/refunds": {
+      post: { summary: "Superuser: record an immutable sale refund" },
+    },
+    "/v1/crm/sales/{id}/delivery": {
+      put: { summary: "Update a sale delivery appointment and status" },
+    },
     "/v1/crm/rfm/rules": {
       get: { summary: "Get explainable RFM classification rules" },
       put: { summary: "Superuser: update RFM thresholds and rescore customers" },

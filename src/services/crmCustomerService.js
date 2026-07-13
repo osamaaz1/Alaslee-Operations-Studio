@@ -9,6 +9,8 @@ import { AppError } from "../utils/errors.js";
 import { writeAudit, listAuditEvents } from "./crmAuditService.js";
 import XLSX from "xlsx";
 
+const customerListLimit = 5_000;
+
 export async function listCustomerSources(actor) {
   return withCrmTransaction(actor, async (client) => {
     const result = await client.query("SELECT code, label_ar FROM crm_customer_sources WHERE active = true ORDER BY created_at");
@@ -29,8 +31,8 @@ export async function listCustomers(actor, query = "") {
          FROM crm_rfm_snapshots WHERE customer_id = c.id ORDER BY created_at DESC LIMIT 1
        ) r ON true
        WHERE c.deleted_at IS NULL AND ($1 = '' OR lower(c.name) LIKE $2 OR c.phone_hash = $3 OR c.identity_hash = $4)
-       ORDER BY c.updated_at DESC LIMIT 200`,
-      [search.text, `%${search.text.toLowerCase()}%`, search.phoneHash, search.identityHash],
+       ORDER BY c.updated_at DESC LIMIT $5`,
+      [search.text, `%${search.text.toLowerCase()}%`, search.phoneHash, search.identityHash, customerListLimit],
     );
     return result.rows;
   });

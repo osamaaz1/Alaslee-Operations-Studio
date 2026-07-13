@@ -211,8 +211,10 @@ async function insertInvoices(db, batchId, invoices, clientMap, actor) {
   const rows = invoices.map((row, index) => invoicePayload(row, index, clientMap, actor)).filter(Boolean);
   if (!rows.length) return 0;
   const inserted = await db.query(
-    `INSERT INTO crm_sales(customer_id,record_type,occurred_at,total_amount,source_reference,created_by,updated_by)
-     SELECT x.customer_id::uuid,x.record_type,COALESCE(x.occurred_at::timestamptz,now()),x.total_amount::numeric,x.source_key,x.actor,x.actor
+    `INSERT INTO crm_sales(customer_id,record_type,occurred_at,total_amount,source_reference,
+       payment_tracking_enabled,delivery_status,delivered_at,created_by,updated_by)
+     SELECT x.customer_id::uuid,x.record_type,COALESCE(x.occurred_at::timestamptz,now()),x.total_amount::numeric,x.source_key,
+       false,'delivered',COALESCE(x.occurred_at::timestamptz,now()),x.actor,x.actor
      FROM jsonb_to_recordset($1::jsonb) AS x(customer_id text,record_type text,occurred_at text,total_amount text,actor text,source_key text)
      ON CONFLICT(source_reference) WHERE source_reference IS NOT NULL DO NOTHING
      RETURNING id,customer_id,source_reference`, [JSON.stringify(rows)],

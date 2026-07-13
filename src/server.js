@@ -1,3 +1,4 @@
+// Boots the API, CRM infrastructure, and read-only Daftra scheduler.
 import { createApp } from "./app.js";
 import { config } from "./config.js";
 import { initializeCrmInfrastructure } from "./infra/crm/runtime.js";
