@@ -83,7 +83,7 @@ function Set-EnvValue([string]$Path, [string]$Name, [string]$Value) {
 function Get-EnvValue([string]$Path, [string]$Name) {
     foreach ($line in [IO.File]::ReadAllLines($Path)) {
         if ($line -match ("^" + [Regex]::Escape($Name) + "=(.*)$")) {
-            return $Matches[1].Trim()
+            return ([string]$Matches[1]).Trim()
         }
     }
     throw "$Name is missing from .env."
