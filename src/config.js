@@ -83,6 +83,7 @@ export const config = {
     encryptionPreviousKeys: commaSeparatedValues("CRM_DATA_ENCRYPTION_PREVIOUS_KEYS"),
     staffPin: process.env.CRM_STAFF_PIN,
     superuserPin: process.env.CRM_SUPERUSER_PIN,
+    loginRateLimitDisabled: boolFromEnv("CRM_LOGIN_RATE_LIMIT_DISABLED", process.env.NODE_ENV !== "production"),
     sessionHours: intFromEnv("CRM_SESSION_HOURS", 8),
     priceFloorPercent: intFromEnv("CRM_PRICE_FLOOR_PERCENT", 50),
     secureCookie: boolFromEnv("CRM_SECURE_COOKIE", process.env.NODE_ENV === "production"),

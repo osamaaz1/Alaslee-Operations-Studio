@@ -1,12 +1,15 @@
 // Limits repeated local PIN attempts independently from the general API limit.
 
 import { AppError } from "../utils/errors.js";
+import { config } from "../config.js";
 
 const attempts = new Map();
 const windowMs = 15 * 60_000;
 const maximumAttempts = 5;
 
 export function crmPinRateLimit(req, res, next) {
+  if (config.crm.loginRateLimitDisabled) return next();
+
   const key = req.ip || req.socket.remoteAddress || "unknown";
   const now = Date.now();
   const bucket = attempts.get(key);
