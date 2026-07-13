@@ -56,6 +56,23 @@ function Test-NativeCommand([string]$FilePath, [string[]]$ArgumentList) {
     }
 }
 
+function Invoke-NativeCommand([string]$FilePath, [string[]]$ArgumentList, [string]$Action) {
+    # Send native output to the console without leaking it into a PowerShell
+    # function's return value. PowerShell otherwise treats every stdout line as
+    # part of assignments such as `$port = Initialize-IsolatedPostgres ...`.
+    $previousErrorActionPreference = $ErrorActionPreference
+    try {
+        $ErrorActionPreference = "Continue"
+        & $FilePath @ArgumentList 2>&1 | Out-Host
+        $exitCode = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $previousErrorActionPreference
+    }
+    if ($exitCode -ne 0) {
+        throw "$Action failed (exit code $exitCode)."
+    }
+}
+
 function Install-WingetPackage([string]$Id, [string]$Name) {
     Write-Step "Installing/checking $Name"
     & winget.exe list --id $Id --exact --source winget --accept-source-agreements --disable-interactivity *> $null
@@ -103,6 +120,28 @@ function Get-EnvValue([string]$Path, [string]$Name) {
         }
     }
     throw "$Name is missing from .env."
+}
+
+function Get-NativePostgresPort([string]$EnvironmentPath) {
+    $configuredValue = Get-EnvValue $EnvironmentPath "CRM_POSTGRES_PORT"
+    [int]$port = 0
+    if ([int]::TryParse($configuredValue, [ref]$port) -and $port -ge 1 -and $port -le 65535) {
+        return $port
+    }
+
+    # Recover setup runs affected by the former PowerShell stdout-capture bug.
+    $portFile = Join-Path $env:ProgramData "AlasleeOperationsStudio\PostgreSQL\port.txt"
+    if (Test-Path -LiteralPath $portFile) {
+        $savedValue = [IO.File]::ReadAllText($portFile).Trim()
+        [int]$savedPort = 0
+        if ([int]::TryParse($savedValue, [ref]$savedPort) -and $savedPort -ge 1 -and $savedPort -le 65535) {
+            Write-Warning "Repairing invalid CRM_POSTGRES_PORT in .env with the isolated PostgreSQL port $savedPort."
+            Set-EnvValue $EnvironmentPath "CRM_POSTGRES_PORT" ([string]$savedPort)
+            return $savedPort
+        }
+    }
+
+    throw "CRM_POSTGRES_PORT must be a number between 1 and 65535."
 }
 
 function Find-PostgresTools {
@@ -181,8 +220,10 @@ function Initialize-IsolatedPostgres($Tools, [string]$Password) {
         $passwordFile = Join-Path $env:TEMP ("alaslee-pg-password-" + [Guid]::NewGuid().ToString("N") + ".txt")
         try {
             [IO.File]::WriteAllText($passwordFile, $Password + [Environment]::NewLine, (New-Object Text.UTF8Encoding($false)))
-            & $Tools.InitDb -D $dataDir -U postgres --pwfile=$passwordFile --auth-host=scram-sha-256 --auth-local=scram-sha-256 --encoding=UTF8
-            Assert-LastExitCode "Initializing the isolated Alaslee PostgreSQL data directory"
+            Invoke-NativeCommand $Tools.InitDb @(
+                "-D", $dataDir, "-U", "postgres", "--pwfile=$passwordFile",
+                "--auth-host=scram-sha-256", "--auth-local=scram-sha-256", "--encoding=UTF8"
+            ) "Initializing the isolated Alaslee PostgreSQL data directory"
         } finally {
             Remove-Item -LiteralPath $passwordFile -Force -ErrorAction SilentlyContinue
         }
@@ -196,8 +237,9 @@ function Initialize-IsolatedPostgres($Tools, [string]$Password) {
 
     $service = Get-Service -Name $serviceName -ErrorAction SilentlyContinue
     if (-not $service) {
-        & $Tools.PgCtl register -N $serviceName -D $dataDir -S auto
-        Assert-LastExitCode "Registering the isolated Alaslee PostgreSQL Windows service"
+        Invoke-NativeCommand $Tools.PgCtl @(
+            "register", "-N", $serviceName, "-D", $dataDir, "-S", "auto"
+        ) "Registering the isolated Alaslee PostgreSQL Windows service"
         $service = Get-Service -Name $serviceName
     }
     if ($service.Status -ne "Running") { Start-Service -Name $serviceName }
@@ -219,7 +261,7 @@ function Wait-ForNativePostgres($Tools, [int]$Port, [int]$TimeoutSeconds = 120) 
 }
 
 function Install-NativePostgres([string]$EnvironmentPath) {
-    $port = [int](Get-EnvValue $EnvironmentPath "CRM_POSTGRES_PORT")
+    $port = Get-NativePostgresPort $EnvironmentPath
     $password = Get-EnvValue $EnvironmentPath "CRM_POSTGRES_PASSWORD"
     if (-not $password) { throw "CRM_POSTGRES_PASSWORD must not be empty." }
 
@@ -253,7 +295,7 @@ function Install-NativePostgres([string]$EnvironmentPath) {
 
 function Initialize-NativeCrmDatabase($Tools, [string]$EnvironmentPath) {
     Write-Step "Creating/checking the native CRM database"
-    $port = [int](Get-EnvValue $EnvironmentPath "CRM_POSTGRES_PORT")
+    $port = Get-NativePostgresPort $EnvironmentPath
     $database = Get-EnvValue $EnvironmentPath "CRM_POSTGRES_DB"
     $user = Get-EnvValue $EnvironmentPath "CRM_POSTGRES_USER"
     $password = Get-EnvValue $EnvironmentPath "CRM_POSTGRES_PASSWORD"
@@ -261,7 +303,7 @@ function Initialize-NativeCrmDatabase($Tools, [string]$EnvironmentPath) {
     if ($user -notmatch '^[A-Za-z_][A-Za-z0-9_]*$') { throw "CRM_POSTGRES_USER contains unsupported characters." }
 
     if (-not (Test-PostgresAdminLogin $Tools $port $password)) {
-        $port = Initialize-IsolatedPostgres $Tools $password
+        $port = [int](Initialize-IsolatedPostgres $Tools $password)
         Set-EnvValue $EnvironmentPath "CRM_POSTGRES_PORT" ([string]$port)
     }
 
