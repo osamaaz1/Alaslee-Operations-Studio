@@ -159,8 +159,9 @@ function Initialize-NativeCrmDatabase($Tools, [string]$EnvironmentPath) {
     try {
         & $Tools.Psql --no-password -h 127.0.0.1 -p $port -U postgres -d postgres -v ON_ERROR_STOP=1 -c $roleSql
         Assert-LastExitCode "Creating the CRM PostgreSQL role"
-        $databaseExists = (& $Tools.Psql --no-password -h 127.0.0.1 -p $port -U postgres -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname = '$database'").Trim()
+        $databaseCheckOutput = & $Tools.Psql --no-password -h 127.0.0.1 -p $port -U postgres -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname = '$database'"
         Assert-LastExitCode "Checking the CRM PostgreSQL database"
+        $databaseExists = ([string]$databaseCheckOutput).Trim()
         if ($databaseExists -ne "1") {
             & $Tools.CreateDb --no-password -h 127.0.0.1 -p $port -U postgres --owner $user $database
             Assert-LastExitCode "Creating the CRM PostgreSQL database"
