@@ -40,6 +40,22 @@ function Assert-LastExitCode([string]$Action) {
     }
 }
 
+function Test-NativeCommand([string]$FilePath, [string[]]$ArgumentList) {
+    # Windows PowerShell 5.1 can promote native stderr to a terminating
+    # NativeCommandError when ErrorActionPreference is Stop. Connection probes
+    # are expected to fail sometimes, so decide from the process exit code.
+    $previousErrorActionPreference = $ErrorActionPreference
+    try {
+        $ErrorActionPreference = "Continue"
+        & $FilePath @ArgumentList *> $null
+        return $LASTEXITCODE -eq 0
+    } catch {
+        return $false
+    } finally {
+        $ErrorActionPreference = $previousErrorActionPreference
+    }
+}
+
 function Install-WingetPackage([string]$Id, [string]$Name) {
     Write-Step "Installing/checking $Name"
     & winget.exe list --id $Id --exact --source winget --accept-source-agreements --disable-interactivity *> $null
@@ -116,8 +132,10 @@ function Test-PostgresAdminLogin($Tools, [int]$Port, [string]$Password) {
     $previousPassword = $env:PGPASSWORD
     $env:PGPASSWORD = $Password
     try {
-        & $Tools.Psql --no-password -h 127.0.0.1 -p $Port -U postgres -d postgres -tAc "SELECT 1" *> $null
-        return $LASTEXITCODE -eq 0
+        return Test-NativeCommand $Tools.Psql @(
+            "--no-password", "-h", "127.0.0.1", "-p", [string]$Port,
+            "-U", "postgres", "-d", "postgres", "-tAc", "SELECT 1"
+        )
     } finally {
         if ($null -eq $previousPassword) { Remove-Item Env:PGPASSWORD -ErrorAction SilentlyContinue }
         else { $env:PGPASSWORD = $previousPassword }
@@ -194,8 +212,7 @@ function Initialize-IsolatedPostgres($Tools, [string]$Password) {
 function Wait-ForNativePostgres($Tools, [int]$Port, [int]$TimeoutSeconds = 120) {
     $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
     do {
-        & $Tools.Ready -h 127.0.0.1 -p $Port -U postgres *> $null
-        if ($LASTEXITCODE -eq 0) { return }
+        if (Test-NativeCommand $Tools.Ready @("-h", "127.0.0.1", "-p", [string]$Port, "-U", "postgres")) { return }
         Start-Sleep -Seconds 2
     } while ((Get-Date) -lt $deadline)
     throw "Native PostgreSQL did not become ready on 127.0.0.1:$Port."
@@ -227,8 +244,7 @@ function Install-NativePostgres([string]$EnvironmentPath) {
     if ($installedNow) {
         Wait-ForNativePostgres $tools $port
     } else {
-        & $tools.Ready -h 127.0.0.1 -p $port -U postgres *> $null
-        if ($LASTEXITCODE -ne 0) {
+        if (-not (Test-NativeCommand $tools.Ready @("-h", "127.0.0.1", "-p", [string]$port, "-U", "postgres"))) {
             Write-Warning "No compatible PostgreSQL server is listening on port $port; an isolated Alaslee instance will be created."
         }
     }
