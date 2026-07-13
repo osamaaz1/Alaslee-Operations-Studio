@@ -12,6 +12,11 @@ export function errorHandler(error, req, res, next) {
     return next(error);
   }
 
+  if (!isAppError(error)) {
+    const diagnostic = error?.stack || error?.message || String(error);
+    console.error(`[api-error] ${req.method} ${req.originalUrl || req.url}\n${diagnostic}`);
+  }
+
   const statusCode = isAppError(error) ? error.statusCode : 500;
   const message = isAppError(error) ? error.message : "Internal server error.";
   const details = resolveDetails(error);
