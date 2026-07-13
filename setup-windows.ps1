@@ -101,11 +101,94 @@ function Find-PostgresTools {
         $psql = Join-Path $bin "psql.exe"
         $createdb = Join-Path $bin "createdb.exe"
         $ready = Join-Path $bin "pg_isready.exe"
-        if ((Test-Path -LiteralPath $psql) -and (Test-Path -LiteralPath $createdb) -and (Test-Path -LiteralPath $ready)) {
-            return @{ Psql = $psql; CreateDb = $createdb; Ready = $ready }
+        $initdb = Join-Path $bin "initdb.exe"
+        $pgCtl = Join-Path $bin "pg_ctl.exe"
+        if ((Test-Path -LiteralPath $psql) -and (Test-Path -LiteralPath $createdb) -and
+            (Test-Path -LiteralPath $ready) -and (Test-Path -LiteralPath $initdb) -and
+            (Test-Path -LiteralPath $pgCtl)) {
+            return @{ Psql = $psql; CreateDb = $createdb; Ready = $ready; InitDb = $initdb; PgCtl = $pgCtl }
         }
     }
     return $null
+}
+
+function Test-PostgresAdminLogin($Tools, [int]$Port, [string]$Password) {
+    $previousPassword = $env:PGPASSWORD
+    $env:PGPASSWORD = $Password
+    try {
+        & $Tools.Psql --no-password -h 127.0.0.1 -p $Port -U postgres -d postgres -tAc "SELECT 1" *> $null
+        return $LASTEXITCODE -eq 0
+    } finally {
+        if ($null -eq $previousPassword) { Remove-Item Env:PGPASSWORD -ErrorAction SilentlyContinue }
+        else { $env:PGPASSWORD = $previousPassword }
+    }
+}
+
+function Find-FreeTcpPort([int]$StartPort = 55432, [int]$Attempts = 100) {
+    for ($port = $StartPort; $port -lt ($StartPort + $Attempts); $port++) {
+        $listener = [Net.Sockets.TcpListener]::new([Net.IPAddress]::Loopback, $port)
+        try {
+            $listener.Start()
+            return $port
+        } catch {
+            continue
+        } finally {
+            $listener.Stop()
+        }
+    }
+    throw "No free local TCP port was found for the isolated Alaslee PostgreSQL instance."
+}
+
+function Initialize-IsolatedPostgres($Tools, [string]$Password) {
+    Write-Step "Creating an isolated Alaslee PostgreSQL instance"
+    Write-Warning "The existing PostgreSQL administrator password does not match .env. The existing server will not be modified."
+
+    $serviceName = "AlasleeOperationsStudioPostgres"
+    $clusterRoot = Join-Path $env:ProgramData "AlasleeOperationsStudio\PostgreSQL"
+    $dataDir = Join-Path $clusterRoot "data"
+    $portFile = Join-Path $clusterRoot "port.txt"
+    New-Item -ItemType Directory -Force -Path $clusterRoot | Out-Null
+
+    if (Test-Path -LiteralPath $portFile) {
+        $port = [int][IO.File]::ReadAllText($portFile)
+    } else {
+        $port = Find-FreeTcpPort
+    }
+
+    $versionFile = Join-Path $dataDir "PG_VERSION"
+    if (-not (Test-Path -LiteralPath $versionFile)) {
+        if ((Test-Path -LiteralPath $dataDir) -and (Get-ChildItem -LiteralPath $dataDir -Force | Select-Object -First 1)) {
+            throw "The dedicated PostgreSQL data folder is incomplete: $dataDir. Rename it and run setup again."
+        }
+        $passwordFile = Join-Path $env:TEMP ("alaslee-pg-password-" + [Guid]::NewGuid().ToString("N") + ".txt")
+        try {
+            [IO.File]::WriteAllText($passwordFile, $Password + [Environment]::NewLine, (New-Object Text.UTF8Encoding($false)))
+            & $Tools.InitDb -D $dataDir -U postgres --pwfile=$passwordFile --auth-host=scram-sha-256 --auth-local=scram-sha-256 --encoding=UTF8
+            Assert-LastExitCode "Initializing the isolated Alaslee PostgreSQL data directory"
+        } finally {
+            Remove-Item -LiteralPath $passwordFile -Force -ErrorAction SilentlyContinue
+        }
+        [IO.File]::AppendAllText(
+            (Join-Path $dataDir "postgresql.conf"),
+            "`n# Alaslee Operations Studio isolated instance`nlisten_addresses = '127.0.0.1'`nport = $port`n",
+            (New-Object Text.UTF8Encoding($false))
+        )
+        [IO.File]::WriteAllText($portFile, [string]$port, (New-Object Text.UTF8Encoding($false)))
+    }
+
+    $service = Get-Service -Name $serviceName -ErrorAction SilentlyContinue
+    if (-not $service) {
+        & $Tools.PgCtl register -N $serviceName -D $dataDir -S auto
+        Assert-LastExitCode "Registering the isolated Alaslee PostgreSQL Windows service"
+        $service = Get-Service -Name $serviceName
+    }
+    if ($service.Status -ne "Running") { Start-Service -Name $serviceName }
+    Wait-ForNativePostgres $Tools $port
+    if (-not (Test-PostgresAdminLogin $Tools $port $Password)) {
+        throw "The isolated Alaslee PostgreSQL instance started but rejected its generated password."
+    }
+    Write-Host "Isolated Alaslee PostgreSQL is ready on port $port." -ForegroundColor Green
+    return $port
 }
 
 function Wait-ForNativePostgres($Tools, [int]$Port, [int]$TimeoutSeconds = 120) {
@@ -124,6 +207,7 @@ function Install-NativePostgres([string]$EnvironmentPath) {
     if (-not $password) { throw "CRM_POSTGRES_PASSWORD must not be empty." }
 
     $tools = Find-PostgresTools
+    $installedNow = $false
     if (-not $tools) {
         Write-Step "Installing native PostgreSQL 16 (no Docker or virtualization)"
         $installerOptions = "--mode unattended --unattendedmodeui minimal --superpassword `"$password`" --servicepassword `"$password`" --serverport $port"
@@ -132,6 +216,7 @@ function Install-NativePostgres([string]$EnvironmentPath) {
             --override $installerOptions
         Assert-LastExitCode "Installing native PostgreSQL 16"
         $tools = Find-PostgresTools
+        $installedNow = $true
     }
     if (-not $tools) { throw "PostgreSQL tools were not found after installation." }
 
@@ -139,7 +224,14 @@ function Install-NativePostgres([string]$EnvironmentPath) {
     foreach ($service in $services) {
         if ($service.Status -ne "Running") { Start-Service -Name $service.Name }
     }
-    Wait-ForNativePostgres $tools $port
+    if ($installedNow) {
+        Wait-ForNativePostgres $tools $port
+    } else {
+        & $tools.Ready -h 127.0.0.1 -p $port -U postgres *> $null
+        if ($LASTEXITCODE -ne 0) {
+            Write-Warning "No compatible PostgreSQL server is listening on port $port; an isolated Alaslee instance will be created."
+        }
+    }
     return $tools
 }
 
@@ -151,6 +243,11 @@ function Initialize-NativeCrmDatabase($Tools, [string]$EnvironmentPath) {
     $password = Get-EnvValue $EnvironmentPath "CRM_POSTGRES_PASSWORD"
     if ($database -notmatch '^[A-Za-z_][A-Za-z0-9_]*$') { throw "CRM_POSTGRES_DB contains unsupported characters." }
     if ($user -notmatch '^[A-Za-z_][A-Za-z0-9_]*$') { throw "CRM_POSTGRES_USER contains unsupported characters." }
+
+    if (-not (Test-PostgresAdminLogin $Tools $port $password)) {
+        $port = Initialize-IsolatedPostgres $Tools $password
+        Set-EnvValue $EnvironmentPath "CRM_POSTGRES_PORT" ([string]$port)
+    }
 
     $escapedPassword = $password -replace "'", "''"
     $roleSql = "DO `$alaslee`$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = '$user') THEN CREATE ROLE `"$user`" LOGIN PASSWORD '$escapedPassword'; ELSE ALTER ROLE `"$user`" WITH LOGIN PASSWORD '$escapedPassword'; END IF; END `$alaslee`$;"
