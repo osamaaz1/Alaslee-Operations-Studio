@@ -83,7 +83,7 @@ function Set-EnvValue([string]$Path, [string]$Name, [string]$Value) {
 function Get-EnvValue([string]$Path, [string]$Name) {
     foreach ($line in [IO.File]::ReadAllLines($Path)) {
         if ($line -match ("^" + [Regex]::Escape($Name) + "=(.*)$")) {
-            return ([string]$Matches[1]).Trim()
+            return [string]$Matches[1]
         }
     }
     throw "$Name is missing from .env."
@@ -152,7 +152,7 @@ function Initialize-NativeCrmDatabase($Tools, [string]$EnvironmentPath) {
     if ($database -notmatch '^[A-Za-z_][A-Za-z0-9_]*$') { throw "CRM_POSTGRES_DB contains unsupported characters." }
     if ($user -notmatch '^[A-Za-z_][A-Za-z0-9_]*$') { throw "CRM_POSTGRES_USER contains unsupported characters." }
 
-    $escapedPassword = $password.Replace("'", "''")
+    $escapedPassword = $password -replace "'", "''"
     $roleSql = "DO `$alaslee`$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = '$user') THEN CREATE ROLE `"$user`" LOGIN PASSWORD '$escapedPassword'; ELSE ALTER ROLE `"$user`" WITH LOGIN PASSWORD '$escapedPassword'; END IF; END `$alaslee`$;"
     $previousPassword = $env:PGPASSWORD
     $env:PGPASSWORD = $password
@@ -161,8 +161,8 @@ function Initialize-NativeCrmDatabase($Tools, [string]$EnvironmentPath) {
         Assert-LastExitCode "Creating the CRM PostgreSQL role"
         $databaseCheckOutput = & $Tools.Psql --no-password -h 127.0.0.1 -p $port -U postgres -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname = '$database'"
         Assert-LastExitCode "Checking the CRM PostgreSQL database"
-        $databaseExists = ([string]$databaseCheckOutput).Trim()
-        if ($databaseExists -ne "1") {
+        $databaseExists = $databaseCheckOutput -eq "1"
+        if (-not $databaseExists) {
             & $Tools.CreateDb --no-password -h 127.0.0.1 -p $port -U postgres --owner $user $database
             Assert-LastExitCode "Creating the CRM PostgreSQL database"
         }
@@ -282,8 +282,14 @@ New-Item -ItemType Directory -Force -Path "data", "uploads" | Out-Null
 $environmentPath = Join-Path $projectRoot ".env"
 $nativePostgresTools = $null
 if ($SkipDocker) {
-    $nativePostgresTools = Install-NativePostgres $environmentPath
-    Initialize-NativeCrmDatabase $nativePostgresTools $environmentPath
+    try {
+        $nativePostgresTools = Install-NativePostgres $environmentPath
+        Initialize-NativeCrmDatabase $nativePostgresTools $environmentPath
+    } catch {
+        Write-Host "Native PostgreSQL setup failed at script line $($_.InvocationInfo.ScriptLineNumber)." -ForegroundColor Red
+        Write-Host $_.ScriptStackTrace -ForegroundColor DarkRed
+        throw
+    }
 }
 
 Write-Step "Installing exact project dependencies from package-lock.json"
