@@ -6,40 +6,40 @@
 
 - Windows 11 بنظام 64-bit ومحدّث عبر Windows Update.
 - صلاحية Administrator أثناء الإعداد الأول فقط.
-- اتصال إنترنت لتنزيل Node.js وGit وDocker Desktop وحزم npm وصورة PostgreSQL.
+- اتصال إنترنت لتنزيل Node.js وGit وPostgreSQL وحزم npm. Docker مطلوب فقط عند اختيار مساره البديل.
 - مساحة خالية موصى بها: 15 GB على الأقل.
 - ذاكرة: 8 GB كحد عملي أدنى، و16 GB موصى بها.
-- تفعيل Virtualization (Intel VT-x أو AMD-V) من UEFI/BIOS لتشغيل WSL 2 وDocker.
+- لا يحتاج مسار التشغيل بدون Docker إلى Virtualization. يلزم تفعيلها فقط عند اختيار Docker/WSL 2.
 - وجود ملفات المشروع في مسار محلي، والمسار الحالي المدعوم هو `D:\Codex\Alaslee-Operations-Studio`.
 
 ## ما الذي يتم تثبيته؟
 
-عند تشغيل `setup-windows.cmd` يثبت السكربت تلقائياً عبر WinGet:
+عند تشغيل `setup-windows-no-docker.cmd` يثبت السكربت تلقائياً عبر WinGet:
 
 1. Node.js LTS مع npm.
 2. Git for Windows.
-3. WSL 2 ومكوّناته.
-4. Docker Desktop.
-5. حزم المشروع بالإصدارات المقفلة في `package-lock.json` باستخدام `npm ci`.
-6. PostgreSQL 16 داخل Docker، ثم ترحيلات قاعدة بيانات CRM.
+3. PostgreSQL 16 كخدمة Windows أصلية على المنفذ `5433`.
+4. حزم المشروع بالإصدارات المقفلة في `package-lock.json` باستخدام `npm ci`.
+5. قاعدة CRM وترحيلاتها.
+
+هذا المسار لا يثبت Docker أو WSL ولا يحتاج Virtualization. يبقى `setup-windows.cmd` متاحاً كمسار بديل لمن يفضل Docker.
 
 بعدها ينشئ `.env` للمرة الأولى بقيم محلية عشوائية، ويستخدم `free-test` افتراضياً كي يعمل النظام بلا حسابات AI مدفوعة، ثم يبني الواجهة ويشغل الاختبارات.
 
 ## التثبيت الأول
 
 1. افتح مجلد المشروع.
-2. انقر نقراً مزدوجاً على `setup-windows.cmd`.
+2. انقر نقراً مزدوجاً على `setup-windows-no-docker.cmd` للتثبيت الأصلي الموصى به.
 3. وافق على نافذة Administrator.
-4. إذا طلب Windows أو WSL أو Docker إعادة تشغيل الجهاز، أعد تشغيله ثم شغّل `setup-windows.cmd` مرة أخرى. السكربت آمن لإعادة التشغيل ولا يحذف `.env` الحالي.
-5. في أول تشغيل لـDocker Desktop، وافق على اتفاقية الاستخدام وانتظر ظهور حالة التشغيل، ثم أعد السكربت إذا كان قد توقف بانتظار Docker.
+4. وافق على تثبيت PostgreSQL عند ظهوره وانتظر اكتمال إنشاء خدمة Windows وقاعدة CRM.
 
 يسجل السكربت رقمي PIN عشوائيين للموظف والمشرف في `.env` ويعرضهما عند الإنشاء. لا ترفع `.env` إلى Git ولا تشاركه.
 
 ## التشغيل اليومي
 
-للتشغيل بدون Docker، نفّذ `setup-windows-no-docker.cmd` مرة واحدة ثم انقر نقراً مزدوجاً على `start-local.cmd`. سيعمل النظام الأساسي محلياً، بينما تتطلب وظائف CRM وقاعدة بيانات العملاء PostgreSQL.
+للتشغيل بدون Docker، نفّذ `setup-windows-no-docker.cmd` مرة واحدة ثم انقر نقراً مزدوجاً على `start-local.cmd`. يشغّل هذا المسار النظام كاملاً مع CRM عبر PostgreSQL الأصلي.
 
-لتشغيل النظام كاملاً مع CRM، استخدم `setup-windows.cmd` للإعداد ثم `start-local-with-docker.cmd` للتشغيل اليومي.
+يبقى `setup-windows.cmd` ثم `start-local-with-docker.cmd` مساراً بديلاً اختيارياً فقط للأجهزة التي تدعم Docker.
 
 افتح:
 
@@ -74,7 +74,7 @@ OPENAI_API_KEY=ضع_المفتاح_هنا
 # إعادة إنشاء .env (يحفظ نسخة احتياطية أولاً)
 .\setup-windows.ps1 -ForceEnvironment
 
-# تجهيز الوظائف التي لا تحتاج CRM/PostgreSQL فقط
+# تثبيت PostgreSQL الأصلي وتجهيز CRM بدون Docker
 .\setup-windows.ps1 -SkipDocker
 
 # تخطي البناء والاختبارات لتجهيز أسرع

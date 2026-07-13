@@ -4,10 +4,11 @@
 
 ## تشغيل V2
 
-```bash
-npm install
-Copy-Item .env.example .env
-npm run dev
+على Windows 11، شغّل الإعداد الكامل بدون Docker مرة واحدة:
+
+```powershell
+.\setup-windows-no-docker.cmd
+.\start-local.cmd
 ```
 
 - واجهة React/Vite متاحة على `http://localhost:5173` أثناء التطوير.
@@ -16,23 +17,7 @@ npm run dev
 
 ## تشغيل إدارة العملاء المحلية
 
-إدارة العملاء جزء مستقل داخل واجهة Vite وليست تطبيق Streamlit. بعد نسخ `.env.example` إلى `.env`:
-
-1. ضع كلمة مرور PostgreSQL نفسها في `CRM_POSTGRES_PASSWORD` وداخل `CRM_DATABASE_URL`.
-2. أنشئ مفتاح تشفير عشوائياً بالأمر التالي، ثم انسخ الناتج إلى `CRM_DATA_ENCRYPTION_KEY`:
-
-```powershell
-node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
-```
-
-3. ضع رقم دخول الموظفين في `CRM_STAFF_PIN` ورقماً مختلفاً للمشرف الأعلى في `CRM_SUPERUSER_PIN`.
-4. شغّل PostgreSQL والترحيلات ثم النظام:
-
-```powershell
-npm run crm:db:up
-npm run crm:migrate
-npm run dev
-```
+إدارة العملاء جزء مستقل داخل واجهة Vite وليست تطبيق Streamlit. يثبت `setup-windows-no-docker.cmd` PostgreSQL 16 كخدمة Windows أصلية، وينشئ كلمات المرور ومفتاح التشفير ورقمي PIN وقاعدة CRM وترحيلاتها تلقائياً. لا يحتاج هذا المسار إلى Docker أو WSL أو Virtualization.
 
 افتح `http://localhost:5173` واختر «إدارة العملاء». تبقى قاعدة SQLite الحالية لعمليات الصور والحملات، بينما تستخدم إدارة العملاء PostgreSQL محلياً تمهيداً للانتقال إلى Supabase دون تغيير عقود البيانات.
 

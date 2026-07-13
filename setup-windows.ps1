@@ -80,6 +80,100 @@ function Set-EnvValue([string]$Path, [string]$Name, [string]$Value) {
     [IO.File]::WriteAllText($Path, $content, (New-Object Text.UTF8Encoding($false)))
 }
 
+function Get-EnvValue([string]$Path, [string]$Name) {
+    foreach ($line in [IO.File]::ReadAllLines($Path)) {
+        if ($line -match ("^" + [Regex]::Escape($Name) + "=(.*)$")) {
+            return $Matches[1].Trim()
+        }
+    }
+    throw "$Name is missing from .env."
+}
+
+function Find-PostgresTools {
+    $roots = @()
+    $postgresRoot = Join-Path $env:ProgramFiles "PostgreSQL"
+    if (Test-Path -LiteralPath $postgresRoot) {
+        $roots += Get-ChildItem -LiteralPath $postgresRoot -Directory |
+            Sort-Object { try { [version]$_.Name } catch { [version]"0.0" } } -Descending
+    }
+    foreach ($root in $roots) {
+        $bin = Join-Path $root.FullName "bin"
+        $psql = Join-Path $bin "psql.exe"
+        $createdb = Join-Path $bin "createdb.exe"
+        $ready = Join-Path $bin "pg_isready.exe"
+        if ((Test-Path -LiteralPath $psql) -and (Test-Path -LiteralPath $createdb) -and (Test-Path -LiteralPath $ready)) {
+            return @{ Psql = $psql; CreateDb = $createdb; Ready = $ready }
+        }
+    }
+    return $null
+}
+
+function Wait-ForNativePostgres($Tools, [int]$Port, [int]$TimeoutSeconds = 120) {
+    $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+    do {
+        & $Tools.Ready -h 127.0.0.1 -p $Port -U postgres *> $null
+        if ($LASTEXITCODE -eq 0) { return }
+        Start-Sleep -Seconds 2
+    } while ((Get-Date) -lt $deadline)
+    throw "Native PostgreSQL did not become ready on 127.0.0.1:$Port."
+}
+
+function Install-NativePostgres([string]$EnvironmentPath) {
+    $port = [int](Get-EnvValue $EnvironmentPath "CRM_POSTGRES_PORT")
+    $password = Get-EnvValue $EnvironmentPath "CRM_POSTGRES_PASSWORD"
+    if (-not $password) { throw "CRM_POSTGRES_PASSWORD must not be empty." }
+
+    $tools = Find-PostgresTools
+    if (-not $tools) {
+        Write-Step "Installing native PostgreSQL 16 (no Docker or virtualization)"
+        $installerOptions = "--mode unattended --unattendedmodeui minimal --superpassword `"$password`" --servicepassword `"$password`" --serverport $port"
+        & winget.exe install --id PostgreSQL.PostgreSQL.16 --exact --source winget `
+            --accept-package-agreements --accept-source-agreements --disable-interactivity `
+            --override $installerOptions
+        Assert-LastExitCode "Installing native PostgreSQL 16"
+        $tools = Find-PostgresTools
+    }
+    if (-not $tools) { throw "PostgreSQL tools were not found after installation." }
+
+    $services = Get-Service -Name "postgresql*" -ErrorAction SilentlyContinue
+    foreach ($service in $services) {
+        if ($service.Status -ne "Running") { Start-Service -Name $service.Name }
+    }
+    Wait-ForNativePostgres $tools $port
+    return $tools
+}
+
+function Initialize-NativeCrmDatabase($Tools, [string]$EnvironmentPath) {
+    Write-Step "Creating/checking the native CRM database"
+    $port = [int](Get-EnvValue $EnvironmentPath "CRM_POSTGRES_PORT")
+    $database = Get-EnvValue $EnvironmentPath "CRM_POSTGRES_DB"
+    $user = Get-EnvValue $EnvironmentPath "CRM_POSTGRES_USER"
+    $password = Get-EnvValue $EnvironmentPath "CRM_POSTGRES_PASSWORD"
+    if ($database -notmatch '^[A-Za-z_][A-Za-z0-9_]*$') { throw "CRM_POSTGRES_DB contains unsupported characters." }
+    if ($user -notmatch '^[A-Za-z_][A-Za-z0-9_]*$') { throw "CRM_POSTGRES_USER contains unsupported characters." }
+
+    $escapedPassword = $password.Replace("'", "''")
+    $roleSql = "DO `$alaslee`$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = '$user') THEN CREATE ROLE `"$user`" LOGIN PASSWORD '$escapedPassword'; ELSE ALTER ROLE `"$user`" WITH LOGIN PASSWORD '$escapedPassword'; END IF; END `$alaslee`$;"
+    $previousPassword = $env:PGPASSWORD
+    $env:PGPASSWORD = $password
+    try {
+        & $Tools.Psql --no-password -h 127.0.0.1 -p $port -U postgres -d postgres -v ON_ERROR_STOP=1 -c $roleSql
+        Assert-LastExitCode "Creating the CRM PostgreSQL role"
+        $databaseExists = (& $Tools.Psql --no-password -h 127.0.0.1 -p $port -U postgres -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname = '$database'").Trim()
+        Assert-LastExitCode "Checking the CRM PostgreSQL database"
+        if ($databaseExists -ne "1") {
+            & $Tools.CreateDb --no-password -h 127.0.0.1 -p $port -U postgres --owner $user $database
+            Assert-LastExitCode "Creating the CRM PostgreSQL database"
+        }
+    } finally {
+        if ($null -eq $previousPassword) { Remove-Item Env:PGPASSWORD -ErrorAction SilentlyContinue }
+        else { $env:PGPASSWORD = $previousPassword }
+    }
+
+    $encodedPassword = [Uri]::EscapeDataString($password)
+    Set-EnvValue $EnvironmentPath "CRM_DATABASE_URL" "postgresql://${user}:$encodedPassword@127.0.0.1:$port/$database"
+}
+
 function Initialize-Environment([string]$ProjectRoot) {
     $environmentPath = Join-Path $ProjectRoot ".env"
     $examplePath = Join-Path $ProjectRoot ".env.example"
@@ -184,6 +278,12 @@ if (-not $SkipDocker) {
 Write-Step "Creating the local environment"
 Initialize-Environment $projectRoot
 New-Item -ItemType Directory -Force -Path "data", "uploads" | Out-Null
+$environmentPath = Join-Path $projectRoot ".env"
+$nativePostgresTools = $null
+if ($SkipDocker) {
+    $nativePostgresTools = Install-NativePostgres $environmentPath
+    Initialize-NativeCrmDatabase $nativePostgresTools $environmentPath
+}
 
 Write-Step "Installing exact project dependencies from package-lock.json"
 & npm.cmd ci --no-fund --no-audit
@@ -208,6 +308,10 @@ if (-not $SkipDocker) {
     Write-Step "Applying CRM database migrations"
     & npm.cmd run crm:migrate
     Assert-LastExitCode "CRM migrations"
+} else {
+    Write-Step "Applying CRM database migrations to native PostgreSQL"
+    & npm.cmd run crm:migrate
+    Assert-LastExitCode "CRM migrations"
 }
 
 if (-not $SkipTests) {
@@ -221,3 +325,4 @@ if (-not $SkipTests) {
 
 Write-Host "`nSetup completed successfully." -ForegroundColor Green
 Write-Host "Run start-local.cmd, then open http://localhost:5173"
+if ($SkipDocker) { Write-Host "CRM is using native PostgreSQL; Docker and virtualization are not required." -ForegroundColor Green }
