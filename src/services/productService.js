@@ -136,29 +136,94 @@ export function getOriginalImagesForGeneration(productId) {
   }));
 }
 
-export function setProductGenerating(productId, provider) {
+export function setProductGenerating(productId, provider, settings = {}) {
+  const includeModel = settings.includeModel === true;
+  const expectedCount = Number(settings.expectedCount || (includeModel ? 4 : 3));
+  const now = new Date().toISOString();
   db.prepare(`
     UPDATE products
-    SET status = 'generating', provider = ?, error_message = NULL, updated_at = ?
+    SET status = 'generating', provider = ?, error_message = NULL, updated_at = ?,
+        generation_include_model = ?, generation_model_gender = ?, generation_started_at = ?,
+        generation_current_role = NULL, generation_expected_count = ?
     WHERE id = ?
-  `).run(provider, new Date().toISOString(), productId);
+  `).run(provider, now, includeModel ? 1 : 0, settings.modelGender || null, now, expectedCount, productId);
+}
+
+export async function beginProductGeneration(productId, provider, settings = {}) {
+  const product = getProductRecord(productId);
+  if (product.status === "generating") throw new AppError("توليد صور هذا المنتج جارٍ بالفعل.", 409);
+  setProductGenerating(productId, provider, settings);
+  try {
+    if (!settings.preserveExisting) await clearGeneratedImages(productId);
+  } catch (error) {
+    setProductFailed(productId, error);
+    throw error;
+  }
+}
+
+export function setProductGenerationRole(productId, role) {
+  db.prepare("UPDATE products SET generation_current_role=?,updated_at=? WHERE id=?")
+    .run(role, new Date().toISOString(), productId);
 }
 
 export function setProductGenerated(productId, provider) {
   const now = new Date().toISOString();
   db.prepare(`
     UPDATE products
-    SET status = 'generated', provider = ?, generated_at = ?, updated_at = ?, error_message = NULL
+    SET status = 'generated', provider = ?, generated_at = ?, updated_at = ?, error_message = NULL,
+        generation_current_role = NULL
     WHERE id = ?
   `).run(provider, now, now, productId);
 }
 
-export function setProductFailed(productId, error) {
+export function setProductFailed(productId, error, role = undefined) {
   db.prepare(`
     UPDATE products
-    SET status = 'failed', error_message = ?, updated_at = ?
+    SET status = 'failed', error_message = ?, generation_current_role=COALESCE(?,generation_current_role), updated_at = ?
     WHERE id = ?
-  `).run(error.message || "Generation failed.", new Date().toISOString(), productId);
+  `).run(error.message || "Generation failed.", role || null, new Date().toISOString(), productId);
+}
+
+export function getGeneratedRoles(productId) {
+  return db.prepare("SELECT role FROM product_generated_images WHERE product_id=?").all(productId).map((row) => row.role);
+}
+
+export async function clearGeneratedImages(productId) {
+  const existingPaths = db.prepare("SELECT path FROM product_generated_images WHERE product_id=?").all(productId).map((row) => row.path);
+  db.prepare("DELETE FROM product_generated_images WHERE product_id=?").run(productId);
+  await removeFilesBestEffort(existingPaths, []);
+}
+
+export async function retainGeneratedRoles(productId, expectedRoles) {
+  const placeholders = expectedRoles.map(() => "?").join(",");
+  const unexpected = db.prepare(`
+    SELECT path FROM product_generated_images
+    WHERE product_id=? AND role NOT IN (${placeholders})
+  `).all(productId, ...expectedRoles);
+  db.prepare(`
+    DELETE FROM product_generated_images
+    WHERE product_id=? AND role NOT IN (${placeholders})
+  `).run(productId, ...expectedRoles);
+  await removeFilesBestEffort(unexpected.map((row) => row.path), []);
+}
+
+export async function upsertGeneratedImage(productId, image) {
+  const existing = db.prepare("SELECT path FROM product_generated_images WHERE product_id=? AND role=?").get(productId, image.role);
+  const now = new Date().toISOString();
+  db.prepare(`
+    INSERT INTO product_generated_images
+      (product_id,role,filename,path,mime_type,size_bytes,width,height,provider,prompt,
+       output_stage,output_kind,is_mock,generation_duration_ms,created_at,updated_at)
+    VALUES
+      (@productId,@role,@filename,@path,@mimeType,@sizeBytes,@width,@height,@provider,@prompt,
+       @outputStage,@outputKind,@isMock,@generationDurationMs,@now,@now)
+    ON CONFLICT(product_id,role) DO UPDATE SET
+      filename=excluded.filename,path=excluded.path,mime_type=excluded.mime_type,size_bytes=excluded.size_bytes,
+      width=excluded.width,height=excluded.height,provider=excluded.provider,prompt=excluded.prompt,
+      output_stage=excluded.output_stage,output_kind=excluded.output_kind,is_mock=excluded.is_mock,
+      generation_duration_ms=excluded.generation_duration_ms,updated_at=excluded.updated_at
+  `).run(generatedImageRow(productId, image, now));
+  if (existing?.path && existing.path !== image.path) await removeFilesBestEffort([existing.path], [image.path]);
 }
 
 export async function replaceGeneratedImages(productId, generatedImages) {
@@ -171,10 +236,10 @@ export async function replaceGeneratedImages(productId, generatedImages) {
   const insertGenerated = db.prepare(`
     INSERT INTO product_generated_images
       (product_id, role, filename, path, mime_type, size_bytes, width, height, provider, prompt,
-       output_stage, output_kind, is_mock, created_at)
+       output_stage, output_kind, is_mock, generation_duration_ms, created_at)
     VALUES
       (@productId, @role, @filename, @path, @mimeType, @sizeBytes, @width, @height, @provider, @prompt,
-       @outputStage, @outputKind, @isMock, @now)
+       @outputStage, @outputKind, @isMock, @generationDurationMs, @now)
   `);
 
   db.transaction(() => {
@@ -194,6 +259,7 @@ export async function replaceGeneratedImages(productId, generatedImages) {
         outputStage: image.outputStage || "output_1",
         outputKind: image.outputKind || "real_ai",
         isMock: image.isMock ? 1 : 0,
+        generationDurationMs: image.generationDurationMs || null,
         now,
       });
     }
@@ -239,6 +305,13 @@ function serializeProduct(product, originals, generated, instagram, req) {
     updatedAt: product.updated_at,
     generatedAt: product.generated_at,
     errorMessage: product.error_message,
+    generation: {
+      includeModel: Boolean(product.generation_include_model),
+      modelGender: product.generation_model_gender,
+      startedAt: product.generation_started_at,
+      currentRole: product.generation_current_role,
+      expectedCount: Number(product.generation_expected_count || 3),
+    },
     originalImages: originals.map((image) => serializeImage(image, req, product)),
     generatedImages: generated.map((image) => serializeImage(image, req, product)),
     instagramImages: instagram.map((image) => serializeImage(image, req, product)),
@@ -274,6 +347,7 @@ function serializeImage(image, req, product = undefined) {
     outputStage: image.output_stage,
     outputKind: image.output_kind,
     isMock: Boolean(image.is_mock),
+    generationDurationMs: image.generation_duration_ms == null ? null : Number(image.generation_duration_ms),
     isFinal: image.is_final === undefined ? undefined : Boolean(image.is_final),
     sourceGeneratedImageId: image.source_generated_image_id,
     sourceRole: image.source_role,
@@ -291,5 +365,15 @@ function serializeImage(image, req, product = undefined) {
     createdAt: image.created_at,
     updatedAt: image.updated_at,
     completedAt: image.completed_at,
+  };
+}
+
+function generatedImageRow(productId, image, now) {
+  return {
+    productId, role: image.role, filename: image.filename, path: image.path, mimeType: image.mimeType,
+    sizeBytes: image.sizeBytes, width: image.width, height: image.height, provider: image.provider,
+    prompt: image.prompt || "", outputStage: image.outputStage || "output_1",
+    outputKind: image.outputKind || "real_ai", isMock: image.isMock ? 1 : 0,
+    generationDurationMs: image.generationDurationMs || null, now,
   };
 }

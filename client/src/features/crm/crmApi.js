@@ -8,7 +8,10 @@ export const crmApi = {
   login: (pin) => post("/auth/pin", { pin }),
   logout: () => post("/auth/logout", {}),
   sources: () => get("/crm/customers/sources"),
-  customers: (query = "") => get(`/crm/customers?q=${encodeURIComponent(query)}`),
+  customers: (query = "", { limit, signal } = {}) => get(
+    `/crm/customers?q=${encodeURIComponent(query)}${limit ? `&limit=${encodeURIComponent(limit)}` : ""}`,
+    { signal },
+  ),
   /** Download the customer register as a CSV or Excel workbook. */
   exportCustomers: async (format = "csv", query = "") => {
     const normalized = format === "xlsx" ? "xlsx" : "csv";
@@ -29,10 +32,14 @@ export const crmApi = {
   importCustomers: (file) => post("/crm/imports/customers/file", (() => { const body = new FormData(); body.append("file", file); body.append("dryRun", "false"); return body; })(), false),
   restoreCustomer: (id) => post(`/crm/customers/${encodeURIComponent(id)}/restore`, {}),
   addPrescription: (id, payload) => post(`/crm/customers/${encodeURIComponent(id)}/prescriptions`, payload),
-  products: (query = "", { availableOnly = false } = {}) => get(`/daftra/products?q=${encodeURIComponent(query)}&availableOnly=${availableOnly ? "1" : "0"}`),
+  products: (query = "", { availableOnly = false, limit, signal } = {}) => get(
+    `/daftra/products?q=${encodeURIComponent(query)}&availableOnly=${availableOnly ? "1" : "0"}${limit ? `&limit=${encodeURIComponent(limit)}` : ""}`,
+    { signal },
+  ),
   syncStatus: () => get("/daftra/sync/status"),
   syncNow: () => post("/daftra/sync", {}),
   sales: () => get("/crm/sales"),
+  salesAgenda: () => get("/crm/sales/agenda"),
   sale: (id) => get(`/crm/sales/${encodeURIComponent(id)}`),
   createSale: (payload) => post("/crm/sales", payload),
   addSalePayment: (id, payload) => post(`/crm/sales/${encodeURIComponent(id)}/payments`, payload),

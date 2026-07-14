@@ -5,7 +5,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { AppError } from "../utils/errors.js";
 import { sendSuccess } from "../utils/apiResponse.js";
 import { importBatchFromFolder } from "../services/batchImportService.js";
-import { generateBatch } from "../services/batchGenerationService.js";
+import { generateBatch, getBatchOutputProgress } from "../services/batchGenerationService.js";
 import { getBatchById, listBatchProducts } from "../services/batchRepository.js";
 import { generateExplicitInstagramImages } from "../services/explicitInstagramGenerationService.js";
 import { isFreeTestProvider } from "../domain/providers.js";
@@ -32,9 +32,18 @@ batchesRouter.post(
   asyncHandler(async (req, res) => {
     const result = await generateBatch(req.params.id, {
       force: req.body?.force === true,
+      retryMissing: req.body?.retryMissing === true,
+      provider: req.body?.provider,
     });
 
     sendSuccess(res, result);
+  }),
+);
+
+batchesRouter.get(
+  "/:id/output-1/progress",
+  asyncHandler(async (req, res) => {
+    sendSuccess(res, getBatchOutputProgress(req.params.id, req));
   }),
 );
 

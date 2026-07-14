@@ -55,7 +55,12 @@ export async function crmDatabaseHealth() {
     const result = await getCrmPool().query("SELECT now() AS now");
     return { configured: true, connected: true, checkedAt: result.rows[0].now };
   } catch (error) {
-    return { configured: true, connected: false, error: error.message };
+    console.error("[crm-db] health check failed", error.message);
+    return {
+      configured: true,
+      connected: false,
+      error: process.env.NODE_ENV === "production" ? "unavailable" : error.message,
+    };
   }
 }
 

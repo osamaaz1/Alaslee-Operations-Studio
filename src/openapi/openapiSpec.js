@@ -7,6 +7,12 @@ export const openapiSpec = {
     version: "2.0.0",
   },
   paths: {
+    "/health/live": {
+      get: { summary: "Process liveness check" },
+    },
+    "/health/ready": {
+      get: { summary: "Production dependency readiness check" },
+    },
     "/v1/auth/status": {
       get: { summary: "Get local CRM configuration status" },
     },
@@ -35,14 +41,17 @@ export const openapiSpec = {
       post: { summary: "Superuser: restore a soft-deleted customer" },
     },
     "/v1/crm/customers/{id}/prescriptions": {
-      post: { summary: "Add a consented encrypted optical prescription" },
+      post: { summary: "Append an encrypted optical prescription without a consent flag" },
     },
     "/v1/crm/customers/{id}/audit": {
       get: { summary: "Superuser: list customer audit events" },
     },
     "/v1/crm/sales": {
       get: { summary: "List manual and imported customer sales" },
-      post: { summary: "Record a manual sale without decrementing Daftra stock" },
+      post: { summary: "Record a manual sale with a unique invoice number without decrementing Daftra stock" },
+    },
+    "/v1/crm/sales/agenda": {
+      get: { summary: "List today, overdue, upcoming, and ready delivery work" },
     },
     "/v1/crm/sales/{id}": {
       get: { summary: "Read a sale and its locked product snapshots" },
@@ -57,7 +66,7 @@ export const openapiSpec = {
       post: { summary: "Superuser: record an immutable sale refund" },
     },
     "/v1/crm/sales/{id}/delivery": {
-      put: { summary: "Update a sale delivery appointment and status" },
+      put: { summary: "Update a sale delivery calendar date and status" },
     },
     "/v1/crm/rfm/rules": {
       get: { summary: "Get explainable RFM classification rules" },
@@ -136,16 +145,19 @@ export const openapiSpec = {
       post: { summary: "Upload a single product reference image set" },
     },
     "/v1/products/generate": {
-      post: { summary: "Output 1: generate the four ecommerce product images only" },
+      post: { summary: "Output 1: generate three product images and an optional fourth real-person image" },
     },
     "/v1/products/{id}/output-1/generate": {
-      post: { summary: "Generate real AI Output 1 for one product" },
+      post: { summary: "Generate or retry real AI Output 1 for one product" },
     },
     "/v1/products/{id}/output-1/mock": {
       post: { summary: "Create Free Test / Mock Output 1 without AI" },
     },
     "/v1/products/{id}/output-1": {
       get: { summary: "Get Output 1 metadata" },
+    },
+    "/v1/products/{id}/output-1/progress": {
+      get: { summary: "Get live per-image Output 1 progress and generation durations" },
     },
     "/v1/products/{id}/output-1/estimate": {
       get: { summary: "Estimate GPT Output 1 cost before paid generation" },
@@ -193,6 +205,9 @@ export const openapiSpec = {
     },
     "/v1/batches/{id}/output-1/mock": {
       post: { summary: "Create Free Test batch Output 1 without AI" },
+    },
+    "/v1/batches/{id}/output-1/progress": {
+      get: { summary: "Get live per-product and per-image batch Output 1 progress" },
     },
     "/v1/batches/{id}/output-1/estimate": {
       get: { summary: "Estimate GPT batch Output 1 cost before paid generation" },

@@ -37,12 +37,29 @@ export async function syncDaftra() {
 }
 
 export async function daftraSyncStatus() {
-  const result = await getCrmPool().query(
-    `SELECT id,status,started_at,completed_at,products_count,stores_count,transactions_count,error_message,details
-     FROM daftra_sync_runs ORDER BY started_at DESC LIMIT 1`,
-  );
-  const latest = result.rows[0] || null;
-  return { configured: daftraConfigured(), latest, freshness: freshness(latest?.completed_at) };
+  const [latestResult, completedResult, countsResult] = await Promise.all([
+    getCrmPool().query(
+      `SELECT id,status,started_at,completed_at,products_count,stores_count,transactions_count,error_message,details
+       FROM daftra_sync_runs ORDER BY started_at DESC LIMIT 1`,
+    ),
+    getCrmPool().query(
+      `SELECT id,status,started_at,completed_at,products_count,stores_count,transactions_count
+       FROM daftra_sync_runs WHERE status='completed' ORDER BY completed_at DESC LIMIT 1`,
+    ),
+    getCrmPool().query(
+      `SELECT (SELECT count(*)::int FROM daftra_products) AS products,
+              (SELECT count(*)::int FROM daftra_stores) AS stores,
+              (SELECT count(*)::int FROM daftra_stock_transactions) AS transactions`,
+    ),
+  ]);
+  const latest = latestResult.rows[0] || null;
+  const lastCompleted = completedResult.rows[0] || null;
+  const counts = countsResult.rows[0] || { products: 0, stores: 0, transactions: 0 };
+  const currentFreshness = freshness(lastCompleted?.completed_at);
+  return {
+    configured: daftraConfigured(), latest, lastCompleted, counts, freshness: currentFreshness,
+    usable: Boolean(lastCompleted && counts.products > 0 && currentFreshness !== "expired"),
+  };
 }
 
 async function tryLock(client) {

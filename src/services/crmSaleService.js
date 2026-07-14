@@ -1,6 +1,7 @@
 // Posts protected manual sales using authoritative Daftra snapshot constraints.
 
 import { config } from "../config.js";
+import { decryptJson } from "../infra/crm/cryptoVault.js";
 import { withCrmTransaction } from "../infra/crm/postgres.js";
 import { AppError } from "../utils/errors.js";
 import { writeAudit } from "./crmAuditService.js";
@@ -9,7 +10,7 @@ import { recalculateCustomerRfm } from "./crmRfmService.js";
 export async function listSales(actor) {
   return withCrmTransaction(actor, async (client) => {
     const result = await client.query(
-      `SELECT s.id,s.customer_id,c.name AS customer_name,s.status,s.occurred_at,s.total_amount,s.warning_reason,
+      `SELECT s.id,s.customer_id,c.name AS customer_name,s.invoice_number,s.status,s.occurred_at,s.total_amount,s.warning_reason,
               s.payment_tracking_enabled,s.delivery_status,s.scheduled_delivery_at,s.delivered_at,
               COUNT(i.id)::int AS items_count FROM crm_sales s JOIN crm_customers c ON c.id=s.customer_id
        LEFT JOIN crm_sale_items i ON i.sale_id=s.id GROUP BY s.id,c.name ORDER BY s.occurred_at DESC LIMIT 200`,
@@ -19,17 +20,51 @@ export async function listSales(actor) {
   });
 }
 
+export async function listSalesAgenda(actor) {
+  return withCrmTransaction(actor, async (client) => {
+    const result = await client.query(
+      `SELECT s.id,s.customer_id,c.name AS customer_name,c.phone_cipher,s.invoice_number,s.status,s.occurred_at,
+              s.total_amount,s.payment_tracking_enabled,s.delivery_status,s.scheduled_delivery_at,s.delivered_at,
+              COALESCE(jsonb_agg(jsonb_build_object(
+                'id',i.id,'product_id',i.daftra_product_id,'product_code',i.product_code,'sku',i.sku,
+                'product_name',i.product_name,'quantity',i.quantity,'unit_price',i.unit_price,'line_total',i.line_total
+              ) ORDER BY i.created_at) FILTER (WHERE i.id IS NOT NULL),'[]'::jsonb) AS items
+       FROM crm_sales s JOIN crm_customers c ON c.id=s.customer_id
+       LEFT JOIN crm_sale_items i ON i.sale_id=s.id
+       WHERE s.status='posted' AND s.delivery_status IN ('pending','ready') AND s.scheduled_delivery_at IS NOT NULL
+       GROUP BY s.id,c.id ORDER BY s.scheduled_delivery_at,s.occurred_at LIMIT 5000`,
+    );
+    const totals = await paymentTotalsBySale(client, result.rows.map((row) => row.id));
+    const today = riyadhDateKey();
+    const sales = result.rows.map((row) => exposeAgendaSale(row, totals.get(row.id)));
+    return {
+      asOfDate: today,
+      buckets: {
+        overdue: agendaBucket(sales.filter((sale) => sale.scheduled_delivery_at < today)),
+        today: agendaBucket(sales.filter((sale) => sale.scheduled_delivery_at === today)),
+        upcoming: agendaBucket(sales.filter((sale) => sale.scheduled_delivery_at > today)),
+        ready: agendaBucket(sales.filter((sale) => sale.delivery_status === "ready")),
+      },
+    };
+  });
+}
+
 export async function getSale(saleId, actor) {
   return withCrmTransaction(actor, (client) => readSale(client, saleId));
 }
 
 export async function createSale(input, actor, ipAddress) {
-  return withCrmTransaction(actor, async (client) => {
-    const sale = await createSaleInTransaction(client, input, actor);
-    await writeAudit(client, actor, "sale.create", "sale", sale.id, { total: sale.total_amount }, ipAddress);
-    await recalculateCustomerRfm(client, input.customerId, actor.id);
-    return readSale(client, sale.id);
-  });
+  try {
+    return await withCrmTransaction(actor, async (client) => {
+      const sale = await createSaleInTransaction(client, input, actor);
+      await writeAudit(client, actor, "sale.create", "sale", sale.id,
+        { total: sale.total_amount, invoiceNumber: sale.invoice_number }, ipAddress);
+      await recalculateCustomerRfm(client, input.customerId, actor.id);
+      return readSale(client, sale.id);
+    });
+  } catch (error) {
+    throw saleWriteError(error);
+  }
 }
 
 export async function addSalePayment(saleId, input, actor, ipAddress) {
@@ -61,12 +96,12 @@ export async function updateSaleDelivery(saleId, input, actor, ipAddress) {
   return withCrmTransaction(actor, async (client) => {
     const sale = await postedSaleForUpdate(client, saleId);
     assertDeliveryTransition(sale.delivery_status, input.status, actor, input.reason);
-    const scheduledAt = input.scheduledDeliveryAt || sale.scheduled_delivery_at;
+    const scheduledAt = deliveryDateKey(input.scheduledDeliveryAt || sale.scheduled_delivery_at);
     if (["pending", "ready"].includes(input.status) && !scheduledAt) {
-      throw new AppError("حدد موعد تسليم الطلب.", 422);
+      throw new AppError("حدد تاريخ تسليم الطلب.", 422);
     }
-    if (scheduledAt && new Date(scheduledAt) < new Date(sale.occurred_at)) {
-      throw new AppError("موعد التسليم يجب ألا يسبق وقت البيع.", 422);
+    if (scheduledAt && deliveryDateKey(scheduledAt) < deliveryDateKey(sale.occurred_at)) {
+      throw new AppError("تاريخ التسليم يجب ألا يسبق تاريخ البيع.", 422);
     }
     const deliveredAt = input.status === "delivered"
       ? sale.delivered_at || new Date()
@@ -83,40 +118,46 @@ export async function updateSaleDelivery(saleId, input, actor, ipAddress) {
 }
 
 export async function correctSale(saleId, input, actor, ipAddress) {
-  return withCrmTransaction(actor, async (client) => {
-    await saleRowForUpdate(client, saleId);
-    const before = await readSale(client, saleId);
-    const paid = await netPaidAmount(client, saleId);
-    if (paid > 0 && ["edit", "void", "delete"].includes(input.action)) {
-      throw new AppError("يجب تسجيل رد كامل للمبلغ المدفوع قبل تعديل البيع أو إلغائه.", 422);
-    }
-    const replacement = input.action === "edit"
-      ? await createSaleInTransaction(client, { ...input.replacement, correctionOf: saleId }, actor)
-      : null;
-    const nextStatus = correctionStatus(input.action);
-    const restoredDelivery = input.action === "restore" ? await deliveryBeforeCancellation(client, saleId) : null;
-    const nextDelivery = input.action === "restore"
-      ? restoredDelivery?.delivery_status || "pending"
-      : "cancelled";
-    await client.query(
-      `UPDATE crm_sales SET status=$1,deleted_at=$2,delivery_status=$3,scheduled_delivery_at=$4,
-         delivered_at=$5,updated_at=now(),updated_by=$6 WHERE id=$7`,
-      [nextStatus, nextStatus === "deleted" ? new Date() : null, nextDelivery,
-        restoredDelivery?.scheduled_delivery_at || before.scheduled_delivery_at,
-        nextDelivery === "delivered" ? restoredDelivery?.delivered_at || before.delivered_at : null,
-        actor.id, saleId],
-    );
-    const after = replacement ? await readSale(client, replacement.id) : { status: nextStatus };
-    await client.query(
-      `INSERT INTO crm_sale_corrections(sale_id,replacement_sale_id,action,reason,before_snapshot,after_snapshot,created_by)
-       VALUES($1,$2,$3,$4,$5::jsonb,$6::jsonb,$7)`,
-      [saleId, replacement?.id || null, input.action, input.reason, JSON.stringify(before), JSON.stringify(after), actor.id],
-    );
-    await writeAudit(client, actor, `sale.${input.action}`, "sale", saleId, { reason: input.reason, replacementId: replacement?.id }, ipAddress);
-    await recalculateCustomerRfm(client, before.customer_id, actor.id);
-    if (replacement && replacement.customer_id !== before.customer_id) await recalculateCustomerRfm(client, replacement.customer_id, actor.id);
-    return { original: await readSale(client, saleId), replacement: replacement ? await readSale(client, replacement.id) : null };
-  });
+  try {
+    return await withCrmTransaction(actor, async (client) => {
+      await saleRowForUpdate(client, saleId);
+      const before = await readSale(client, saleId);
+      const paid = await netPaidAmount(client, saleId);
+      if (paid > 0 && ["edit", "void", "delete"].includes(input.action)) {
+        throw new AppError("يجب تسجيل رد كامل للمبلغ المدفوع قبل تعديل البيع أو إلغائه.", 422);
+      }
+      const nextStatus = correctionStatus(input.action);
+      const restoredDelivery = input.action === "restore" ? await deliveryBeforeCancellation(client, saleId) : null;
+      const nextDelivery = input.action === "restore"
+        ? restoredDelivery?.delivery_status || "pending"
+        : "cancelled";
+      // Release the active invoice number and stock reservation before inserting an edited replacement.
+      // The transaction rolls this update back automatically if replacement validation fails.
+      await client.query(
+        `UPDATE crm_sales SET status=$1,deleted_at=$2,delivery_status=$3,scheduled_delivery_at=$4,
+           delivered_at=$5,updated_at=now(),updated_by=$6 WHERE id=$7`,
+        [nextStatus, nextStatus === "deleted" ? new Date() : null, nextDelivery,
+          deliveryDateKey(restoredDelivery?.scheduled_delivery_at || before.scheduled_delivery_at) || null,
+          nextDelivery === "delivered" ? restoredDelivery?.delivered_at || before.delivered_at : null,
+          actor.id, saleId],
+      );
+      const replacement = input.action === "edit"
+        ? await createSaleInTransaction(client, { ...input.replacement, correctionOf: saleId }, actor)
+        : null;
+      const after = replacement ? await readSale(client, replacement.id) : { status: nextStatus };
+      await client.query(
+        `INSERT INTO crm_sale_corrections(sale_id,replacement_sale_id,action,reason,before_snapshot,after_snapshot,created_by)
+         VALUES($1,$2,$3,$4,$5::jsonb,$6::jsonb,$7)`,
+        [saleId, replacement?.id || null, input.action, input.reason, JSON.stringify(before), JSON.stringify(after), actor.id],
+      );
+      await writeAudit(client, actor, `sale.${input.action}`, "sale", saleId, { reason: input.reason, replacementId: replacement?.id }, ipAddress);
+      await recalculateCustomerRfm(client, before.customer_id, actor.id);
+      if (replacement && replacement.customer_id !== before.customer_id) await recalculateCustomerRfm(client, replacement.customer_id, actor.id);
+      return { original: await readSale(client, saleId), replacement: replacement ? await readSale(client, replacement.id) : null };
+    });
+  } catch (error) {
+    throw saleWriteError(error);
+  }
 }
 
 async function createSaleInTransaction(client, input, actor) {
@@ -129,16 +170,16 @@ async function createSaleInTransaction(client, input, actor) {
   if (initialPaidAmount > total) throw new AppError("المبلغ المدفوع لا يمكن أن يتجاوز إجمالي البيع.", 422);
   const deliveryMode = input.deliveryMode || "immediate";
   const deliveryStatus = deliveryMode === "scheduled" ? "pending" : "delivered";
-  if (deliveryMode === "scheduled" && !input.scheduledDeliveryAt) throw new AppError("حدد موعد تسليم الطلب.", 422);
+  if (deliveryMode === "scheduled" && !input.scheduledDeliveryAt) throw new AppError("حدد تاريخ تسليم الطلب.", 422);
   const occurredAt = input.occurredAt ? new Date(input.occurredAt) : new Date();
-  if (input.scheduledDeliveryAt && new Date(input.scheduledDeliveryAt) < occurredAt) {
-    throw new AppError("موعد التسليم يجب ألا يسبق وقت البيع.", 422);
+  if (input.scheduledDeliveryAt && input.scheduledDeliveryAt < deliveryDateKey(occurredAt)) {
+    throw new AppError("تاريخ التسليم يجب ألا يسبق تاريخ البيع.", 422);
   }
   const result = await client.query(
-    `INSERT INTO crm_sales(customer_id,occurred_at,total_amount,warning_reason,correction_of,
+    `INSERT INTO crm_sales(customer_id,invoice_number,occurred_at,total_amount,warning_reason,correction_of,
        payment_tracking_enabled,delivery_status,scheduled_delivery_at,delivered_at,created_by,updated_by)
-     VALUES($1,$2,$3,$4,$5,true,$6,$7,$8,$9,$9) RETURNING *`,
-    [input.customerId, occurredAt, total, input.warningReason || null, input.correctionOf || null,
+     VALUES($1,$2,$3,$4,$5,$6,true,$7,$8,$9,$10,$10) RETURNING *`,
+    [input.customerId, input.invoiceNumber.trim(), occurredAt, total, input.warningReason || null, input.correctionOf || null,
       deliveryStatus, input.scheduledDeliveryAt || null, deliveryStatus === "delivered" ? occurredAt : null, actor.id],
   );
   await insertLines(client, result.rows[0].id, lines, actor.id);
@@ -260,7 +301,10 @@ function serializableLine(line) {
 }
 
 async function readSale(client, id) {
-  const saleResult = await client.query("SELECT * FROM crm_sales WHERE id=$1", [id]);
+  const saleResult = await client.query(
+    `SELECT s.*,c.name AS customer_name,c.phone_cipher
+     FROM crm_sales s JOIN crm_customers c ON c.id=s.customer_id WHERE s.id=$1`, [id],
+  );
   if (!saleResult.rows[0]) throw new AppError("عملية البيع غير موجودة.", 404);
   const items = await client.query("SELECT * FROM crm_sale_items WHERE sale_id=$1 ORDER BY created_at", [id]);
   const payments = await client.query(
@@ -317,12 +361,43 @@ function exposePaymentState(row, summary = { payments: 0, refunds: 0, net: 0 }) 
     else if (remaining <= 0) paymentStatus = "paid";
     else paymentStatus = "partially_paid";
   }
-  return {
+  const exposed = {
     ...row,
+    scheduled_delivery_at: deliveryDateKey(row.scheduled_delivery_at) || null,
     paid_amount: net,
     remaining_amount: row.payment_tracking_enabled ? remaining : null,
     payment_status: paymentStatus,
   };
+  if (row.phone_cipher) exposed.customer_phone = decryptJson(row.phone_cipher)?.e164 || null;
+  delete exposed.phone_cipher;
+  return exposed;
+}
+
+function exposeAgendaSale(row, summary) {
+  return exposePaymentState({ ...row, items: Array.isArray(row.items) ? row.items : [] }, summary);
+}
+
+function agendaBucket(sales) {
+  return {
+    count: sales.length,
+    remainingAmount: money(sales.reduce((sum, sale) => sum + Number(sale.remaining_amount || 0), 0)),
+    sales,
+  };
+}
+
+function riyadhDateKey(now = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Riyadh", year: "numeric", month: "2-digit", day: "2-digit",
+  }).formatToParts(now);
+  const part = (type) => parts.find((item) => item.type === type)?.value;
+  return `${part("year")}-${part("month")}-${part("day")}`;
+}
+
+function saleWriteError(error) {
+  if (error?.code === "23505" && error?.constraint === "ux_crm_sales_active_manual_invoice") {
+    return new AppError("رقم الفاتورة مسجل في عملية بيع أخرى.", 409, { code: "sale_invoice_exists" });
+  }
+  return error;
 }
 
 async function saleRowForUpdate(client, id) {
@@ -378,6 +453,25 @@ function correctionStatus(action) {
   if (action === "delete") return "deleted";
   if (action === "restore") return "posted";
   return "voided";
+}
+
+function deliveryDateKey(value) {
+  if (!value) return "";
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    const year = value.getFullYear();
+    const month = String(value.getMonth() + 1).padStart(2, "0");
+    const day = String(value.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }
+  const text = String(value);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return text;
+  const parsed = new Date(text);
+  if (Number.isNaN(parsed.getTime())) return "";
+  const parts = new Intl.DateTimeFormat("en", {
+    timeZone: "Asia/Riyadh", year: "numeric", month: "2-digit", day: "2-digit",
+  }).formatToParts(parsed);
+  const part = (type) => parts.find((item) => item.type === type)?.value;
+  return `${part("year")}-${part("month")}-${part("day")}`;
 }
 
 function money(value) {

@@ -19,10 +19,11 @@ export class OpenAIProvider extends AIProvider {
     this.client = new OpenAI({ apiKey, timeout: this.timeoutMs });
   }
 
-  async generateImages({ productId, originalImages, outputs, outputSize, onImageGenerated }) {
+  async generateImages({ productId, originalImages, outputs, outputSize, onImageStarted, onImageGenerated }) {
     const results = [];
 
     for (const output of outputs) {
+      if (onImageStarted) await onImageStarted(output.role);
       console.info(`[output-1:gpt] starting ${output.role} for product ${productId}`);
       const startedAt = Date.now();
       const sourceImages = referencesForOutputRole(originalImages, output.role);
@@ -53,6 +54,7 @@ export class OpenAIProvider extends AIProvider {
         model: this.model,
         buffer: Buffer.from(base64, "base64"),
         referenceRoles: sourceImages.map((image) => image.role),
+        generationDurationMs: Date.now() - startedAt,
       };
       if (onImageGenerated) {
         await onImageGenerated(generated);

@@ -14,11 +14,13 @@ export class GeminiProvider extends AIProvider {
     this.client = new GoogleGenAI({ apiKey });
   }
 
-  async generateImages({ originalImages, outputs }) {
+  async generateImages({ originalImages, outputs, onImageStarted, onImageGenerated }) {
     const referenceParts = await this.#buildReferenceParts(originalImages);
     const results = [];
 
     for (const output of outputs) {
+      if (onImageStarted) await onImageStarted(output.role);
+      const startedAt = Date.now();
       const interaction = await withProviderRetry(() =>
         this.client.interactions.create({
           model: this.model,
@@ -37,7 +39,7 @@ export class GeminiProvider extends AIProvider {
         throw new AppError(`Gemini did not return image data for ${output.role}.`, 502);
       }
 
-      results.push({
+      const generated = {
         role: output.role,
         fileSuffix: output.fileSuffix,
         label: output.label,
@@ -45,7 +47,10 @@ export class GeminiProvider extends AIProvider {
         provider: this.name,
         model: this.model,
         buffer: Buffer.from(image.data, "base64"),
-      });
+        generationDurationMs: Date.now() - startedAt,
+      };
+      if (onImageGenerated) await onImageGenerated(generated);
+      results.push(generated);
     }
 
     return results;

@@ -15,7 +15,8 @@ test("CRM exposes product sales while non-sale tables omit financial values", ()
   const inventory = fs.readFileSync("client/src/features/crm/InventoryWorkspace.jsx", "utf8");
   const settings = fs.readFileSync("client/src/features/crm/CrmSettings.jsx", "utf8");
   assert.match(workspace, /SaleWorkspace/);
-  assert.match(workspace, /بيع منتج/);
+  assert.match(workspace, /بيع جديد/);
+  assert.match(workspace, /SalesDashboard/);
   assert.doesNotMatch(customers, /monetary|money\.format|<th>القيمة<\/th>/);
   assert.doesNotMatch(inventory, /money\.format|سعر البيع|أقل سعر|ضوابط السعر/);
   assert.doesNotMatch(settings, /RfmEditor|monetary|المبيعات|sales_count/);

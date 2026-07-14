@@ -8,6 +8,8 @@ export async function listDaftraProducts(actor, query = "", options = {}) {
   return withCrmTransaction(actor, async (client) => {
     const text = String(query || "").trim().toLowerCase();
     const availableOnly = options.availableOnly === true;
+    const requestedLimit = Number.parseInt(options.limit, 10);
+    const limit = Number.isFinite(requestedLimit) ? Math.min(productListLimit, Math.max(1, requestedLimit)) : productListLimit;
     const result = await client.query(
       `SELECT p.external_id,p.product_code,p.sku,p.barcode,p.name,p.brand,p.category,
               p.unit_price,p.minimum_price,p.stock_balance,p.track_stock,p.status,p.synced_at,
@@ -28,7 +30,7 @@ export async function listDaftraProducts(actor, query = "", options = {}) {
          AND ($3::boolean = false OR COALESCE(p.track_stock,false) = false
            OR GREATEST(COALESCE(p.stock_balance,0)-COALESCE(r.reserved_quantity,0),0) > 0)
        GROUP BY p.external_id,r.reserved_quantity ORDER BY p.name LIMIT $4`,
-      [text, `%${text}%`, availableOnly, productListLimit],
+      [text, `%${text}%`, availableOnly, limit],
     );
     return result.rows;
   });

@@ -234,6 +234,18 @@ const migrations = [
     },
     down() {},
   },
+  {
+    id: "202607140001_generation_progress",
+    up(db) {
+      addColumn(db, "products", "generation_include_model", "INTEGER NOT NULL DEFAULT 0");
+      addColumn(db, "products", "generation_model_gender", "TEXT");
+      addColumn(db, "products", "generation_started_at", "TEXT");
+      addColumn(db, "products", "generation_current_role", "TEXT");
+      addColumn(db, "products", "generation_expected_count", "INTEGER NOT NULL DEFAULT 3");
+      addColumn(db, "product_generated_images", "generation_duration_ms", "INTEGER");
+    },
+    down() {},
+  },
 ];
 
 export function runMigrations(db) {

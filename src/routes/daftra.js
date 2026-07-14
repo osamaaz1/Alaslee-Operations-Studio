@@ -11,7 +11,7 @@ export const daftraRouter = Router();
 
 daftraRouter.get("/products", asyncHandler(async (req, res) => {
   const availableOnly = ["1", "true", "yes"].includes(String(req.query.availableOnly || "").toLowerCase());
-  sendSuccess(res, await listDaftraProducts(req.crmActor, req.query.q, { availableOnly }));
+  sendSuccess(res, await listDaftraProducts(req.crmActor, req.query.q, { availableOnly, limit: req.query.limit }));
 }));
 
 daftraRouter.get("/sync/status", asyncHandler(async (req, res) => {

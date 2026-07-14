@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Bell,
   Boxes,
+  CalendarClock,
   Check,
   ChevronLeft,
   CloudCog,
@@ -29,6 +30,7 @@ import { CrmWorkspace } from "./features/crm/CrmWorkspace.jsx";
 import { AccountVault } from "./features/accounts/AccountVault.jsx";
 import { FeedbackWidget } from "./features/feedback/FeedbackWidget.jsx";
 import { GenerationCostEstimate } from "./features/production/GenerationCostEstimate.jsx";
+import { BatchGenerationProgress, ProductGenerationProgress, ProviderFallbackDialog } from "./features/production/GenerationProgress.jsx";
 import logoEyesUrl from "../../Logo Eyes.png";
 
 const sections = [
@@ -88,23 +90,29 @@ export default function App() {
     return () => window.removeEventListener("crm-session-change", syncSuperuser);
   }, []);
 
-  const open = (id) => {
+  const navigatePath = useCallback((path) => {
+    if (window.location.pathname !== path) {
+      window.history.pushState({}, "", path);
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    }
+    setSection(sectionForPath(path));
+    window.requestAnimationFrame(() => document.getElementById("main-content")?.focus());
+  }, []);
+  const open = useCallback((id) => {
     const target = sections.find((item) => item.id === id);
     if (!target) return;
-    if (window.location.pathname !== target.path) window.history.pushState({}, "", target.path);
-    setSection(id);
-    window.requestAnimationFrame(() => document.getElementById("main-content")?.focus());
-  };
+    navigatePath(target.path);
+  }, [navigatePath]);
 
   const content = useMemo(() => {
-    const props = { workspace, health, salla, branding, product, setProduct, refreshOverview, inform, open };
+    const props = { workspace, health, salla, branding, product, setProduct, refreshOverview, inform, open, navigatePath };
     if (section === "production") return <Production {...props} />;
     if (section === "campaigns") return <Campaigns {...props} />;
-    if (section === "crm") return <CrmWorkspace inform={inform} />;
+    if (section === "crm") return <CrmWorkspace inform={inform} navigatePath={navigatePath} />;
     if (section === "accounts") return <AccountVault inform={inform} />;
     if (section === "settings") return <Settings {...props} />;
     return <Home {...props} />;
-  }, [section, workspace, health, salla, branding, product, refreshOverview, inform]);
+  }, [section, workspace, health, salla, branding, product, refreshOverview, inform, open, navigatePath]);
 
   return (
     <div className="app-frame">
@@ -156,6 +164,7 @@ function BrandSignature() {
 
 function sectionForPath(pathname) {
   const normalized = pathname.replace(/\/+$/, "") || "/";
+  if (normalized.startsWith("/crm/")) return "crm";
   return sections.find((item) => item.path === normalized)?.id || "home";
 }
 
@@ -164,7 +173,7 @@ function ConnectionBadge({ salla, health }) {
   return <div className={`connection-badge ${online ? "ready" : "pending"}`}><i></i><span>{salla?.connected ? "سلة متصل" : health?.ok ? "الاستوديو جاهز" : "جارٍ التحقق"}</span></div>;
 }
 
-function Home({ workspace, health, salla, branding, open }) {
+function Home({ workspace, health, salla, branding, open, navigatePath }) {
   const kpis = workspace?.kpis || {};
   const cards = [
     { label: "المنتجات", value: number.format(kpis.products || 0), icon: Boxes, hint: "جاهزة للتحليل والإنتاج", tone: "ink" },
@@ -186,6 +195,7 @@ function Home({ workspace, health, salla, branding, open }) {
     <section className="home-grid">
       <article className="panel workflow-panel"><PanelHeading kicker="خطوة تالية" title="سير عمل الإنتاج" action="كل المنتجات" onAction={() => open("production")} /><div className="workflow-list"><WorkflowRow number="01" title="أضف مرجع المنتج" text="صور أمامية وجانبية وزاوية 45°" active /><WorkflowRow number="02" title="أنشئ صور المتجر" text="مخرجات مدعومة بالذكاء الاصطناعي" /><WorkflowRow number="03" title="جهّز الحملة" text="صورة اجتماعية بهوية معتمدة" /></div></article>
       <article className="panel signal-panel"><PanelHeading kicker="حالة العمل" title="جاهزية الاستوديو" /><Readiness label="موفر الذكاء الاصطناعي" ready={Boolean(health?.ok)} value={health?.provider || "غير متاح"} /><Readiness label="حزمة العلامة التجارية" ready={Boolean(branding?.ready)} value={branding?.ready ? "جاهزة للإنتاج" : "تحتاج إلى أصول"} /><Readiness label="تكامل سلة" ready={Boolean(salla?.connected)} value={salla?.message || "قيد التحقق"} /></article>
+      <article className="panel sales-home-shortcut"><span className="sales-home-icon"><CalendarClock size={25} /></span><div><p className="eyebrow">المبيعات والتسليم</p><h2>اعرف من سيحضر اليوم ومن تأخر.</h2><p>راجع المبلغ المتبقي، تفاصيل العميل، وحالة تجهيز كل طلب من شاشة واحدة.</p></div><button type="button" className="button primary" onClick={() => navigatePath("/crm/sales")}>فتح مركز التسليم<ChevronLeft size={17} /></button></article>
     </section>
   </>;
 }
@@ -195,40 +205,93 @@ function WorkflowRow({ number, title, text, active }) { return <div className={`
 function Readiness({ label, ready, value }) { return <div className="readiness"><span>{label}</span><div><i className={ready ? "ready" : ""}></i><strong>{value}</strong></div></div>; }
 function PanelHeading({ kicker, title, action, onAction }) { return <header className="panel-heading"><div><p className="eyebrow">{kicker}</p><h2>{title}</h2></div>{action && <button className="text-button" type="button" onClick={onAction}>{action}<ChevronLeft size={16} /></button>}</header>; }
 
-function Production({ product, setProduct, inform, open }) {
+function Production({ product, setProduct, inform, open, health }) {
   const [mode, setMode] = useState("single");
   const [provider, setProvider] = useState("gemini");
   const [busy, setBusy] = useState(false);
   const [folder, setFolder] = useState("");
   const [batchResult, setBatchResult] = useState(null);
   const [batchProducts, setBatchProducts] = useState([]);
-  const submitUpload = async (event) => { event.preventDefault(); setBusy(true); try { const result = await post("/products/upload", new FormData(event.currentTarget), false); setProduct(result); inform("تم حفظ صور مرجع المنتج."); } catch (error) { inform(error.message, "warning"); } finally { setBusy(false); } };
-  const createOutput = async () => { if (!product?.id) return inform("أضف مرجع المنتج أولاً.", "warning"); setBusy(true); try { setProduct(await post("/products/generate", { productId: product.id, provider })); inform("اكتمل إنشاء صور المتجر."); } catch (error) { inform(error.message, "warning"); } finally { setBusy(false); } };
-  const importBatch = async (event) => { event.preventDefault(); setBusy(true); try { const result = await post("/batches/import-folder", { folderPath: folder, provider, brandingEnabled: false }); setBatchResult(result); setBatchProducts([]); inform(`تم استيراد ${result.products?.length || 0} منتج. راجع الدفعة ثم ابدأ التوليد.`); } catch (error) { inform(error.message, "warning"); } finally { setBusy(false); } };
-  const generateBatch = async () => {
-    const batchId = batchResult?.batch?.id;
-    if (!batchId) return inform("استورد مجلد الدفعة أولاً.", "warning");
+  const [includeModel, setIncludeModel] = useState(true);
+  const [modelGender, setModelGender] = useState("");
+  const [generationProgress, setGenerationProgress] = useState(null);
+  const [batchProgress, setBatchProgress] = useState(null);
+  const [fallbackRequest, setFallbackRequest] = useState(null);
+  const submitUpload = async (event) => { event.preventDefault(); setBusy(true); try { const result = await post("/products/upload", new FormData(event.currentTarget), false); setProduct(result); setGenerationProgress(null); inform("تم حفظ صور مرجع المنتج."); } catch (error) { inform(error.message, "warning"); } finally { setBusy(false); } };
+  const runSingleGeneration = async (payload) => {
     setBusy(true);
+    if (!payload.retryMissing) setGenerationProgress(initialProductProgress(product, payload.includeModel, payload.modelGender));
+    const stopPolling = startProgressPolling(`/products/${encodeURIComponent(product.id)}/output-1/progress`, setGenerationProgress);
     try {
-      const result = await post(`/batches/${encodeURIComponent(batchId)}/generate`, {});
+      setProduct(await post("/products/generate", payload));
+      inform("اكتمل إنشاء صور المتجر.");
+    } catch (error) {
+      if (error.details?.code === "provider_credentials_missing" && error.details.provider === "gemini") {
+        setFallbackRequest({ kind: "single", payload, gptAvailable: error.details.suggestedProvider === "gpt" });
+      } else inform(error.message, "warning");
+    } finally {
+      await stopPolling(); setBusy(false);
+    }
+  };
+  const createOutput = (retryMissing = false) => {
+    if (!product?.id) return inform("أضف مرجع المنتج أولاً.", "warning");
+    if (includeModel && !modelGender) return inform("اختر أولاً هل النظارة رجالية أم نسائية.", "warning");
+    const payload = { productId: product.id, provider, includeModel, modelGender: includeModel ? modelGender : undefined, retryMissing };
+    if (!providerReady(health, provider)) {
+      if (provider === "gemini") setFallbackRequest({ kind: "single", payload, gptAvailable: Boolean(health?.aiProviders?.gpt?.configured) });
+      else inform("ما لقينا مفتاح GPT على هذا الجهاز. اطلب من المسؤول إضافة مفتاح OpenAI صالح.", "warning");
+      return;
+    }
+    runSingleGeneration(payload);
+  };
+  const importBatch = async (event) => { event.preventDefault(); setBusy(true); try { const result = await post("/batches/import-folder", { folderPath: folder, provider, brandingEnabled: false }); setBatchResult(result); setBatchProducts([]); setBatchProgress(null); inform(`تم استيراد ${result.products?.length || 0} منتج. راجع الدفعة ثم ابدأ التوليد.`); } catch (error) { inform(error.message, "warning"); } finally { setBusy(false); } };
+  const runBatchGeneration = async (payload) => {
+    const batchId = batchResult?.batch?.id;
+    setBusy(true);
+    const stopPolling = startProgressPolling(`/batches/${encodeURIComponent(batchId)}/output-1/progress`, setBatchProgress);
+    try {
+      const result = await post(`/batches/${encodeURIComponent(batchId)}/generate`, payload);
       const details = await Promise.all((result.products || []).map((item) => get(`/products/${encodeURIComponent(item.id)}`)));
       setBatchResult(result);
       setBatchProducts(details);
       inform(result.results?.failed ? "اكتمل جزء من الدفعة. راجع المنتجات التي تعذر توليدها." : "اكتمل توليد صور الدفعة.", result.results?.failed ? "warning" : "success");
     } catch (error) {
-      inform(error.message, "warning");
+      if (error.details?.code === "provider_credentials_missing" && error.details.provider === "gemini") {
+        setFallbackRequest({ kind: "batch", payload, gptAvailable: error.details.suggestedProvider === "gpt" });
+      } else inform(error.message, "warning");
     } finally {
-      setBusy(false);
+      await stopPolling(); setBusy(false);
     }
+  };
+  const generateBatch = (retryMissing = false) => {
+    if (!batchResult?.batch?.id) return inform("استورد مجلد الدفعة أولاً.", "warning");
+    const payload = { provider, retryMissing };
+    if (!providerReady(health, provider)) {
+      if (provider === "gemini") setFallbackRequest({ kind: "batch", payload, gptAvailable: Boolean(health?.aiProviders?.gpt?.configured) });
+      else inform("ما لقينا مفتاح GPT على هذا الجهاز. اطلب من المسؤول إضافة مفتاح OpenAI صالح.", "warning");
+      return;
+    }
+    runBatchGeneration(payload);
+  };
+  const switchToGpt = () => {
+    const request = fallbackRequest; setFallbackRequest(null); setProvider("gpt");
+    if (!request) return;
+    const payload = { ...request.payload, provider: "gpt" };
+    if (request.kind === "single") runSingleGeneration(payload); else runBatchGeneration(payload);
   };
   const images = product?.generatedImages || [];
   return <section className="section-stack"><PageTitle kicker="المنتجات والإنتاج" title="أنشئ أصولاً دقيقة للمنتج." text="ابدأ بمراجع واضحة، ثم راجع صور المتجر قبل نقل الأفضل إلى الحملة." action={<label className="provider-select">المحرك<select value={provider} onChange={(event) => setProvider(event.target.value)}><option value="gemini">Gemini</option><option value="gpt">GPT</option><option value="free-test">Try Free</option></select></label>} />
     <div className="production-layout"><article className="panel intake-panel"><div className="segmented" role="tablist"><button type="button" className={mode === "single" ? "selected" : ""} onClick={() => setMode("single")}>منتج واحد</button><button type="button" className={mode === "batch" ? "selected" : ""} onClick={() => setMode("batch")}>دفعة منتجات</button></div>{mode === "single" ? <form onSubmit={submitUpload}><PanelHeading kicker="01 — مراجع المنتج" title="أضف الصور الأصلية" /><p className="panel-copy">يفضّل تصوير النظارة بصورة أفقية للحصول على أكبر قدر من التفاصيل. الصور العمودية والأفقية، بما فيها 16:9 و9:16، تُصغّر تلقائياً دون قص أو تشويه.</p><div className="upload-slots"><FileSlot name="front" label="الواجهة الأمامية" required /><FileSlot name="side" label="الجانب" required /><FileSlot name="angle" label="زاوية 45°" required /><FileSlot name="temple" label="تفاصيل الذراع" /></div><button className="button primary wide" type="submit" disabled={busy}><Upload size={18} />{busy ? "جارٍ التحسين والحفظ…" : "تحسين وحفظ المراجع"}</button></form> : <form className="batch-form" onSubmit={importBatch}><PanelHeading kicker="01 — إنتاج متسلسل" title="استيراد مجلد دفعة" /><p className="panel-copy">يفضّل أن تكون الصور أفقية. يدعم التحسين الصور العمودية والأفقية ونسب 16:9 و9:16 مع الحفاظ على النسبة الأصلية.</p><label className="field-label">مسار المجلد<input value={folder} onChange={(event) => setFolder(event.target.value)} placeholder="E:\\Products\\Batch-01" required /></label><button className="button primary wide" type="submit" disabled={busy}><FolderUp size={18} />استيراد وتحسين الدفعة</button></form>}</article>
-      {mode === "single" ? <article className="panel output-panel"><PanelHeading kicker="02 — صور المتجر" title="معرض المنتج" action={product ? "تجهيز الحملة" : undefined} onAction={() => open("campaigns")} />{product ? <><div className="product-summary"><div><span>معرّف المنتج</span><strong dir="ltr">{product.id}</strong></div><div><span>الحالة</span><strong>{product.status || "جاهز"}</strong></div></div><GenerationCostEstimate productId={product.id} images={product.originalImages} />{images.length ? <GeneratedImageGallery images={images} productId={product.id} inform={inform} /> : <EmptyState icon={ImagePlus} title="لم تُنشأ صور بعد" text="بعد مراجعة النسخ المحسّنة والتكلفة، أنشئ أربع صور مهيأة لواجهة المتجر." /> }<button className="button primary wide" type="button" disabled={busy || provider === "free-test"} onClick={createOutput}><WandSparkles size={18} />{busy ? "جارٍ إنشاء الصور…" : "إنشاء صور المتجر"}</button></> : <EmptyState icon={ImagePlus} title="أضف منتجاً للبدء" text="ستظهر الصور المحسّنة ومقارنة التكلفة هنا بعد رفع المراجع." />}</article> : <BatchOutputPanel batchResult={batchResult} products={batchProducts} busy={busy} onGenerate={generateBatch} inform={inform} />}</div>
+      {mode === "single" ? <article className="panel output-panel"><PanelHeading kicker="02 — صور المتجر" title="معرض المنتج" action={product ? "تجهيز الحملة" : undefined} onAction={() => open("campaigns")} />{product ? <><div className="product-summary"><div><span>معرّف المنتج</span><strong dir="ltr">{product.id}</strong></div><div><span>الحالة</span><strong>{product.status || "جاهز"}</strong></div></div><GenerationCostEstimate productId={product.id} images={product.originalImages} includeModel={includeModel} /><GenerationOptions includeModel={includeModel} setIncludeModel={setIncludeModel} modelGender={modelGender} setModelGender={setModelGender} disabled={busy} /><ProductGenerationProgress progress={generationProgress} busy={busy} onRetry={() => createOutput(true)} />{!busy && images.length ? <GeneratedImageGallery images={images} productId={product.id} inform={inform} /> : !generationProgress ? <EmptyState icon={ImagePlus} title="لم تُنشأ صور بعد" text="أنشئ ثلاث صور للمنتج، وصورة رابعة اختيارية لشخص حقيقي يلبس النظارة." /> : null}<button className="button primary wide" type="button" disabled={busy || provider === "free-test"} onClick={() => createOutput(false)}><WandSparkles size={18} />{busy ? "جارٍ إنشاء الصور…" : "إنشاء صور المتجر"}</button></> : <EmptyState icon={ImagePlus} title="أضف منتجاً للبدء" text="ستظهر الصور المحسّنة ومقارنة التكلفة هنا بعد رفع المراجع." />}</article> : <BatchOutputPanel batchResult={batchResult} products={batchProducts} progress={batchProgress} busy={busy} onGenerate={generateBatch} inform={inform} />}</div>
+    <ProviderFallbackDialog open={Boolean(fallbackRequest)} gptAvailable={fallbackRequest?.gptAvailable ?? Boolean(health?.aiProviders?.gpt?.configured)} onConfirm={switchToGpt} onClose={() => setFallbackRequest(null)} />
   </section>;
 }
 
-function BatchOutputPanel({ batchResult, products, busy, onGenerate, inform }) {
+function GenerationOptions({ includeModel, setIncludeModel, modelGender, setModelGender, disabled }) {
+  return <section className="model-generation-options"><label className="model-option-toggle"><input type="checkbox" checked={includeModel} disabled={disabled} onChange={(event) => setIncludeModel(event.target.checked)} /><span><strong>توليد صورة لشخص لابس النظارة</strong><small>مفعّل افتراضياً — ينتج صورة رابعة ببورتريه واقعي</small></span></label>{includeModel && <fieldset><legend>هل النظارة رجالية أم نسائية؟</legend><div className="model-gender-options"><label className={modelGender === "male" ? "selected" : ""}><input type="radio" name="modelGender" value="male" checked={modelGender === "male"} disabled={disabled} onChange={() => setModelGender("male")} /><span>رجالية</span></label><label className={modelGender === "female" ? "selected" : ""}><input type="radio" name="modelGender" value="female" checked={modelGender === "female"} disabled={disabled} onChange={() => setModelGender("female")} /><span>نسائية</span></label></div></fieldset>}</section>;
+}
+
+function BatchOutputPanel({ batchResult, products, progress, busy, onGenerate, inform }) {
   const batch = batchResult?.batch;
   const rows = batchResult?.products || [];
   const images = products.flatMap((product) => product.generatedImages || []);
@@ -242,14 +305,47 @@ function BatchOutputPanel({ batchResult, products, busy, onGenerate, inform }) {
       </div>
       <GenerationCostEstimate batchId={batch.id} />
       {rows.length ? <div className="batch-product-list">{rows.map((item) => <div key={item.id} className={item.error_message ? "has-error" : ""}><span>{item.source_product_code || item.id}</span><strong>{batchStatusLabel(item.status)}</strong></div>)}</div> : null}
-      {images.length ? <GeneratedImageGallery images={images} productId={batch.id} inform={inform} /> : <EmptyState icon={ImagePlus} title="الدفعة جاهزة للتوليد" text="ابدأ التوليد، وستظهر جميع صور منتجات المجلد هنا مع العرض الكبير والتحميل." />}
-      <button className="button primary wide" type="button" disabled={busy} onClick={onGenerate}><WandSparkles size={18} />{busy ? "جارٍ توليد صور الدفعة…" : images.length ? "إعادة توليد الدفعة" : "توليد صور الدفعة"}</button>
+      <BatchGenerationProgress progress={progress} busy={busy} onRetry={() => onGenerate(true)} />
+      {!busy && images.length ? <GeneratedImageGallery images={images} productId={batch.id} inform={inform} /> : !progress ? <EmptyState icon={ImagePlus} title="الدفعة جاهزة للتوليد" text="تولّد الدفعات ثلاث صور لكل منتج، وتظهر حالة كل صورة هنا فور اكتمالها." /> : null}
+      <button className="button primary wide" type="button" disabled={busy} onClick={() => onGenerate(false)}><WandSparkles size={18} />{busy ? "جارٍ توليد صور الدفعة…" : images.length ? "إعادة توليد الدفعة" : "توليد صور الدفعة"}</button>
     </> : <EmptyState icon={FolderUp} title="استورد مجلد المنتجات" text="بعد الاستيراد ستظهر تفاصيل الدفعة هنا، ويمكنك تشغيل التوليد ومراجعة كل الصور." />}
   </article>;
 }
 
 function batchStatusLabel(status) {
   return ({ imported: "تم الاستيراد", queued: "بانتظار التوليد", generating: "جارٍ التوليد", generated: "مكتملة", completed: "مكتملة", partial: "مكتملة جزئياً", failed: "تعذر التوليد" })[status] || status || "جاهزة";
+}
+
+function initialProductProgress(product, includeModel, modelGender) {
+  const roles = (includeModel ? ["front", "side", "angle", "model"] : ["front", "side", "angle"])
+    .map((role, index) => ({ role, state: index === 0 ? "generating" : "pending", durationMs: null }));
+  return {
+    productId: product.id, productCode: product.sourceProductCode || product.id, status: "generating",
+    includeModel, modelGender, expectedCount: roles.length, completedCount: 0, roles,
+  };
+}
+
+function providerReady(health, provider) {
+  if (provider === "free-test") return true;
+  const capability = health?.aiProviders?.[provider];
+  return capability ? capability.configured === true : true;
+}
+
+function startProgressPolling(path, onProgress) {
+  let stopped = false;
+  let inFlight = false;
+  const poll = async () => {
+    if (stopped || inFlight) return;
+    inFlight = true;
+    try { onProgress(await get(path)); } catch { /* Generation request reports the actionable error. */ }
+    finally { inFlight = false; }
+  };
+  poll();
+  const timer = window.setInterval(poll, 850);
+  return async () => {
+    stopped = true; window.clearInterval(timer);
+    try { onProgress(await get(path)); } catch { /* Keep the last successful progress snapshot. */ }
+  };
 }
 
 function GeneratedImageGallery({ images, productId, inform }) {

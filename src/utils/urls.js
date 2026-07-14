@@ -23,7 +23,7 @@ function shouldUseRequestBase(publicBaseUrl, requestHost) {
     const configured = new URL(publicBaseUrl);
     const configuredHost = normalizeHost(configured.hostname);
     const currentHost = normalizeHost(String(requestHost || "").split(":")[0]);
-    return isLoopbackHost(configuredHost) && isLoopbackHost(currentHost) && configured.host !== requestHost;
+    return isLoopbackHost(configuredHost) && configured.host !== requestHost && Boolean(currentHost);
   } catch {
     return false;
   }

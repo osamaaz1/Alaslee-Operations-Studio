@@ -25,10 +25,11 @@ const outputTokensByQuality = Object.freeze({
 
 const safetyMultiplier = 2.5;
 
-export function estimateProductOutputOneCost(productId) {
+export function estimateProductOutputOneCost(productId, options = {}) {
   const product = getProductById(productId);
-  const estimate = estimateProduct(product);
-  const beforeOptimization = estimateProduct(sourceDimensionProduct(product));
+  const outputs = options.includeModel === false ? galleryOutputs.filter((output) => output.role !== "model") : galleryOutputs;
+  const estimate = estimateProduct(product, outputs);
+  const beforeOptimization = estimateProduct(sourceDimensionProduct(product), outputs);
 
   return {
     provider: "gpt",
@@ -44,7 +45,7 @@ export function estimateProductOutputOneCost(productId) {
 }
 
 export function estimateBatchOutputOneCost(products) {
-  const perProduct = products.map((product) => estimateProductOutputOneCost(product.id));
+  const perProduct = products.map((product) => estimateProductOutputOneCost(product.id, { includeModel: false }));
   const totals = perProduct.reduce(
     (sum, item) => ({
       requestCount: sum.requestCount + item.requestCount,
@@ -129,9 +130,9 @@ export async function estimateOutputTwoCost(input = {}) {
   };
 }
 
-function estimateProduct(product) {
+function estimateProduct(product, outputs) {
   const originals = product.originalImages || [];
-  const requestBreakdown = galleryOutputs.map((output) => {
+  const requestBreakdown = outputs.map((output) => {
     const references = referencesForOutputRole(originals, output.role);
     const textInputTokens = estimateTextTokens(output.prompt);
     const imageInputTokens = references.reduce((sum, image) => sum + estimateImageInputTokens(image), 0);
@@ -174,7 +175,7 @@ function estimateProduct(product) {
   return {
     productId: product.id,
     productCode: product.sourceProductCode || product.id,
-    outputCount: galleryOutputs.length,
+    outputCount: outputs.length,
     ...rounded,
     requestBreakdown: requestBreakdown.map((item) => roundMoney(item)),
   };

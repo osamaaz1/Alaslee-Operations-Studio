@@ -12,12 +12,21 @@ export const CUSTOMER_SOURCE_OPTIONS = Object.freeze([
 ]);
 
 export const RX_LIMITS = Object.freeze({
-  sph: [-20, 20, 0.25],
-  cyl: [-6, 6, 0.25],
+  sph: [-30, 30, 0.25],
+  cyl: [-7, 7, 0.25],
   axis: [1, 180, 1],
-  add: [0, 4, 0.25],
-  binocularPd: [35, 80, 0.5],
-  monocularPd: [20, 45, 0.5],
+  add: [0, 6, 0.25],
+  binocularPd: [35, 80, 1],
+  monocularPd: [20, 45, 1],
+});
+
+export const RX_EXCEPTION_LIMITS = Object.freeze({
+  sph: [-40, 40, 0.25],
+  cyl: [-10, 10, 0.25],
+  axis: [1, 180, 1],
+  add: [0, 8, 0.25],
+  binocularPd: [10, 100, 1],
+  monocularPd: [10, 60, 1],
 });
 
 export const RFM_DEFAULT_RULES = Object.freeze({

@@ -117,7 +117,7 @@ async function productShadow(product, canvasWidth, settings) {
 async function productOverlay(input, canvasWidth, settings) {
   const size = Math.round(canvasWidth * (settings.productWidthPercent / 100));
   const raw = await sharp(input, { failOn: "error" })
-    .resize(size, size, { fit: "contain" })
+    .resize(size, size, { fit: "contain", background: { r: 0, g: 0, b: 0, alpha: 0 } })
     .ensureAlpha()
     .raw()
     .toBuffer({ resolveWithObject: true });
@@ -170,7 +170,15 @@ function removeNearWhiteBackground(pixels) {
     if (darkestChannel < thresholds.minimumDarkChannel || saturation > thresholds.maximumSaturation) continue;
 
     const foregroundFactor = Math.max(0, Math.min(1, (thresholds.fadeStart - darkestChannel) / thresholds.fadeRange));
-    pixels[index + 3] = Math.round(existingAlpha * foregroundFactor);
+    const nextAlpha = Math.round(existingAlpha * foregroundFactor);
+    pixels[index + 3] = nextAlpha <= 8 ? 0 : nextAlpha;
+    // Transparent RGB still participates in libvips trim/interpolation. Clear it
+    // so a removed white canvas cannot become opaque black bands after resize.
+    if (pixels[index + 3] === 0) {
+      pixels[index] = 0;
+      pixels[index + 1] = 0;
+      pixels[index + 2] = 0;
+    }
   }
 }
 

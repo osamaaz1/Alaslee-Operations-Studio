@@ -19,7 +19,7 @@ crmCustomersRouter.get("/sources", asyncHandler(async (req, res) => {
 }));
 
 crmCustomersRouter.get("/", asyncHandler(async (req, res) => {
-  sendSuccess(res, await listCustomers(req.crmActor, req.query.q));
+  sendSuccess(res, await listCustomers(req.crmActor, req.query.q, { limit: req.query.limit }));
 }));
 
 crmCustomersRouter.get("/export", requireSuperuser, asyncHandler(async (req, res) => {

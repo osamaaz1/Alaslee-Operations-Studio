@@ -4,7 +4,7 @@ import { Router } from "express";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { mockOutputUpload, productUpload, multerErrorHandler } from "../middleware/upload.js";
 import { createProductFromUpload, getProductById, getProductGallery } from "../services/productService.js";
-import { generateProductGallery } from "../services/generationService.js";
+import { generateProductGallery, getProductOutputProgress } from "../services/generationService.js";
 import { generateExplicitInstagramImages } from "../services/explicitInstagramGenerationService.js";
 import { createMockOutputOne } from "../services/freeTestOutputService.js";
 import { estimateProductOutputOneCost } from "../services/outputCostEstimateService.js";
@@ -34,6 +34,9 @@ productsRouter.post(
     const product = await generateProductGallery(productId, {
       force: req.body?.force === true,
       provider: req.body?.provider,
+      includeModel: req.body?.includeModel !== false,
+      modelGender: req.body?.modelGender,
+      retryMissing: req.body?.retryMissing === true,
       req,
     });
 
@@ -47,6 +50,9 @@ productsRouter.post(
     const product = await generateProductGallery(req.params.id, {
       force: req.body?.force === true,
       provider: req.body?.provider,
+      includeModel: req.body?.includeModel !== false,
+      modelGender: req.body?.modelGender,
+      retryMissing: req.body?.retryMissing === true,
       req,
     });
 
@@ -55,9 +61,16 @@ productsRouter.post(
 );
 
 productsRouter.get(
+  "/:id/output-1/progress",
+  asyncHandler(async (req, res) => {
+    sendSuccess(res, getProductOutputProgress(req.params.id, req));
+  }),
+);
+
+productsRouter.get(
   "/:id/output-1/estimate",
   asyncHandler(async (req, res) => {
-    sendSuccess(res, estimateProductOutputOneCost(req.params.id));
+    sendSuccess(res, estimateProductOutputOneCost(req.params.id, { includeModel: req.query.includeModel !== "0" }));
   }),
 );
 

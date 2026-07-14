@@ -20,7 +20,13 @@ before(async () => {
   process.env.GEMINI_API_KEY = "";
   process.env.OPENAI_API_KEY = "";
   process.env.AI_PROVIDER = "gemini";
+  process.env.CRM_DATABASE_URL = "";
+  process.env.SUPABASE_DATABASE_URL = "";
   process.env.RATE_LIMIT_MAX = "10000";
+  process.env.BRAND_BACKGROUND_PATH = "";
+  process.env.BRAND_LOGO_PATH = "";
+  process.env.BRAND_FOOTER_PATH = "";
+  process.env.BRAND_PRICE_LABEL_REFERENCE_PATH = "";
 
   const appModule = await import("../src/app.js");
   const databaseModule = await import("../src/db/database.js");
@@ -42,6 +48,23 @@ test("Free Test creates mock Output 1 and local-preview Output 2 without AI cred
   assert.equal(product.originalImages.every((image) => image.sourceUrl), true);
   assert.equal(product.originalImages.every((image) => image.sourceWidth && image.sourceHeight), true);
 
+  const health = await getJson("/health");
+  assert.equal(health.aiProviders.gemini.configured, false);
+  assert.equal(health.aiProviders.gpt.configured, false);
+
+  const missingGender = await postJsonError("/v1/products/generate", {
+    productId: product.id, provider: "gemini", includeModel: true,
+  });
+  assert.equal(missingGender.status, 422);
+  assert.equal(missingGender.error.details.code, "model_gender_required");
+
+  const missingGemini = await postJsonError("/v1/products/generate", {
+    productId: product.id, provider: "gemini", includeModel: true, modelGender: "female",
+  });
+  assert.equal(missingGemini.status, 422);
+  assert.equal(missingGemini.error.details.code, "provider_credentials_missing");
+  assert.equal(missingGemini.error.details.provider, "gemini");
+
   const estimate = await getJson(`/v1/products/${product.id}/output-1/estimate`);
   assert.equal(estimate.provider, "gpt");
   assert.equal(estimate.quality, "medium");
@@ -52,12 +75,24 @@ test("Free Test creates mock Output 1 and local-preview Output 2 without AI cred
   assert.equal(Boolean(estimate.optimizationComparison?.before), true);
   assert.equal(Boolean(estimate.optimizationComparison?.after), true);
   assert.equal(estimate.requestBreakdown.every((item) => item.referenceCount <= 3), true);
+  const threeImageEstimate = await getJson(`/v1/products/${product.id}/output-1/estimate?includeModel=0`);
+  assert.equal(threeImageEstimate.requestCount, 3);
+  assert.equal(threeImageEstimate.outputCount, 3);
 
-  const output1 = await postForm(`/v1/products/${product.id}/output-1/mock`, new FormData());
+  const mockOutput = new FormData();
+  mockOutput.append("front", await fileBlob(240, 180, "#244f45"), "front-mock.png");
+  mockOutput.append("side", await fileBlob(240, 180, "#365a91"), "side-mock.png");
+  mockOutput.append("angle", await fileBlob(240, 180, "#7a3e64"), "angle-mock.png");
+  mockOutput.append("model", await fileBlob(240, 180, "#8b7550"), "model-mock.png");
+  const output1 = await postForm(`/v1/products/${product.id}/output-1/mock`, mockOutput);
   assert.equal(output1.generatedImages.length, 4);
   assert.equal(output1.provider, "free-test");
   assert.equal(output1.generatedImages.every((image) => image.provider === "free-test"), true);
   assert.equal(output1.generatedImages.every((image) => image.isMock === true), true);
+  const progress = await getJson(`/v1/products/${product.id}/output-1/progress`);
+  assert.equal(progress.expectedCount, 4);
+  assert.equal(progress.completedCount, 4);
+  assert.equal(progress.roles.every((role) => role.state === "completed"), true);
 
   await expectJsonError("/v1/instagram/generate", {
     profileId: "square-1x1",
@@ -186,12 +221,17 @@ test("Batch Free Test Output 2 is saved under uploads/products/batch/product/ins
   assert.equal(estimate.provider, "gpt");
   assert.equal(estimate.quality, "medium");
   assert.equal(estimate.productCount, 1);
-  assert.equal(estimate.requestCount, 4);
+  assert.equal(estimate.requestCount, 3);
 
   const generated = await postJson(`/v1/batches/${imported.batch.id}/generate`, { force: true });
   assert.equal(generated.results.successful, 1);
 
   const product = await getJson(`/v1/products/${generated.products[0].id}`);
+  assert.equal(product.generatedImages.length, 3);
+  assert.deepEqual(product.generatedImages.map((item) => item.role).sort(), ["angle", "front", "side"]);
+  const progress = await getJson(`/v1/batches/${imported.batch.id}/output-1/progress`);
+  assert.equal(progress.summary.expectedImages, 3);
+  assert.equal(progress.summary.completedImages, 3);
   const instagram = await postJson(`/v1/batches/${imported.batch.id}/instagram`, {
     profileId: "portrait-4x5",
     items: [{ productId: product.id, generatedImageId: product.generatedImages[0].id }],
@@ -233,6 +273,18 @@ async function postJson(url, payload) {
     body: JSON.stringify(payload),
   });
   return responseData(response);
+}
+
+async function postJsonError(url, payload) {
+  const response = await fetch(`${baseUrl}${url}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const body = await response.json();
+  assert.equal(response.ok, false);
+  assert.equal(body.success, false);
+  return { status: response.status, error: body.errors[0] };
 }
 
 async function expectJsonError(url, payload, messagePart) {

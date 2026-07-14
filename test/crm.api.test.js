@@ -37,15 +37,32 @@ after(async () => {
 
 test("CRM creates encrypted customers and enforces staff/superuser boundaries", { skip: !databaseUrl }, async () => {
   const suffix = String(Date.now()).slice(-7);
+  const customerPayload = {
+    name: "عميل اختبار", primaryPhone: { countryCode: "SA", number: `055${suffix}` }, hasWhatsapp: true,
+    sourceCode: "in_store", birthYear: 1990, prescription: {
+      right: { sph: -1, cyl: -0.5, axis: 90 }, left: { sph: 0, cyl: 0 }, pdMode: "binocular", binocularPd: 62,
+    },
+  };
   const customer = await request("/v1/crm/customers", {
     method: "POST", auth: staff,
-    body: { name: "عميل اختبار", primaryPhone: { countryCode: "SA", number: `055${suffix}` }, hasWhatsapp: true,
-      sourceCode: "in_store", birthYear: 1990, prescription: {
-        consent: true, right: { sph: -1, cyl: -0.5, axis: 90 }, left: { sph: 0, cyl: 0 }, pdMode: "binocular", binocularPd: 62,
-      } },
+    body: customerPayload,
   });
   assert.equal(customer.name, "عميل اختبار");
   assert.equal(customer.prescriptions.length, 1);
+  assert.equal(Object.hasOwn(customer.prescriptions[0], "consent_at"), false);
+
+  const duplicate = await rawRequest("/v1/crm/customers", { method: "POST", auth: staff, body: customerPayload });
+  const duplicateBody = await duplicate.json();
+  assert.equal(duplicate.status, 409);
+  assert.equal(duplicateBody.errors[0].details.code, "customer_phone_exists");
+  assert.equal(duplicateBody.errors[0].details.customerId, customer.id);
+
+  const customerWithNewPrescription = await request(`/v1/crm/customers/${customer.id}/prescriptions`, {
+    method: "POST", auth: staff,
+    body: { right: { sph: -30, cyl: -7, axis: 180, add: 6 }, left: { sph: 0, cyl: 0 }, pdMode: "binocular", binocularPd: 63 },
+  });
+  assert.equal(customerWithNewPrescription.prescriptions.length, 2);
+  assert.equal(Object.hasOwn(customerWithNewPrescription.prescriptions[0], "consent_at"), false);
 
   const batchId = await insertReviewCandidate(suffix);
   const candidates = await request("/v1/crm/imports/candidates", { auth: superuser });
@@ -64,18 +81,21 @@ test("CRM creates encrypted customers and enforces staff/superuser boundaries", 
   await request(`/v1/crm/customers/${customer.id}/restore`, { method: "POST", auth: superuser, body: {} });
 
   await insertProduct(`test-${suffix}`);
-  const scheduledDeliveryAt = new Date(Date.now() + 86_400_000).toISOString();
+  const scheduledDeliveryAt = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10);
   const sale = await request("/v1/crm/sales", {
     method: "POST", auth: staff,
     body: {
+      invoiceNumber: `TEST-${suffix}`,
       customerId: customer.id, warningReason: "تمت مراجعة الحد المؤقت",
       initialPaidAmount: 200, deliveryMode: "scheduled", scheduledDeliveryAt,
       items: [{ productId: `test-${suffix}`, quantity: 2, unitPrice: 750 }],
     },
   });
   assert.equal(Number(sale.total_amount), 1500);
+  assert.equal(sale.invoice_number, `TEST-${suffix}`);
   assert.equal(sale.items[0].minimum_source, "fallback_50_percent");
   assert.equal(sale.delivery_status, "pending");
+  assert.equal(sale.scheduled_delivery_at, scheduledDeliveryAt);
   assert.equal(Number(sale.paid_amount), 200);
   assert.equal(Number(sale.remaining_amount), 1300);
 
@@ -84,9 +104,17 @@ test("CRM creates encrypted customers and enforces staff/superuser boundaries", 
   assert.equal(Number(reservedProduct.reserved_quantity), 2);
   assert.equal(Number(reservedProduct.available_quantity), 3);
 
+  const duplicateInvoice = await rawRequest("/v1/crm/sales", {
+    method: "POST", auth: staff,
+    body: { invoiceNumber: `test-${suffix}`, customerId: customer.id, warningReason: "اختبار التكرار", items: [{ productId: `test-${suffix}`, quantity: 1, unitPrice: 750 }] },
+  });
+  const duplicateInvoiceBody = await duplicateInvoice.json();
+  assert.equal(duplicateInvoice.status, 409);
+  assert.equal(duplicateInvoiceBody.errors[0].details.code, "sale_invoice_exists");
+
   const oversold = await rawRequest("/v1/crm/sales", {
     method: "POST", auth: staff,
-    body: { customerId: customer.id, warningReason: "اختبار الحجز", items: [{ productId: `test-${suffix}`, quantity: 4, unitPrice: 750 }] },
+    body: { invoiceNumber: `OVER-${suffix}`, customerId: customer.id, warningReason: "اختبار الحجز", items: [{ productId: `test-${suffix}`, quantity: 4, unitPrice: 750 }] },
   });
   assert.equal(oversold.status, 422);
 
@@ -114,9 +142,17 @@ test("CRM creates encrypted customers and enforces staff/superuser boundaries", 
   });
   assert.equal(ready.delivery_status, "ready");
 
+  const agenda = await request("/v1/crm/sales/agenda", { auth: staff });
+  const readyAgendaSale = agenda.buckets.ready.sales.find((item) => item.id === sale.id);
+  assert.ok(readyAgendaSale);
+  assert.equal(readyAgendaSale.customer_phone, customer.primaryPhone.e164);
+  assert.equal(readyAgendaSale.invoice_number, `TEST-${suffix}`);
+  assert.equal(readyAgendaSale.items[0].product_name, "إطار اختبار");
+  assert.equal(Number(readyAgendaSale.remaining_amount), 1500);
+
   const belowFloor = await rawRequest("/v1/crm/sales", {
     method: "POST", auth: staff,
-    body: { customerId: customer.id, warningReason: "اختبار", items: [{ productId: `test-${suffix}`, quantity: 1, unitPrice: 400 }] },
+    body: { invoiceNumber: `LOW-${suffix}`, customerId: customer.id, warningReason: "اختبار", items: [{ productId: `test-${suffix}`, quantity: 1, unitPrice: 400 }] },
   });
   assert.equal(belowFloor.status, 422);
   const corrected = await request(`/v1/crm/sales/${sale.id}/corrections`, {
@@ -124,6 +160,7 @@ test("CRM creates encrypted customers and enforces staff/superuser boundaries", 
     body: {
       action: "edit", reason: "اختبار تعديل الطلب المحجوز",
       replacement: {
+        invoiceNumber: `TEST-${suffix}`,
         customerId: customer.id, warningReason: "تمت مراجعة الحد المؤقت",
         deliveryMode: "scheduled", scheduledDeliveryAt,
         items: [{ productId: `test-${suffix}`, quantity: 2, unitPrice: 750 }],

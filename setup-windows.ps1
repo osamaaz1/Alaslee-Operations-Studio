@@ -308,7 +308,7 @@ function Initialize-NativeCrmDatabase($Tools, [string]$EnvironmentPath) {
     }
 
     $escapedPassword = $password -replace "'", "''"
-    $roleSql = "DO `$alaslee`$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = '$user') THEN CREATE ROLE `"$user`" LOGIN PASSWORD '$escapedPassword'; ELSE ALTER ROLE `"$user`" WITH LOGIN PASSWORD '$escapedPassword'; END IF; END `$alaslee`$;"
+    $roleSql = "DO `$alaslee`$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = '$user') THEN CREATE ROLE `"$user`" LOGIN PASSWORD '$escapedPassword' NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION; ELSE ALTER ROLE `"$user`" WITH LOGIN PASSWORD '$escapedPassword' NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION; END IF; END `$alaslee`$;"
     $previousPassword = $env:PGPASSWORD
     $env:PGPASSWORD = $password
     try {
@@ -321,6 +321,8 @@ function Initialize-NativeCrmDatabase($Tools, [string]$EnvironmentPath) {
             & $Tools.CreateDb --no-password -h 127.0.0.1 -p $port -U postgres --owner $user $database
             Assert-LastExitCode "Creating the CRM PostgreSQL database"
         }
+        & $Tools.Psql --no-password -h 127.0.0.1 -p $port -U postgres -d postgres -v ON_ERROR_STOP=1 -c "REVOKE CONNECT ON DATABASE `"$database`" FROM PUBLIC; GRANT CONNECT ON DATABASE `"$database`" TO `"$user`";"
+        Assert-LastExitCode "Hardening CRM PostgreSQL access"
     } finally {
         if ($null -eq $previousPassword) { Remove-Item Env:PGPASSWORD -ErrorAction SilentlyContinue }
         else { $env:PGPASSWORD = $previousPassword }
@@ -328,6 +330,7 @@ function Initialize-NativeCrmDatabase($Tools, [string]$EnvironmentPath) {
 
     $encodedPassword = [Uri]::EscapeDataString($password)
     Set-EnvValue $EnvironmentPath "CRM_DATABASE_URL" "postgresql://${user}:$encodedPassword@127.0.0.1:$port/$database"
+    Set-EnvValue $EnvironmentPath "CRM_POSTGRES_ADMIN_URL" "postgresql://postgres:$encodedPassword@127.0.0.1:$port/postgres"
 }
 
 function Initialize-Environment([string]$ProjectRoot) {

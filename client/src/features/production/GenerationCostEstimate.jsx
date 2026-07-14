@@ -6,7 +6,7 @@ const usd = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD",
 const integer = new Intl.NumberFormat("ar-SA-u-nu-latn", { maximumFractionDigits: 0 });
 const decimal = new Intl.NumberFormat("ar-SA-u-nu-latn", { maximumFractionDigits: 1 });
 
-export function GenerationCostEstimate({ productId, batchId, images = [] }) {
+export function GenerationCostEstimate({ productId, batchId, images = [], includeModel = true }) {
   const [state, setState] = useState({ loading: false, estimate: null, error: "" });
   const [activeImage, setActiveImage] = useState(null);
   const resource = batchId ? `batches/${encodeURIComponent(batchId)}` : productId ? `products/${encodeURIComponent(productId)}` : "";
@@ -18,11 +18,11 @@ export function GenerationCostEstimate({ productId, batchId, images = [] }) {
       return () => { active = false; };
     }
     setState({ loading: true, estimate: null, error: "" });
-    get(`/${resource}/output-1/estimate`)
+    get(`/${resource}/output-1/estimate${batchId ? "" : `?includeModel=${includeModel ? "1" : "0"}`}`)
       .then((estimate) => active && setState({ loading: false, estimate, error: "" }))
       .catch((error) => active && setState({ loading: false, estimate: null, error: error.message }));
     return () => { active = false; };
-  }, [resource]);
+  }, [resource, batchId, includeModel]);
 
   useEffect(() => {
     if (!activeImage) return undefined;

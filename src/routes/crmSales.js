@@ -9,7 +9,7 @@ import { validateBody } from "../middleware/validate.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { sendSuccess } from "../utils/apiResponse.js";
 import {
-  addSalePayment, correctSale, createSale, getSale, listSales, refundSalePayment, updateSaleDelivery,
+  addSalePayment, correctSale, createSale, getSale, listSales, listSalesAgenda, refundSalePayment, updateSaleDelivery,
 } from "../services/crmSaleService.js";
 
 export const crmSalesRouter = Router();
@@ -20,6 +20,10 @@ crmSalesRouter.get("/", asyncHandler(async (req, res) => {
 
 crmSalesRouter.post("/", validateBody(saleCreateSchema), asyncHandler(async (req, res) => {
   sendSuccess(res, await createSale(req.validatedBody, req.crmActor, req.ip), 201);
+}));
+
+crmSalesRouter.get("/agenda", asyncHandler(async (req, res) => {
+  sendSuccess(res, await listSalesAgenda(req.crmActor));
 }));
 
 crmSalesRouter.get("/:id", asyncHandler(async (req, res) => {

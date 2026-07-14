@@ -1,10 +1,12 @@
 // Lists, searches, creates, and inspects CRM customers in Arabic.
 
 import { useCallback, useEffect, useState } from "react";
-import { ChevronLeft, Download, FileDown, FileUp, Pencil, Plus, Search, UserRound, WalletCards } from "lucide-react";
+import { ChevronLeft, Download, FileDown, FileUp, Pencil, Plus, Save, Search, Stethoscope, UserRound, WalletCards, X } from "lucide-react";
 import { crmApi } from "./crmApi.js";
 import { CustomerForm } from "./CustomerForm.jsx";
 import { CustomerImport } from "./CustomerImport.jsx";
+import { emptyPrescription, PrescriptionFields } from "./PrescriptionFields.jsx";
+import { prescriptionSchema } from "../../../../shared/crm/prescriptionSchemas.js";
 
 export function CustomerList({ session, inform }) {
   const [customers, setCustomers] = useState([]);
@@ -35,7 +37,7 @@ export function CustomerList({ session, inform }) {
     } catch (error) { inform(error.message, "warning"); } finally { setExporting(""); }
   };
 
-  if (mode === "new") return <CustomerForm sources={sources} onCancel={() => setMode("list")} onSave={async (payload) => {
+  if (mode === "new") return <CustomerForm sources={sources} onCancel={() => setMode("list")} onExistingCustomer={(id) => { setSelected({ id }); setMode("profile"); }} onSave={async (payload) => {
     const customer = await crmApi.createCustomer(payload); inform("تم حفظ العميل بنجاح."); await load(); setSelected(customer); setMode("profile");
   }} />;
   if (mode === "import") return <CustomerImport inform={inform} onCancel={() => setMode("list")} onComplete={async () => { await load(); setMode("list"); }} />;
@@ -57,19 +59,40 @@ export function CustomerList({ session, inform }) {
 
 function CustomerProfile({ customerId, session, inform, onBack, onEdit }) {
   const [customer, setCustomer] = useState(null);
-  useEffect(() => { crmApi.customer(customerId).then(setCustomer).catch((error) => inform(error.message, "warning")); }, [customerId, inform]);
+  const [addingPrescription, setAddingPrescription] = useState(false);
+  const loadCustomer = useCallback(() => crmApi.customer(customerId).then(setCustomer), [customerId]);
+  useEffect(() => { loadCustomer().catch((error) => inform(error.message, "warning")); }, [loadCustomer, inform]);
   if (!customer) return <div className="panel crm-loading">جارٍ تحميل ملف العميل…</div>;
   return <section className="crm-stack">
     <div className="profile-head panel"><button type="button" className="text-button" onClick={onBack}>العودة للعملاء</button><div className="profile-identity"><span><UserRound size={25} /></span><div><p className="eyebrow">ملف العميل</p><h2>{customer.name}</h2><small dir="ltr">{customer.primaryPhone?.e164}</small></div></div>
       <span className="segment-badge">{customer.source?.label}</span></div>
     <div className="profile-grid"><article className="panel"><PanelTitle title="البيانات الشخصية" /><dl className="detail-list"><Detail label="الهاتف" value={customer.primaryPhone?.e164} ltr /><Detail label="واتساب" value={customer.whatsappPhone?.e164 || "غير متاح"} ltr /><Detail label="الهوية / الإقامة" value={customer.identity?.number || "غير مسجل"} ltr /><Detail label="سنة الميلاد" value={customer.birthYear || "غير مسجلة"} /></dl></article>
       <article className="panel"><PanelTitle title="العنوان الوطني" /><dl className="detail-list">{customer.address ? <><Detail label="العنوان المختصر" value={customer.address.shortAddress} ltr /><Detail label="الموقع" value={`${customer.address.streetName}، ${customer.address.district}، ${customer.address.city}`} /><Detail label="الرمز البريدي" value={customer.address.postalCode} ltr /></> : <Detail label="الحالة" value="لم يضف عنوان" />}</dl></article></div>
-    <article className="panel"><PanelTitle title="سجل الكشف الطبي" icon={WalletCards} /><div className="rx-history">{customer.prescriptions?.length ? customer.prescriptions.map((item) => <RxSummary item={item} key={item.id} />) : <p className="empty-copy">لا يوجد كشف طبي محفوظ لهذا العميل.</p>}</div></article>
+    <article className="panel"><div className="profile-prescription-head"><PanelTitle title="سجل الكشف الطبي" icon={WalletCards} /><button className="button secondary" type="button" onClick={() => setAddingPrescription((value) => !value)}>{addingPrescription ? <X size={16} /> : <Stethoscope size={16} />}{addingPrescription ? "إلغاء" : "إضافة كشف جديد"}</button></div>{addingPrescription && <PrescriptionEditor onCancel={() => setAddingPrescription(false)} onSave={async (payload) => { const updated = await crmApi.addPrescription(customer.id, payload); setCustomer(updated); setAddingPrescription(false); inform("تمت إضافة الكشف الطبي الجديد إلى سجل العميل."); }} />}<div className="rx-history">{customer.prescriptions?.length ? customer.prescriptions.map((item) => <RxSummary item={item} key={item.id} />) : <p className="empty-copy">لا يوجد كشف طبي محفوظ لهذا العميل.</p>}</div></article>
     {session.role === "superuser" && <div className="superuser-strip"><span>وضع المشرف الأعلى فعّال</span><div><button type="button" onClick={() => onEdit(customer)}><Pencil size={14} />تعديل البيانات</button><button type="button" onClick={async () => { if (!window.confirm("هل تريد حذف العميل من السجل النشط؟")) return; await crmApi.deleteCustomer(customer.id); inform("تم حذف العميل من السجل النشط."); onBack(); }}>حذف العميل</button></div></div>}
   </section>;
 }
 
-function RxSummary({ item }) { const value = item.values || {}; return <article className="rx-summary"><header><strong>{new Date(item.exam_date).toLocaleDateString("ar-SA-u-nu-latn")}</strong>{item.exceptional && <span>قيمة استثنائية</span>}</header><div><b>Right</b><small>SPH {value.right?.sph ?? "—"}</small><small>CYL {value.right?.cyl ?? "—"}</small><small>Axis {value.right?.axis || "—"}</small><small>ADD {value.right?.add || "—"}</small></div><div><b>Left</b><small>SPH {value.left?.sph ?? "—"}</small><small>CYL {value.left?.cyl ?? "—"}</small><small>Axis {value.left?.axis || "—"}</small><small>ADD {value.left?.add || "—"}</small></div><footer>IPD: {value.pdMode === "binocular" ? value.binocularPd : `${value.rightPd} / ${value.leftPd}`}</footer></article>; }
+function PrescriptionEditor({ onSave, onCancel }) {
+  const [value, setValue] = useState(() => structuredClone(emptyPrescription));
+  const [showErrors, setShowErrors] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const cleaned = cleanPrescription(value);
+  const parsed = prescriptionSchema.safeParse(cleaned);
+  const errors = prescriptionErrors(parsed);
+  const submit = async (event) => {
+    event.preventDefault(); setShowErrors(true); setSubmitError("");
+    if (!parsed.success) return;
+    setBusy(true);
+    try { await onSave(parsed.data); }
+    catch (error) { setSubmitError(error.message); }
+    finally { setBusy(false); }
+  };
+  return <form className="profile-prescription-form" onSubmit={submit} noValidate><PrescriptionFields value={value} onChange={setValue} errors={showErrors ? errors : {}} />{submitError && <div className="form-alert" role="alert">{submitError}</div>}<div className="form-actions"><button className="button secondary" type="button" onClick={onCancel}>إلغاء</button><button className="button primary" type="submit" disabled={busy}><Save size={16} />{busy ? "جارٍ الحفظ…" : "حفظ الكشف الجديد"}</button></div></form>;
+}
+
+function RxSummary({ item }) { const value = item.values || {}; return <article className="rx-summary"><header><strong>{new Date(item.exam_date).toLocaleDateString("ar-SA-u-nu-latn")}</strong>{item.exceptional && <span>قيمة استثنائية</span>}</header><div><b>Right</b><small>SPH {value.right?.sph ?? "—"}</small><small>CYL {value.right?.cyl ?? "—"}</small><small>Axis {value.right?.axis || "—"}</small><small>ADD {value.right?.add ?? "—"}</small></div><div><b>Left</b><small>SPH {value.left?.sph ?? "—"}</small><small>CYL {value.left?.cyl ?? "—"}</small><small>Axis {value.left?.axis || "—"}</small><small>ADD {value.left?.add ?? "—"}</small></div><footer>IPD: {value.pdMode === "binocular" ? value.binocularPd : `${value.rightPd} / ${value.leftPd}`}</footer></article>; }
 function PanelTitle({ title, icon: Icon }) { return <header className="crm-panel-title"><div>{Icon && <Icon size={18} />}<h2>{title}</h2></div></header>; }
 function Detail({ label, value, ltr }) { return <div><dt>{label}</dt><dd dir={ltr ? "ltr" : undefined}>{value}</dd></div>; }
 function EmptyCustomers() { return <div className="crm-empty"><UserRound size={28} /><strong>لا توجد نتائج</strong><span>أضف أول عميل، أو استورد بيانات التحليل من الإعدادات، أو غيّر عبارة البحث.</span></div>; }
@@ -89,3 +112,5 @@ function customerFormValue(customer) {
 }
 
 function phoneValue(phone) { return { countryCode: phone?.countryCode || "SA", number: phone?.e164 || "" }; }
+function cleanPrescription(value) { const next = structuredClone(value); delete next.exceptionalEntry; return next; }
+function prescriptionErrors(result) { return result.success ? {} : Object.fromEntries(result.error.issues.map((issue) => [issue.path.join("."), issue.message])); }

@@ -19,10 +19,16 @@
     "crm:rollback": "node src/infra/crm/cli.js rollback",
     "crm:status": "node src/infra/crm/cli.js status",
     "import:v1": "node scripts/import-v1.js",
+    "production:preflight": "node scripts/production-preflight.js",
+    "production:smoke": "node scripts/production-http-smoke.js",
+    "production:test": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/test-production.ps1",
+    "production:backup": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/backup-production.ps1",
+    "production:restore:verify": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/verify-backup-restore.ps1",
     "check": "node scripts/check-syntax.js && npm audit --audit-level=high && npm run build && npm test",
     "test": "node --test",
     "test:api": "node --test test/*.api.test.js",
-    "test:ui": "node --test test/*.ui.test.js"
+    "test:ui": "node --test test/*.ui.test.js",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@google/genai": "^2.10.0",
@@ -45,5 +51,8 @@
     "vite": "^7.1.12",
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz",
     "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.61.1"
   }
 }

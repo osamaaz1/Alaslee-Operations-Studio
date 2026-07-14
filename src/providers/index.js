@@ -19,6 +19,17 @@ const providerFactories = {
 
 export function createAIProvider(providerName = config.aiProvider) {
   const normalizedProvider = normalizeProviderName(providerName, config.aiProvider);
+  if (normalizedProvider === PROVIDERS.GEMINI && !config.gemini.apiKey) {
+    throw new AppError("ما لقينا مفتاح Gemini على هذا الجهاز، لذلك ما نقدر نبدأ التوليد منه.", 422, {
+      code: "provider_credentials_missing", provider: PROVIDERS.GEMINI,
+      suggestedProvider: config.openai.apiKey ? PROVIDERS.GPT : null,
+    });
+  }
+  if (normalizedProvider === PROVIDERS.GPT && !config.openai.apiKey) {
+    throw new AppError("ما لقينا مفتاح GPT على هذا الجهاز. اطلب من المسؤول إضافة مفتاح OpenAI صالح.", 422, {
+      code: "provider_credentials_missing", provider: PROVIDERS.GPT, suggestedProvider: null,
+    });
+  }
   const factory = providerFactories[normalizedProvider];
   if (!factory) {
     throw new AppError(`Unsupported AI_PROVIDER "${providerName}". Use "gemini" or "gpt".`, 500);

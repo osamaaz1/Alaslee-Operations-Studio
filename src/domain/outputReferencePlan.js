@@ -4,6 +4,7 @@ const referencePlan = Object.freeze({
   front: Object.freeze(["front", "angle"]),
   side: Object.freeze(["side", "temple", "angle"]),
   angle: Object.freeze(["angle", "front"]),
+  model: Object.freeze(["front", "angle", "side"]),
   hero: Object.freeze(["front", "angle"]),
 });
 

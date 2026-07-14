@@ -11,13 +11,17 @@ export async function api(path, options = {}) {
   const body = contentType.includes("application/json") ? await response.json() : null;
 
   if (!response.ok || body?.success === false) {
-    throw new Error(body?.errors?.[0]?.message || body?.error?.message || "تعذر إتمام الطلب.");
+    const payload = body?.errors?.[0] || body?.error || {};
+    const error = new Error(payload.message || "تعذر إتمام الطلب.");
+    error.status = response.status;
+    error.details = payload.details;
+    throw error;
   }
 
   return body?.success === true ? body.data : body;
 }
 
-export const get = (path) => api(path);
+export const get = (path, options = {}) => api(path, options);
 export const post = (path, body, json = true) =>
   api(path, {
     method: "POST",

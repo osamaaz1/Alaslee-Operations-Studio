@@ -45,19 +45,23 @@ test("Saudi national address validates fixed numeric and short-address formats",
 
 test("prescription requires axis for non-zero CYL and supports exceptional audit", () => {
   const rx = {
-    consent: true, right: { sph: -1, cyl: -0.5, axis: 90 }, left: { sph: 0, cyl: 0 },
+    right: { sph: -1, cyl: -0.5, axis: 90 }, left: { sph: 0, cyl: 0 },
     pdMode: "binocular", binocularPd: 62,
   };
   assert.equal(prescriptionSchema.safeParse(rx).success, true);
   assert.equal(prescriptionExceptional(rx), false);
   assert.equal(prescriptionSchema.safeParse({ ...rx, right: { sph: -1, cyl: -0.5 } }).success, false);
-  assert.equal(prescriptionSchema.safeParse({ ...rx, right: { sph: -25, cyl: 0 } }).success, false);
-  assert.equal(prescriptionSchema.safeParse({ ...rx, right: { sph: -25, cyl: 0 }, exceptionReason: "وصفة معتمدة" }).success, true);
+  assert.equal(prescriptionSchema.safeParse({ ...rx, right: { sph: -30, cyl: 7, axis: 180, add: 6 } }).success, true);
+  assert.equal(prescriptionSchema.safeParse({ ...rx, right: { sph: -35, cyl: 0 } }).success, false);
+  assert.equal(prescriptionSchema.safeParse({ ...rx, right: { sph: -35, cyl: 0 }, exceptionReason: "وصفة معتمدة" }).success, true);
+  assert.equal(prescriptionSchema.safeParse({ ...rx, right: { sph: -41, cyl: 0 }, exceptionReason: "خارج النطاق" }).success, false);
+  assert.equal(prescriptionSchema.safeParse({ ...rx, binocularPd: 62.5 }).success, false);
 });
 
 test("manual sale and correction contracts reject incomplete writes", () => {
-  const sale = { customerId: "550e8400-e29b-41d4-a716-446655440000", items: [{ productId: "1", quantity: 1, unitPrice: 500 }] };
+  const sale = { customerId: "550e8400-e29b-41d4-a716-446655440000", invoiceNumber: "INV-1001", items: [{ productId: "1", quantity: 1, unitPrice: 500 }] };
   assert.equal(saleCreateSchema.safeParse(sale).success, true);
+  assert.equal(saleCreateSchema.safeParse({ ...sale, invoiceNumber: "" }).success, false);
   assert.equal(saleCreateSchema.safeParse({ ...sale, items: [] }).success, false);
   assert.equal(saleCorrectionSchema.safeParse({ action: "edit", reason: "تصحيح" }).success, false);
   assert.equal(saleCorrectionSchema.safeParse({ action: "void", reason: "تصحيح" }).success, true);
@@ -66,16 +70,19 @@ test("manual sale and correction contracts reject incomplete writes", () => {
 test("sale fulfillment validates payments, refunds, and scheduled delivery", () => {
   const sale = {
     customerId: "550e8400-e29b-41d4-a716-446655440000",
+    invoiceNumber: "INV-1002",
     deliveryMode: "scheduled",
     items: [{ productId: "1", quantity: 1, unitPrice: 500 }],
   };
   assert.equal(saleCreateSchema.safeParse(sale).success, false);
-  assert.equal(saleCreateSchema.safeParse({ ...sale, scheduledDeliveryAt: "2030-01-01T12:00:00.000Z", initialPaidAmount: 200 }).success, true);
+  assert.equal(saleCreateSchema.safeParse({ ...sale, scheduledDeliveryAt: "2030-01-01", initialPaidAmount: 200 }).success, true);
+  assert.equal(saleCreateSchema.safeParse({ ...sale, scheduledDeliveryAt: "2030-01-01T12:00:00.000Z", initialPaidAmount: 200 }).success, false);
   assert.equal(saleCreateSchema.safeParse({ ...sale, initialPaidAmount: -1 }).success, false);
   assert.equal(salePaymentSchema.safeParse({ amount: 0 }).success, false);
   assert.equal(salePaymentSchema.safeParse({ amount: 100 }).success, true);
   assert.equal(saleRefundSchema.safeParse({ amount: 100, reason: "" }).success, false);
   assert.equal(saleRefundSchema.safeParse({ amount: 100, reason: "رد للعميل" }).success, true);
   assert.equal(saleDeliverySchema.safeParse({ status: "cancelled" }).success, false);
-  assert.equal(saleDeliverySchema.safeParse({ status: "ready", scheduledDeliveryAt: "2030-01-01T12:00:00.000Z" }).success, true);
+  assert.equal(saleDeliverySchema.safeParse({ status: "ready", scheduledDeliveryAt: "2030-01-01" }).success, true);
+  assert.equal(saleDeliverySchema.safeParse({ status: "ready", scheduledDeliveryAt: "2030-01-01T12:00:00.000Z" }).success, false);
 });

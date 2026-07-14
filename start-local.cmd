@@ -12,6 +12,10 @@ echo Checking native PostgreSQL and CRM migrations...
 call npm.cmd run crm:migrate || goto :missing_database
 echo.
 echo Starting Alaslee Operations Studio with native PostgreSQL (no Docker)...
+set "NODE_ENV=development"
+set "CRM_SECURE_COOKIE=false"
+set "CRM_LOGIN_RATE_LIMIT_DISABLED=true"
+set "LOCAL_DEV_CLIENT_ORIGIN=http://localhost:5173"
 echo Open http://localhost:5173
 echo Press Ctrl+C here to stop the application.
 call npm.cmd run dev

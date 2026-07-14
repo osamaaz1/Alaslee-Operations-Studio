@@ -49,6 +49,11 @@ db.exec(`
     updated_by TEXT NOT NULL DEFAULT 'system',
     generated_at TEXT,
     error_message TEXT,
+    generation_include_model INTEGER NOT NULL DEFAULT 0,
+    generation_model_gender TEXT,
+    generation_started_at TEXT,
+    generation_current_role TEXT,
+    generation_expected_count INTEGER NOT NULL DEFAULT 3,
     FOREIGN KEY(source_batch_id) REFERENCES batches(id) ON DELETE SET NULL
   );
 
@@ -92,6 +97,7 @@ db.exec(`
     output_stage TEXT NOT NULL DEFAULT 'output_1',
     output_kind TEXT NOT NULL DEFAULT 'real_ai',
     is_mock INTEGER NOT NULL DEFAULT 0,
+    generation_duration_ms INTEGER,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_by TEXT NOT NULL DEFAULT 'system',

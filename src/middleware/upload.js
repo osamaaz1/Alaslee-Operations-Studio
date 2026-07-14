@@ -79,7 +79,7 @@ export const mockOutputUpload = mockOutputUploadMiddleware.fields([
   { name: "front", maxCount: 1 },
   { name: "side", maxCount: 1 },
   { name: "angle", maxCount: 1 },
-  { name: "hero", maxCount: 1 },
+  { name: "model", maxCount: 1 },
 ]);
 
 export const instagramSourceUpload = instagramSourceUploadMiddleware.array("images", 12);

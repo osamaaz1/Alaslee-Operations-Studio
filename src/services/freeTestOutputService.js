@@ -20,20 +20,20 @@ import {
   setProductGenerating,
 } from "./productService.js";
 
-const mockOutputRoles = galleryOutputs.map((output) => output.role);
-
 export async function createMockOutputOne(productId, files = {}, options = {}) {
   const product = getProductRecord(productId);
+  const outputs = options.includeModel === false ? galleryOutputs.filter((output) => output.role !== "model") : galleryOutputs;
+  const mockOutputRoles = outputs.map((output) => output.role);
   if (!options.force && product.provider === PROVIDERS.FREE_TEST && hasCompleteGallery(productId, mockOutputRoles)) {
     return getProductById(productId, options.req);
   }
 
-  setProductGenerating(productId, PROVIDERS.FREE_TEST);
+  setProductGenerating(productId, PROVIDERS.FREE_TEST, { includeModel: outputs.some((output) => output.role === "model"), expectedCount: outputs.length });
 
   try {
-    const sources = hasMockUploads(files) ? await uploadedMockSources(files) : await originalReferenceSources(productId);
-    const savedImages = await saveMockOutputs(product, sources);
-    replaceGeneratedImages(productId, savedImages);
+    const sources = hasMockUploads(files, mockOutputRoles) ? await uploadedMockSources(files, mockOutputRoles) : await originalReferenceSources(productId, mockOutputRoles);
+    const savedImages = await saveMockOutputs(product, sources, outputs);
+    await replaceGeneratedImages(productId, savedImages);
     setProductGenerated(productId, PROVIDERS.FREE_TEST);
     console.info(`[output-1] Free Test mock Output 1 saved for product ${productId}`);
     return getProductById(productId, options.req);
@@ -62,42 +62,42 @@ export async function createMockOutputOneForProducts(products, options = {}) {
   return { successful, failed, total: products.length };
 }
 
-function hasMockUploads(files = {}) {
-  return mockOutputRoles.some((role) => Boolean(files?.[role]?.[0]));
+function hasMockUploads(files = {}, roles) {
+  return roles.some((role) => Boolean(files?.[role]?.[0]));
 }
 
-async function uploadedMockSources(files) {
+async function uploadedMockSources(files, roles) {
   for (const field of Object.keys(files || {})) {
-    if (!mockOutputRoles.includes(field)) {
+    if (!roles.includes(field)) {
       throw new AppError(`Unsupported mock Output 1 field "${field}".`, 400);
     }
   }
 
-  const missing = mockOutputRoles.filter((role) => !files?.[role]?.[0]);
+  const missing = roles.filter((role) => !files?.[role]?.[0]);
   if (missing.length > 0) {
     throw new AppError(`Free Test mock Output 1 requires: ${missing.join(", ")}.`, 400);
   }
 
   const sources = new Map();
-  for (const role of mockOutputRoles) {
+  for (const role of roles) {
     const validated = await validateUploadedImage(files[role][0], `${role} mock`, config.maxImageBytes);
     sources.set(role, validated.buffer);
   }
   return sources;
 }
 
-async function originalReferenceSources(productId) {
+async function originalReferenceSources(productId, roles) {
   const originals = getOriginalImagesForGeneration(productId);
   const byRole = new Map(originals.map((image) => [image.role, image]));
   const roleSource = {
     front: "front",
     side: "side",
     angle: "angle",
-    hero: byRole.has("angle") ? "angle" : "front",
+    model: byRole.has("angle") ? "angle" : "front",
   };
   const sources = new Map();
 
-  for (const [outputRole, originalRole] of Object.entries(roleSource)) {
+  for (const [outputRole, originalRole] of Object.entries(roleSource).filter(([role]) => roles.includes(role))) {
     const source = byRole.get(originalRole);
     if (!source) {
       throw new AppError(`Cannot create mock Output 1 because ${originalRole} reference is missing.`, 409);
@@ -108,11 +108,11 @@ async function originalReferenceSources(productId) {
   return sources;
 }
 
-async function saveMockOutputs(product, sources) {
+async function saveMockOutputs(product, sources, outputs) {
   const generatedDir = generatedDirForProduct(product);
   const savedImages = [];
 
-  for (const output of galleryOutputs) {
+  for (const output of outputs) {
     const normalized = await normalizeGeneratedPng(sources.get(output.role), config.outputImageSize);
     const filename = `${outputPrefix(product)}-mock-${output.fileSuffix}.png`;
     const filePath = path.join(generatedDir, filename);

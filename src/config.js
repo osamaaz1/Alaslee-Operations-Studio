@@ -3,15 +3,22 @@
 import path from "node:path";
 import dotenv from "dotenv";
 
-dotenv.config({ quiet: true });
-
 const rootDir = process.cwd();
+const environmentFile = path.resolve(rootDir, process.env.ENV_FILE || ".env");
+dotenv.config({ path: environmentFile, quiet: true });
+
 const defaultRateLimitWindowMs = 60_000;
 const defaultRateLimitMax = 120;
 
-function intFromEnv(name, fallback) {
-  const value = Number.parseInt(process.env[name] ?? "", 10);
-  return Number.isFinite(value) ? value : fallback;
+function intFromEnv(name, fallback, { min = 0, max = Number.MAX_SAFE_INTEGER } = {}) {
+  const raw = String(process.env[name] ?? "").trim();
+  if (!raw) return fallback;
+  if (!/^-?\d+$/.test(raw)) throw new Error(`${name} must be a whole number.`);
+  const value = Number(raw);
+  if (!Number.isSafeInteger(value) || value < min || value > max) {
+    throw new Error(`${name} must be between ${min} and ${max}.`);
+  }
+  return value;
 }
 
 function boolFromEnv(name, fallback = false) {
@@ -50,8 +57,11 @@ function normalizedUrl(value) {
 
 export const config = {
   rootDir,
-  port: intFromEnv("PORT", 3000),
-  publicBaseUrl: process.env.PUBLIC_BASE_URL,
+  environmentFile,
+  environment: process.env.NODE_ENV || "development",
+  host: process.env.HOST || "0.0.0.0",
+  port: intFromEnv("PORT", 3000, { min: 1, max: 65_535 }),
+  publicBaseUrl: normalizedUrl(process.env.PUBLIC_BASE_URL),
   localDevClientOrigin: process.env.LOCAL_DEV_CLIENT_ORIGIN,
   aiProvider: (process.env.AI_PROVIDER || "gemini").trim().toLowerCase(),
   gemini: {
@@ -62,7 +72,7 @@ export const config = {
     apiKey: process.env.OPENAI_API_KEY,
     model: process.env.OPENAI_IMAGE_MODEL || "gpt-image-2",
     priceLabelModel: process.env.OPENAI_PRICE_LABEL_MODEL || process.env.OPENAI_IMAGE_MODEL || "gpt-image-2",
-    requestTimeoutMs: intFromEnv("OPENAI_REQUEST_TIMEOUT_MS", 180_000),
+    requestTimeoutMs: intFromEnv("OPENAI_REQUEST_TIMEOUT_MS", 180_000, { min: 1_000 }),
     imageRequestSize: process.env.OPENAI_IMAGE_REQUEST_SIZE || "auto",
     imageQuality: valueFromEnvSet("OPENAI_IMAGE_QUALITY", "medium", new Set(["low", "medium", "high", "auto"])),
   },
@@ -70,38 +80,39 @@ export const config = {
   dataWorkspaceDir: resolveFromRoot(process.env.ORIGINALEYE_DATA_ROOT || "./OriginalEye-Data-Analysis"),
   uploadsDir: resolveFromRoot(process.env.UPLOADS_DIR || "./uploads"),
   allowedImportRoots: pathsFromEnv("ALLOWED_IMPORT_ROOTS", [rootDir]),
-  maxImageBytes: intFromEnv("MAX_IMAGE_MB", 20) * 1024 * 1024,
-  outputImageSize: intFromEnv("OUTPUT_IMAGE_SIZE", 2048),
+  maxImageBytes: intFromEnv("MAX_IMAGE_MB", 20, { min: 1, max: 100 }) * 1024 * 1024,
+  outputImageSize: intFromEnv("OUTPUT_IMAGE_SIZE", 2048, { min: 512, max: 4096 }),
   security: {
     adminApiKey: process.env.ADMIN_API_KEY,
-    rateLimitWindowMs: intFromEnv("RATE_LIMIT_WINDOW_MS", defaultRateLimitWindowMs),
-    rateLimitMax: intFromEnv("RATE_LIMIT_MAX", defaultRateLimitMax),
+    rateLimitWindowMs: intFromEnv("RATE_LIMIT_WINDOW_MS", defaultRateLimitWindowMs, { min: 1_000 }),
+    rateLimitMax: intFromEnv("RATE_LIMIT_MAX", defaultRateLimitMax, { min: 1 }),
   },
   crm: {
     databaseUrl: process.env.CRM_DATABASE_URL || process.env.SUPABASE_DATABASE_URL,
+    postgresPort: intFromEnv("CRM_POSTGRES_PORT", 5432, { min: 1, max: 65_535 }),
     encryptionKey: process.env.CRM_DATA_ENCRYPTION_KEY,
     encryptionPreviousKeys: commaSeparatedValues("CRM_DATA_ENCRYPTION_PREVIOUS_KEYS"),
     staffPin: process.env.CRM_STAFF_PIN,
     superuserPin: process.env.CRM_SUPERUSER_PIN,
     loginRateLimitDisabled: boolFromEnv("CRM_LOGIN_RATE_LIMIT_DISABLED", process.env.NODE_ENV !== "production"),
-    sessionHours: intFromEnv("CRM_SESSION_HOURS", 8),
-    priceFloorPercent: intFromEnv("CRM_PRICE_FLOOR_PERCENT", 50),
+    sessionHours: intFromEnv("CRM_SESSION_HOURS", 8, { min: 1, max: 72 }),
+    priceFloorPercent: intFromEnv("CRM_PRICE_FLOOR_PERCENT", 50, { min: 0, max: 100 }),
     secureCookie: boolFromEnv("CRM_SECURE_COOKIE", process.env.NODE_ENV === "production"),
   },
   supabase: {
     url: normalizedUrl(process.env.SUPABASE_URL),
     serverKey: process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY,
     feedbackBucket: process.env.SUPABASE_FEEDBACK_BUCKET || "feedback-attachments",
-    feedbackMaxImageBytes: intFromEnv("SUPABASE_FEEDBACK_MAX_IMAGE_MB", 6) * 1024 * 1024,
-    feedbackRateLimitWindowMs: intFromEnv("SUPABASE_FEEDBACK_RATE_LIMIT_WINDOW_MS", 15 * 60_000),
-    feedbackRateLimitMax: intFromEnv("SUPABASE_FEEDBACK_RATE_LIMIT_MAX", 10),
+    feedbackMaxImageBytes: intFromEnv("SUPABASE_FEEDBACK_MAX_IMAGE_MB", 6, { min: 1, max: 20 }) * 1024 * 1024,
+    feedbackRateLimitWindowMs: intFromEnv("SUPABASE_FEEDBACK_RATE_LIMIT_WINDOW_MS", 15 * 60_000, { min: 1_000 }),
+    feedbackRateLimitMax: intFromEnv("SUPABASE_FEEDBACK_RATE_LIMIT_MAX", 10, { min: 1 }),
   },
   daftra: {
     subdomain: process.env.DAFTRA_SUBDOMAIN,
     apiKey: process.env.DAFTRA_API_KEY,
     accessToken: process.env.DAFTRA_ACCESS_TOKEN,
-    syncMinutes: intFromEnv("DAFTRA_SYNC_MINUTES", 60),
-    pageLimit: intFromEnv("DAFTRA_PAGE_LIMIT", 100),
+    syncMinutes: intFromEnv("DAFTRA_SYNC_MINUTES", 60, { min: 15, max: 1440 }),
+    pageLimit: intFromEnv("DAFTRA_PAGE_LIMIT", 100, { min: 1, max: 1000 }),
   },
   branding: {
     backgroundPath: resolveOptionalPath(process.env.BRAND_BACKGROUND_PATH),

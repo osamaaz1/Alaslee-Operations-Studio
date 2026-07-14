@@ -40,7 +40,7 @@ export async function createDirectInstagramUpload(files = [], options = {}) {
 
   insertProductWithOriginals({ product, originals: [] });
   const generatedImages = await saveDirectSources(product, validatedUploads);
-  replaceGeneratedImages(productId, generatedImages);
+  await replaceGeneratedImages(productId, generatedImages);
   setProductGenerated(productId, PROVIDERS.GPT);
 
   console.info(`[instagram] saved ${generatedImages.length} direct source image(s) for ${productId}`);

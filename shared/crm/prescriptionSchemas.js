@@ -1,16 +1,15 @@
 // Validates optical prescription relationships and exceptional overrides.
 
 import { z } from "zod";
-import { RX_LIMITS } from "./constants.js";
+import { RX_EXCEPTION_LIMITS, RX_LIMITS } from "./constants.js";
 
-const broadPower = optionalNumeric(-40, 40);
-const axis = optionalNumeric(1, 180);
+const axis = optionalInteger(...RX_EXCEPTION_LIMITS.axis.slice(0, 2));
 
 const eyeSchema = z.object({
-  sph: broadPower,
-  cyl: broadPower,
+  sph: optionalNumeric(...RX_EXCEPTION_LIMITS.sph.slice(0, 2)),
+  cyl: optionalNumeric(...RX_EXCEPTION_LIMITS.cyl.slice(0, 2)),
   axis,
-  add: optionalNumeric(0, 8),
+  add: optionalNumeric(...RX_EXCEPTION_LIMITS.add.slice(0, 2)),
 }).superRefine((eye, context) => {
   if (Number(eye.cyl || 0) !== 0 && eye.axis === undefined) {
     context.addIssue({ code: "custom", path: ["axis"], message: "المحور مطلوب عند وجود CYL." });
@@ -18,14 +17,13 @@ const eyeSchema = z.object({
 });
 
 export const prescriptionSchema = z.object({
-  consent: z.literal(true, { error: "موافقة العميل مطلوبة لحفظ الكشف الطبي." }),
   examDate: z.string().date().optional(),
   right: eyeSchema,
   left: eyeSchema,
   pdMode: z.enum(["binocular", "monocular"]),
-  binocularPd: optionalNumeric(10, 100),
-  rightPd: optionalNumeric(10, 60),
-  leftPd: optionalNumeric(10, 60),
+  binocularPd: optionalInteger(...RX_EXCEPTION_LIMITS.binocularPd.slice(0, 2)),
+  rightPd: optionalInteger(...RX_EXCEPTION_LIMITS.monocularPd.slice(0, 2)),
+  leftPd: optionalInteger(...RX_EXCEPTION_LIMITS.monocularPd.slice(0, 2)),
   exceptionReason: z.string().trim().max(300).optional().or(z.literal("")),
 }).superRefine((value, context) => {
   validatePd(value, context);
@@ -56,6 +54,13 @@ function optionalNumeric(min, max) {
   return z.preprocess(
     (value) => value === "" || value === null || value === undefined ? undefined : Number(value),
     z.number().min(min).max(max).optional(),
+  );
+}
+
+function optionalInteger(min, max) {
+  return z.preprocess(
+    (value) => value === "" || value === null || value === undefined ? undefined : Number(value),
+    z.number().int("أدخل رقماً صحيحاً بدون كسور.").min(min).max(max).optional(),
   );
 }
 

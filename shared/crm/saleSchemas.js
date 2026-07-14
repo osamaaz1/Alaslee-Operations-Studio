@@ -4,10 +4,11 @@ import { z } from "zod";
 
 export const saleCreateSchema = z.object({
   customerId: z.string().uuid("اختر عميلاً صالحاً."),
+  invoiceNumber: z.string().trim().min(1, "أدخل رقم الفاتورة.").max(100, "رقم الفاتورة طويل جداً."),
   occurredAt: z.string().datetime().optional(),
   initialPaidAmount: z.coerce.number().nonnegative("المبلغ المدفوع غير صالح.").default(0),
   deliveryMode: z.enum(["immediate", "scheduled"]).default("immediate"),
-  scheduledDeliveryAt: z.string().datetime().optional(),
+  scheduledDeliveryAt: z.string().date("أدخل تاريخ التسليم باليوم والشهر والسنة فقط.").optional(),
   warningReason: z.string().trim().max(500).optional().or(z.literal("")),
   items: z.array(z.object({
     productId: z.string().trim().min(1),
@@ -16,10 +17,10 @@ export const saleCreateSchema = z.object({
   })).min(1, "أضف منتجاً واحداً على الأقل.").max(50),
 }).superRefine((value, context) => {
   if (value.deliveryMode === "scheduled" && !value.scheduledDeliveryAt) {
-    context.addIssue({ code: "custom", path: ["scheduledDeliveryAt"], message: "حدد موعد تسليم الطلب." });
+    context.addIssue({ code: "custom", path: ["scheduledDeliveryAt"], message: "حدد تاريخ تسليم الطلب." });
   }
-  if (value.scheduledDeliveryAt && value.occurredAt && new Date(value.scheduledDeliveryAt) < new Date(value.occurredAt)) {
-    context.addIssue({ code: "custom", path: ["scheduledDeliveryAt"], message: "موعد التسليم يجب ألا يسبق وقت البيع." });
+  if (value.scheduledDeliveryAt && value.occurredAt && value.scheduledDeliveryAt < value.occurredAt.slice(0, 10)) {
+    context.addIssue({ code: "custom", path: ["scheduledDeliveryAt"], message: "تاريخ التسليم يجب ألا يسبق تاريخ البيع." });
   }
 });
 
@@ -34,7 +35,7 @@ export const saleRefundSchema = salePaymentSchema.extend({
 
 export const saleDeliverySchema = z.object({
   status: z.enum(["pending", "ready", "delivered"]),
-  scheduledDeliveryAt: z.string().datetime().optional(),
+  scheduledDeliveryAt: z.string().date("أدخل تاريخ التسليم باليوم والشهر والسنة فقط.").optional(),
   reason: z.string().trim().max(500).optional().or(z.literal("")),
 });
 

@@ -18,9 +18,10 @@ export async function listCustomerSources(actor) {
   });
 }
 
-export async function listCustomers(actor, query = "") {
+export async function listCustomers(actor, query = "", options = {}) {
   return withCrmTransaction(actor, async (client) => {
     const search = searchValues(query);
+    const limit = resultLimit(options.limit, customerListLimit);
     const result = await client.query(
       `SELECT c.id, c.name, c.phone_last4, c.has_whatsapp, c.birth_year,
               s.code AS source_code, s.label_ar AS source_label,
@@ -30,9 +31,10 @@ export async function listCustomers(actor, query = "") {
          SELECT segment_code, segment_label_ar, explanation_ar, metrics
          FROM crm_rfm_snapshots WHERE customer_id = c.id ORDER BY created_at DESC LIMIT 1
        ) r ON true
-       WHERE c.deleted_at IS NULL AND ($1 = '' OR lower(c.name) LIKE $2 OR c.phone_hash = $3 OR c.identity_hash = $4)
-       ORDER BY c.updated_at DESC LIMIT $5`,
-      [search.text, `%${search.text.toLowerCase()}%`, search.phoneHash, search.identityHash, customerListLimit],
+       WHERE c.deleted_at IS NULL AND ($1 = '' OR lower(c.name) LIKE $2 OR c.phone_hash = $3 OR c.identity_hash = $4
+         OR ($5 <> '' AND c.phone_last4 LIKE $5))
+       ORDER BY c.updated_at DESC LIMIT $6`,
+      [search.text, `%${search.text.toLowerCase()}%`, search.phoneHash, search.identityHash, search.phoneLast4Like, limit],
     );
     return result.rows;
   });
@@ -51,6 +53,12 @@ export async function createCustomer(input, actor, ipAddress) {
     try {
       const sourceId = await resolveSource(client, input.sourceCode);
       const protectedValues = protectCustomer(input);
+      const existingPhone = await client.query("SELECT id FROM crm_customers WHERE phone_hash=$1 LIMIT 1", [protectedValues.phone.hash]);
+      if (existingPhone.rows[0]) {
+        throw new AppError("رقم الهاتف هذا مسجّل مسبقاً. افتح ملف العميل الموجود لتحديث بياناته.", 409, {
+          code: "customer_phone_exists", customerId: existingPhone.rows[0].id,
+        });
+      }
       const result = await client.query(
         `INSERT INTO crm_customers(
            name, phone_country, phone_cipher, phone_hash, phone_last4, has_whatsapp,
@@ -179,7 +187,7 @@ async function readCustomer(client, id) {
   );
   if (!result.rows[0]) throw new AppError("العميل غير موجود.", 404);
   const prescriptions = await client.query(
-    `SELECT id, exam_date, prescription_cipher, consent_at, exceptional, exception_reason, created_at
+    `SELECT id, exam_date, prescription_cipher, exceptional, exception_reason, created_at
      FROM crm_prescriptions WHERE customer_id=$1 AND deleted_at IS NULL ORDER BY exam_date DESC, created_at DESC`, [id],
   );
   return exposeCustomer(result.rows[0], prescriptions.rows);
@@ -232,7 +240,7 @@ async function savePrescription(client, customerId, prescription, actor) {
   const exceptional = prescriptionExceptional(prescription);
   const result = await client.query(
     `INSERT INTO crm_prescriptions(customer_id,exam_date,prescription_cipher,consent_at,exceptional,exception_reason,created_by,updated_by)
-     VALUES($1,COALESCE($2::date,current_date),$3,now(),$4,$5,$6,$6) RETURNING id`,
+     VALUES($1,COALESCE($2::date,current_date),$3,NULL,$4,$5,$6,$6) RETURNING id`,
     [customerId, prescription.examDate || null, encryptJson(prescription), exceptional, prescription.exceptionReason || null, actor],
   );
   return result.rows[0].id;
@@ -246,10 +254,26 @@ async function requireCustomer(client, id, includeDeleted = false) {
 function searchValues(query) {
   const text = String(query || "").trim();
   const phone = tryNormalizePhone({ countryCode: "SA", number: text });
-  return { text, phoneHash: phone ? blindIndex(phone.e164) : null, identityHash: validateSaudiIdentity(text) ? blindIndex(text) : null };
+  const phoneDigits = text.replace(/\D/g, "");
+  return {
+    text,
+    phoneHash: phone ? blindIndex(phone.e164) : null,
+    identityHash: validateSaudiIdentity(text) ? blindIndex(text) : null,
+    phoneLast4Like: phoneDigits.length >= 2 ? `%${phoneDigits.slice(-4)}%` : "",
+  };
+}
+
+function resultLimit(value, fallback) {
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) ? Math.min(fallback, Math.max(1, parsed)) : fallback;
 }
 
 function customerError(error) {
-  if (error.code === "23505") return new AppError("يوجد عميل مسجل بنفس رقم الهاتف أو الهوية.", 409);
+  if (error.code === "23505" && error.constraint === "crm_customers_phone_hash_key") {
+    return new AppError("رقم الهاتف هذا مسجّل مسبقاً.", 409, { code: "customer_phone_exists" });
+  }
+  if (error.code === "23505" && error.constraint === "ux_crm_customers_identity_hash") {
+    return new AppError("رقم الهوية أو الإقامة مسجّل لعميل آخر.", 409, { code: "customer_identity_exists" });
+  }
   return error;
 }

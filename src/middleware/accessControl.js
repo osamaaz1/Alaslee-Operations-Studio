@@ -41,15 +41,16 @@ function isTrustedWriteOrigin(origin, req) {
   const requestHost = normalizeHost(req.get("host"));
   if (requestHost && normalizeHost(originUrl.host) === requestHost) return true;
 
-  // The Vite development proxy may forward the API request with localhost as
-  // its Host even when the browser opened the studio through the server's LAN
-  // address. Permit private-network browser origins so every device on the
-  // local network can use the authenticated CRM UI without per-device setup.
-  if (isPrivateNetworkHost(originUrl.hostname)) return true;
-
   return [config.publicBaseUrl, config.localDevClientOrigin]
     .map(parseUrl)
     .some((trustedUrl) => trustedUrl?.origin === originUrl.origin);
+}
+
+export function corsOptionsForRequest(req) {
+  const origin = req.get("origin");
+  if (!origin) return { origin: false };
+  if (!isTrustedWriteOrigin(origin, req)) return { origin: false };
+  return { origin, credentials: true };
 }
 
 function parseUrl(value) {
@@ -62,22 +63,4 @@ function parseUrl(value) {
 
 function normalizeHost(value) {
   return String(value || "").trim().toLowerCase();
-}
-
-function isPrivateNetworkHost(value) {
-  const hostname = normalizeHost(value).replace(/^\[/, "").replace(/\]$/, "");
-  if (hostname === "localhost" || hostname === "::1" || hostname.endsWith(".local")) return true;
-
-  const parts = hostname.split(".").map(Number);
-  if (parts.length !== 4 || parts.some((part) => !Number.isInteger(part) || part < 0 || part > 255)) {
-    return /^(fc|fd|fe8|fe9|fea|feb)/i.test(hostname);
-  }
-
-  return (
-    parts[0] === 10 ||
-    parts[0] === 127 ||
-    (parts[0] === 169 && parts[1] === 254) ||
-    (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) ||
-    (parts[0] === 192 && parts[1] === 168)
-  );
 }

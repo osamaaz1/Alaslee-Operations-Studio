@@ -100,24 +100,26 @@ Do not add dramatic angles, props, text, or lifestyle styling.`,
     },
   },
   {
-    id: "gallery-hero",
-    label: "Premium Ecommerce Hero Image",
-    role: "hero",
+    id: "gallery-model",
+    label: "Real Person Wearing the Eyeglasses",
+    role: "model",
     category: "gallery",
-    fileSuffix: "hero",
-    text: ecommercePrompt(
-      "Premium Ecommerce Hero Image",
-      `Create a polished marketplace hero product image, preferably a refined three-quarter presentation.
-Use generous spacing, balanced composition, clean white background, subtle shadow, and premium optical-store lighting.
-Keep the product accurate and fully visible; do not create a lifestyle ad, campaign poster, brand graphic, or Instagram layout.
-Do not add price, SKU, logo overlays, captions, decorative elements, props, or background textures.`,
-    ),
+    fileSuffix: "model",
+    text: `Create exactly one photorealistic premium eyewear portrait for a Saudi optical-store audience.
+
+Use the uploaded product references as the absolute source of truth for the eyeglasses. Preserve exactly the real frame geometry, lens shape and size, bridge, rims, hinges, temple arms, nose pads, color, transparency, finish, proportions, lens tint, and visible branding. Do not redesign, simplify, mirror, thicken, recolor, or invent any product detail.
+
+Show one real adult person naturally wearing the exact eyeglasses in a close head-and-shoulders portrait. The face must have realistic human skin, eyes, hair, proportions, texture, and photographic detail; never create an illustration, mannequin, doll, CGI character, beauty drawing, or visibly synthetic face. Use a natural three-quarter or near-front pose so both the person's face and the eyeglasses are clear, sharp, level, unobstructed, and large enough to inspect.
+
+Use modest, contemporary clothing and respectful styling suitable for customers in Saudi Arabia. Traditional Saudi clothing is allowed but not required. Keep the expression natural and professional, the lighting soft and commercial, and the background clean and neutral. Do not add text, price, SKU, badges, watermarks, extra glasses, props covering the frame, hands touching the glasses, or unrelated logos.
+
+The runtime gender instruction appended to this prompt is mandatory. Return exactly one square ecommerce image.`,
     metadata: {
       sentTo: "GeminiProvider.interactions.create() OR OpenAIProvider.images.edit()",
       provider: "Gemini or GPT image model",
       apiMethod: "images.edit (GPT) / interactions.create response_format=image (Gemini)",
-      referenceImages: "Focused references for this role, usually front + angle",
-      promptRole: "Defines the exact ecommerce output — the model generates a single image per prompt",
+      referenceImages: "Front + angle + side references for exact eyewear preservation",
+      promptRole: "Creates the optional fourth close portrait using the selected adult model gender",
       outputFormat: "2048×2048 PNG (normalized with sharp)",
     },
   },

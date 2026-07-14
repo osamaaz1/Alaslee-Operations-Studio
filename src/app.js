@@ -25,7 +25,7 @@ import { accountVaultRouter } from "./routes/accountVault.js";
 import { feedbackRouter } from "./routes/feedback.js";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
 import { rateLimit } from "./middleware/rateLimit.js";
-import { requireWriteAccess, sameOriginWrites } from "./middleware/accessControl.js";
+import { corsOptionsForRequest, requireWriteAccess, sameOriginWrites } from "./middleware/accessControl.js";
 import { sendSuccess } from "./utils/apiResponse.js";
 import { asyncHandler } from "./utils/asyncHandler.js";
 import { openapiSpec } from "./openapi/openapiSpec.js";
@@ -33,6 +33,7 @@ import { getPriceLabelEditorStatus } from "./services/priceLabelEditService.js";
 import { requireCrmCsrf, requireCrmSession, requireSuperuser } from "./middleware/crmAccess.js";
 import { crmDatabaseHealth } from "./infra/crm/postgres.js";
 import { feedbackStatus } from "./services/feedbackService.js";
+import { livenessStatus, readinessStatus } from "./services/readinessService.js";
 
 export function createApp() {
   const app = express();
@@ -50,7 +51,7 @@ export function createApp() {
       },
     }),
   );
-  app.use(cors());
+  app.use(cors((req, callback) => callback(null, corsOptionsForRequest(req))));
   app.use(express.json({ limit: "1mb" }));
   if (fs.existsSync(clientDir)) {
     app.use(express.static(clientDir));
@@ -93,10 +94,20 @@ export function createApp() {
     sendSuccess(res, {
       ok: true,
       provider: normalizeProviderName(config.aiProvider),
+      aiProviders: {
+        gemini: { configured: Boolean(config.gemini.apiKey) },
+        gpt: { configured: Boolean(config.openai.apiKey) },
+      },
       priceLabelEditor: getPriceLabelEditorStatus(),
       crm: await crmDatabaseHealth(),
       feedback: feedbackStatus(),
     });
+  }));
+
+  app.get("/health/live", (req, res) => sendSuccess(res, livenessStatus()));
+  app.get("/health/ready", asyncHandler(async (req, res) => {
+    const status = await readinessStatus();
+    return sendSuccess(res, status, status.ready ? 200 : 503);
   }));
 
   app.get("/v1/openapi.json", (req, res) => {
@@ -120,11 +131,18 @@ export function createApp() {
   app.use("/v1/prompts", promptsRouter);
   app.use("/products", productsRouter);
   app.get("/{*clientPath}", (req, res, next) => {
-    if (req.method !== "GET" || !fs.existsSync(path.join(clientDir, "index.html"))) return next();
+    if (req.method !== "GET" || isServerPath(req.path) || !req.accepts("html") || !fs.existsSync(path.join(clientDir, "index.html"))) return next();
     return res.sendFile(path.join(clientDir, "index.html"));
   });
   app.use(notFoundHandler);
   app.use(errorHandler);
 
   return app;
+}
+
+function isServerPath(pathname) {
+  return pathname === "/api" || pathname.startsWith("/api/") || pathname.startsWith("/v1/")
+    || pathname === "/uploads" || pathname.startsWith("/uploads/")
+    || pathname === "/products" || pathname.startsWith("/products/")
+    || pathname === "/health" || pathname.startsWith("/health/");
 }

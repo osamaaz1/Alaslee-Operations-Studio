@@ -12,18 +12,21 @@ const emptyForm = {
   sourceCode: "in_store", address: null, prescription: null,
 };
 
-export function CustomerForm({ sources, onSave, onCancel, initialValue = emptyForm, editing = false }) {
+export function CustomerForm({ sources, onSave, onCancel, onExistingCustomer, initialValue = emptyForm, editing = false }) {
   const [form, setForm] = useState(() => structuredClone(initialValue));
   const [showErrors, setShowErrors] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
   const parsed = useMemo(() => customerCreateSchema.safeParse(cleanPayload(form)), [form]);
   const errors = errorMap(parsed);
   const set = (key, value) => setForm((current) => ({ ...current, [key]: value }));
   const submit = async (event) => {
     event.preventDefault(); setShowErrors(true);
     if (!parsed.success) return;
-    setBusy(true);
-    try { await onSave(parsed.data); if (!editing) setForm(emptyForm); setShowErrors(false); } finally { setBusy(false); }
+    setBusy(true); setSubmitError(null);
+    try { await onSave(parsed.data); if (!editing) setForm(emptyForm); setShowErrors(false); }
+    catch (error) { setSubmitError({ message: error.message, details: error.details }); }
+    finally { setBusy(false); }
   };
   const visibleError = (path, active = false) => (showErrors || active) ? findError(errors, path) : null;
   return <form className="customer-form panel" onSubmit={submit} noValidate>
@@ -42,6 +45,7 @@ export function CustomerForm({ sources, onSave, onCancel, initialValue = emptyFo
     <ToggleSection checked={Boolean(form.prescription)} onChange={(checked) => set("prescription", checked ? structuredClone(emptyPrescription) : null)} label="يوجد كشف طبي" />
     {form.prescription && <PrescriptionFields value={form.prescription} onChange={(value) => set("prescription", value)} errors={nestedErrors(errors, "prescription")} />}
     {showErrors && !parsed.success && <div className="form-alert" role="alert">تحقق من الحقول المحددة قبل الحفظ.</div>}
+    {submitError && <div className="form-alert duplicate-customer-alert" role="alert"><span>{submitError.message}</span>{submitError.details?.customerId && onExistingCustomer && <button type="button" onClick={() => onExistingCustomer(submitError.details.customerId)}>فتح ملف العميل</button>}</div>}
     <div className="form-actions"><button className="button secondary" type="button" onClick={onCancel}>إلغاء</button><button className="button primary" type="submit" disabled={busy}><Save size={17} />{busy ? "جارٍ الحفظ…" : editing ? "حفظ التعديلات" : "حفظ العميل"}</button></div>
   </form>;
 }

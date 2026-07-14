@@ -13,7 +13,37 @@
 
 - واجهة React/Vite متاحة على `http://localhost:5173` أثناء التطوير.
 - الخادم وواجهات `/v1/*` يعملان على `http://localhost:3000`.
-- لنسخة الإنتاج استخدم `npm run build` ثم `npm start`.
+- لنسخة الإنتاج استخدم خطوات قسم «تشغيل الإنتاج على شبكة المحل» أدناه، وليس خادم Vite.
+
+## تشغيل الإنتاج على شبكة المحل
+
+اضبط `.env` ثم نفّذ الاختبار المعزول. لا يغيّر هذا الاختبار قاعدة الإنتاج ولا يرسل طلب توليد صور مدفوعاً:
+
+```powershell
+npm run production:test
+```
+
+بعد نجاحه افتح PowerShell كمسؤول مرة واحدة وشغّل:
+
+```powershell
+.\scripts\install-production-windows.ps1 -EnvironmentFile .env
+```
+
+ينشئ المثبّت نسخة احتياطية، يقيد PostgreSQL، يسمح بالمنفذ 3000 لأجهزة `LocalSubnet` على شبكة Windows الخاصة فقط، ويسجل مهمة تشغيل تلقائي. لعرض عنوان IPv4 الحالي:
+
+```powershell
+.\scripts\show-lan-url.ps1
+```
+
+أوامر الصيانة:
+
+```powershell
+npm run production:preflight
+npm run production:backup
+npm run production:restore:verify
+```
+
+النشر الحالي يستخدم HTTP وعنوان IPv4 متغير حسب قرار المتجر؛ لا تفتح المنفذ للإنترنت، وقد يلزم تحديث رابط الأجهزة إذا غيّر الراوتر العنوان.
 
 ## تشغيل إدارة العملاء المحلية
 
@@ -90,6 +120,8 @@ BRAND_FOOTER_PATH=
 BRAND_PRICE_LABEL_REFERENCE_PATH=
 BRAND_LOGO_CORNER=top-right
 ```
+
+الأصول المعتمدة في هذا المشروع هي `background.png` و`Logo.png` و`footer.png` و`Label.png` في جذر المشروع.
 
 Branding assets can also be uploaded from the **Brand Kit** screen. The UI checks that each file is readable by the backend and reports its access status before generation.
 
