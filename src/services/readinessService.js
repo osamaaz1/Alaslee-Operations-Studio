@@ -18,7 +18,7 @@ export async function readinessStatus() {
   const [crm, branding, storage, workspace, sqlite] = await Promise.all([
     safeCheck(() => crmDatabaseHealth(), { configured: false, connected: false }),
     safeCheck(() => getBrandingAssetStatus(), { ready: false, priceLabelReady: false }),
-    pathCheck(config.uploadsDir, fsConstants.R_OK | fsConstants.W_OK),
+    pathCheck(config.uploadsDir, fsConstants.R_OK | fsConstants.W_OK, { create: true }),
     pathCheck(config.dataWorkspaceDir, fsConstants.R_OK),
     sqliteCheck(),
   ]);
@@ -55,8 +55,9 @@ async function sqliteCheck() {
   }
 }
 
-async function pathCheck(target, mode) {
+async function pathCheck(target, mode, { create = false } = {}) {
   try {
+    if (create) await fs.mkdir(target, { recursive: true });
     const stat = await fs.stat(target);
     await fs.access(target, mode);
     return { ok: stat.isDirectory() };
