@@ -15,6 +15,7 @@
     "crm:db:up": "docker compose --env-file .env -f compose.crm.yml up -d",
     "crm:db:down": "docker compose --env-file .env -f compose.crm.yml down",
     "crm:migrate": "node src/infra/crm/cli.js migrate",
+    "crm:import-history": "node scripts/import-crm-history-once.js",
     "crm:rotate-encryption": "node src/infra/crm/cli.js rotate-encryption",
     "crm:rollback": "node src/infra/crm/cli.js rollback",
     "crm:status": "node src/infra/crm/cli.js status",
