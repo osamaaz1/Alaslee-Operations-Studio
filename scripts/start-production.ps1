@@ -21,9 +21,13 @@ if ([string]::IsNullOrWhiteSpace($configuredHost) -or $configuredHost -in @('0.0
         } | Select-Object -ExpandProperty IPAddress
     }
     $selectedAddress = $privateAddresses | Select-Object -First 1
-    if (-not $selectedAddress) { throw 'No active private IPv4 address was found. The production server was not started.' }
-    $env:HOST = $selectedAddress
-    Write-Host "Production is restricted to the private store interface: $selectedAddress" -ForegroundColor Cyan
+    if ($selectedAddress) {
+        $env:HOST = $selectedAddress
+        Write-Host "Production is restricted to the private store interface: $selectedAddress" -ForegroundColor Cyan
+    } else {
+        $env:HOST = '127.0.0.1'
+        Write-Warning 'No active private IPv4 address was found. Production will be available on this computer only at http://127.0.0.1.'
+    }
 } else {
     $env:HOST = $configuredHost
 }
