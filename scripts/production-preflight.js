@@ -46,6 +46,7 @@ try {
 
   checks.secretHygiene = trackedSecretStatus();
   if (!checks.secretHygiene.ok) failures.push(`secrets: sensitive environment files are tracked by Git (${checks.secretHygiene.files.join(", ")}).`);
+  if (checks.secretHygiene.skipped) warnings.push("secrets: Git tracking check was skipped because this installation came from an exported archive.");
 } catch (error) {
   failures.push(`preflight: ${error.message}`);
 } finally {
@@ -133,13 +134,16 @@ async function crmStatus() {
 }
 
 function trackedSecretStatus() {
+  if (!fsSync.existsSync(path.join(config.rootDir, ".git"))) {
+    return { ok: true, files: [], skipped: true, reason: "not-a-git-worktree" };
+  }
   try {
     const output = execFileSync("git", ["ls-files", "--", ".env", "correct.env", "temp.env", "*.env.backup-*"], {
       cwd: config.rootDir, encoding: "utf8", windowsHide: true,
     });
     const files = output.split(/\r?\n/).filter(Boolean);
-    return { ok: files.length === 0, files };
+    return { ok: files.length === 0, files, skipped: false };
   } catch {
-    return { ok: false, files: ["git-check-failed"] };
+    return { ok: false, files: ["git-check-failed"], skipped: false };
   }
 }
