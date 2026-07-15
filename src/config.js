@@ -65,7 +65,8 @@ export const config = {
   localDevClientOrigin: process.env.LOCAL_DEV_CLIENT_ORIGIN,
   aiProvider: (process.env.AI_PROVIDER || "gemini").trim().toLowerCase(),
   gemini: {
-    apiKey: process.env.GEMINI_API_KEY,
+    apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
+    apiMode: (process.env.GEMINI_API_MODE || "developer").trim().toLowerCase(),
     model: process.env.GEMINI_MODEL || "gemini-3.1-flash-image",
   },
   openai: {

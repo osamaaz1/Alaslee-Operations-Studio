@@ -27,6 +27,7 @@ export async function readinessStatus() {
   const ai = {
     provider,
     configured: provider === "gpt" ? Boolean(config.openai.apiKey) : provider === "gemini" ? Boolean(config.gemini.apiKey) : true,
+    ...(provider === "gemini" ? { apiMode: config.gemini.apiMode } : {}),
     testMode: provider === "free-test",
   };
   const checks = {

@@ -8,6 +8,7 @@ const providerFactories = {
   [PROVIDERS.GEMINI]: () =>
     new GeminiProvider({
       apiKey: config.gemini.apiKey,
+      apiMode: config.gemini.apiMode,
       model: config.gemini.model,
     }),
   [PROVIDERS.GPT]: () =>

@@ -16,6 +16,9 @@ export function runtimeConfigReport() {
   if (production && provider === "free-test") {
     errors.push("AI_PROVIDER=free-test is reserved for testing and cannot be used for production startup.");
   }
+  if (!new Set(["developer", "agent-platform"]).has(config.gemini.apiMode)) {
+    errors.push('GEMINI_API_MODE must be "developer" or "agent-platform".');
+  }
   if (provider === "gemini" && !config.gemini.apiKey) errors.push("GEMINI_API_KEY is required for the selected provider.");
   if (provider === "gpt" && !config.openai.apiKey) errors.push("OPENAI_API_KEY is required for the selected provider.");
 

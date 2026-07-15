@@ -96,6 +96,16 @@ Configure `.env`:
 ```ini
 AI_PROVIDER=gemini
 GEMINI_API_KEY=your_google_ai_studio_key
+GEMINI_API_MODE=developer
+GEMINI_MODEL=gemini-3.1-flash-image
+```
+
+For a service-account-bound Gemini Enterprise Agent Platform key that uses Google Cloud billing:
+
+```ini
+AI_PROVIDER=gemini
+GEMINI_API_KEY=your_bound_google_cloud_key
+GEMINI_API_MODE=agent-platform
 GEMINI_MODEL=gemini-3.1-flash-image
 ```
 
