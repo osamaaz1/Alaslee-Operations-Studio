@@ -15,6 +15,21 @@ test("production startup rebuilds the client before serving it", () => {
   assert.equal(build < server, true);
 });
 
+test("interactive production startup replaces prior sessions and opens the healthy server", () => {
+  const startup = fsSync.readFileSync("scripts/start-production.ps1", "utf8");
+  const launch = startup.indexOf("$serverProcess = Start-Process -FilePath node.exe");
+  const healthWait = startup.indexOf("Wait-ForProductionServer -Process $serverProcess");
+  const browser = startup.indexOf("Start-Process -FilePath $browserUrl");
+
+  assert.match(startup, /Get-CimInstance Win32_Process[\s\S]+Name = 'node\.exe'/);
+  assert.match(startup, /Stop-ScheduledTask -TaskName \$productionTaskName/);
+  assert.match(startup, /Stop-PreviousProductionSessions -ServerEntryPoint \$serverEntryPoint -Port \$port/);
+  assert.notEqual(launch, -1);
+  assert.equal(launch < healthWait, true);
+  assert.equal(healthWait < browser, true);
+  assert.match(startup, /-not \$NoBrowser -and -not \$isSystemSession/);
+});
+
 test("production configuration accepts dynamic LAN URLs and rejects mismatched PostgreSQL ports", async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "alaslee-config-test-"));
   try {
