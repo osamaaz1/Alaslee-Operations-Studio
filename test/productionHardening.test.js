@@ -28,6 +28,8 @@ test("interactive production startup replaces prior sessions and opens the healt
   assert.equal(launch < healthWait, true);
   assert.equal(healthWait < browser, true);
   assert.match(startup, /-not \$NoBrowser -and -not \$isSystemSession/);
+  assert.match(startup, /\$values\.ContainsKey\('PORT'\)[\s\S]+else \{ '3000' \}/);
+  assert.doesNotMatch(startup, /\$values\.(?:PORT|HOST)/);
 });
 
 test("production configuration accepts dynamic LAN URLs and rejects mismatched PostgreSQL ports", async () => {

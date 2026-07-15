@@ -66,7 +66,8 @@ if (-not (Test-Path -LiteralPath $environmentPath -PathType Leaf)) { throw "Envi
 . (Join-Path $PSScriptRoot 'env-utils.ps1')
 $values = Get-AlasleeEnvironment $environmentPath
 $port = 0
-if (-not [int]::TryParse([string]$values.PORT, [ref]$port) -or $port -lt 1 -or $port -gt 65535) {
+$portValue = if ($values.ContainsKey('PORT') -and -not [string]::IsNullOrWhiteSpace([string]$values['PORT'])) { [string]$values['PORT'] } else { '3000' }
+if (-not [int]::TryParse($portValue, [ref]$port) -or $port -lt 1 -or $port -gt 65535) {
     throw 'PORT must be a valid TCP port.'
 }
 $serverEntryPoint = Join-Path $projectRoot 'src\server.js'
@@ -101,7 +102,7 @@ if (-not $isSystemSession) {
 Set-Location -LiteralPath $projectRoot
 $env:ENV_FILE = $environmentPath
 $env:NODE_ENV = 'production'
-$configuredHost = [string]$values.HOST
+$configuredHost = if ($values.ContainsKey('HOST')) { [string]$values['HOST'] } else { '' }
 if ([string]::IsNullOrWhiteSpace($configuredHost) -or $configuredHost -in @('0.0.0.0', '::')) {
     $privateInterfaces = Get-NetConnectionProfile | Where-Object {
         $_.NetworkCategory -eq 'Private' -and $_.IPv4Connectivity -ne 'Disconnected'
