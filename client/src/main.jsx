@@ -7,9 +7,12 @@ import "./crm.css";
 import "./sales.css";
 import "./feedback.css";
 import App from "./App.jsx";
+import { ErrorBoundary } from "./ErrorBoundary.jsx";
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
-    <App />
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
   </StrictMode>,
 );

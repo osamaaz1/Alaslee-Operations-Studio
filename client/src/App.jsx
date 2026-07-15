@@ -5,6 +5,7 @@ import {
   CalendarClock,
   Check,
   ChevronLeft,
+  CircleAlert,
   CloudCog,
   Download,
   FolderUp,
@@ -26,6 +27,7 @@ import {
   X,
 } from "lucide-react";
 import { get, post, put } from "./api.js";
+import { ErrorBoundary } from "./ErrorBoundary.jsx";
 import { CrmWorkspace } from "./features/crm/CrmWorkspace.jsx";
 import { AccountVault } from "./features/accounts/AccountVault.jsx";
 import { FeedbackWidget } from "./features/feedback/FeedbackWidget.jsx";
@@ -146,7 +148,7 @@ export default function App() {
           </div>
         </header>
         <main id="main-content" className="main-content" tabIndex="-1">
-          {loading ? <LoadingScreen /> : content}
+          <ErrorBoundary>{loading ? <LoadingScreen /> : content}</ErrorBoundary>
         </main>
       </div>
       {notice && <div className={`toast ${notice.type}`} role="status"><span>{notice.type === "success" ? <Check size={18} /> : <CircleAlert size={18} />}</span>{notice.message}</div>}
@@ -282,7 +284,7 @@ function Production({ product, setProduct, inform, open, health }) {
   const images = product?.generatedImages || [];
   return <section className="section-stack"><PageTitle kicker="المنتجات والإنتاج" title="أنشئ أصولاً دقيقة للمنتج." text="ابدأ بمراجع واضحة، ثم راجع صور المتجر قبل نقل الأفضل إلى الحملة." action={<label className="provider-select">المحرك<select value={provider} onChange={(event) => setProvider(event.target.value)}><option value="gemini">Gemini</option><option value="gpt">GPT</option><option value="free-test">Try Free</option></select></label>} />
     <div className="production-layout"><article className="panel intake-panel"><div className="segmented" role="tablist"><button type="button" className={mode === "single" ? "selected" : ""} onClick={() => setMode("single")}>منتج واحد</button><button type="button" className={mode === "batch" ? "selected" : ""} onClick={() => setMode("batch")}>دفعة منتجات</button></div>{mode === "single" ? <form onSubmit={submitUpload}><PanelHeading kicker="01 — مراجع المنتج" title="أضف الصور الأصلية" /><p className="panel-copy">يفضّل تصوير النظارة بصورة أفقية للحصول على أكبر قدر من التفاصيل. الصور العمودية والأفقية، بما فيها 16:9 و9:16، تُصغّر تلقائياً دون قص أو تشويه.</p><div className="upload-slots"><FileSlot name="front" label="الواجهة الأمامية" required /><FileSlot name="side" label="الجانب" required /><FileSlot name="angle" label="زاوية 45°" required /><FileSlot name="temple" label="تفاصيل الذراع" /></div><button className="button primary wide" type="submit" disabled={busy}><Upload size={18} />{busy ? "جارٍ التحسين والحفظ…" : "تحسين وحفظ المراجع"}</button></form> : <form className="batch-form" onSubmit={importBatch}><PanelHeading kicker="01 — إنتاج متسلسل" title="استيراد مجلد دفعة" /><p className="panel-copy">يفضّل أن تكون الصور أفقية. يدعم التحسين الصور العمودية والأفقية ونسب 16:9 و9:16 مع الحفاظ على النسبة الأصلية.</p><label className="field-label">مسار المجلد<input value={folder} onChange={(event) => setFolder(event.target.value)} placeholder="E:\\Products\\Batch-01" required /></label><button className="button primary wide" type="submit" disabled={busy}><FolderUp size={18} />استيراد وتحسين الدفعة</button></form>}</article>
-      {mode === "single" ? <article className="panel output-panel"><PanelHeading kicker="02 — صور المتجر" title="معرض المنتج" action={product ? "تجهيز الحملة" : undefined} onAction={() => open("campaigns")} />{product ? <><div className="product-summary"><div><span>معرّف المنتج</span><strong dir="ltr">{product.id}</strong></div><div><span>الحالة</span><strong>{product.status || "جاهز"}</strong></div></div><GenerationCostEstimate productId={product.id} images={product.originalImages} includeModel={includeModel} /><GenerationOptions includeModel={includeModel} setIncludeModel={setIncludeModel} modelGender={modelGender} setModelGender={setModelGender} disabled={busy} /><ProductGenerationProgress progress={generationProgress} busy={busy} onRetry={() => createOutput(true)} />{!busy && images.length ? <GeneratedImageGallery images={images} productId={product.id} inform={inform} /> : !generationProgress ? <EmptyState icon={ImagePlus} title="لم تُنشأ صور بعد" text="أنشئ ثلاث صور للمنتج، وصورة رابعة اختيارية لشخص حقيقي يلبس النظارة." /> : null}<button className="button primary wide" type="button" disabled={busy || provider === "free-test"} onClick={() => createOutput(false)}><WandSparkles size={18} />{busy ? "جارٍ إنشاء الصور…" : "إنشاء صور المتجر"}</button></> : <EmptyState icon={ImagePlus} title="أضف منتجاً للبدء" text="ستظهر الصور المحسّنة ومقارنة التكلفة هنا بعد رفع المراجع." />}</article> : <BatchOutputPanel batchResult={batchResult} products={batchProducts} progress={batchProgress} busy={busy} onGenerate={generateBatch} inform={inform} />}</div>
+      {mode === "single" ? <article className="panel output-panel"><PanelHeading kicker="02 — صور المتجر" title="معرض المنتج" action={product ? "تجهيز الحملة" : undefined} onAction={() => open("campaigns")} />{product ? <><div className="product-summary"><div><span>معرّف المنتج</span><strong dir="ltr">{product.id}</strong></div><div><span>الحالة</span><strong>{product.status || "جاهز"}</strong></div></div><GenerationCostEstimate productId={product.id} images={product.originalImages} includeModel={includeModel} /><GenerationOptions includeModel={includeModel} setIncludeModel={setIncludeModel} modelGender={modelGender} setModelGender={setModelGender} disabled={busy} /><ProductGenerationProgress progress={generationProgress} busy={busy} onRetry={() => createOutput(true)} />{!busy && images.length ? <GeneratedImageGallery images={images} productId={product.id} inform={inform} /> : !generationProgress ? <EmptyState icon={ImagePlus} title="لم تُنشأ صور بعد" text="أنشئ ثلاث صور للمنتج، وصورة رابعة اختيارية لشخص حقيقي يلبس النظارة." /> : null}<button className="button primary wide" type="button" disabled={busy || provider === "free-test" || (includeModel && !modelGender)} onClick={() => createOutput(false)}><WandSparkles size={18} />{busy ? "جارٍ إنشاء الصور…" : "إنشاء صور المتجر"}</button></> : <EmptyState icon={ImagePlus} title="أضف منتجاً للبدء" text="ستظهر الصور المحسّنة ومقارنة التكلفة هنا بعد رفع المراجع." />}</article> : <BatchOutputPanel batchResult={batchResult} products={batchProducts} progress={batchProgress} busy={busy} onGenerate={generateBatch} inform={inform} />}</div>
     <ProviderFallbackDialog open={Boolean(fallbackRequest)} gptAvailable={fallbackRequest?.gptAvailable ?? Boolean(health?.aiProviders?.gpt?.configured)} onConfirm={switchToGpt} onClose={() => setFallbackRequest(null)} />
   </section>;
 }

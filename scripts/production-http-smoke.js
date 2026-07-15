@@ -23,6 +23,7 @@ try {
   await check("liveness", "/health/live", 200, "application/json");
   await check("readiness", "/health/ready", 200, "application/json");
   await check("root SPA", "/", 200, "text/html");
+  await check("products SPA refresh", "/products", 200, "text/html", { accept: "*/*" });
   await check("nested SPA", "/crm/sales", 200, "text/html");
   await check("unknown API", "/v1/does-not-exist", 404, "application/json");
   await check("CRM authentication", "/v1/crm/sales", 401, "application/json");
@@ -45,9 +46,9 @@ console.log(`Production HTTP smoke: ${ok ? "PASS" : "FAIL"}`);
 console.log(`Report: ${reportPath}`);
 if (!ok) process.exitCode = 1;
 
-async function check(name, pathname, expectedStatus, expectedType) {
+async function check(name, pathname, expectedStatus, expectedType, headers) {
   const started = performance.now();
-  const response = await fetch(`${baseUrl}${pathname}`, { redirect: "manual" });
+  const response = await fetch(`${baseUrl}${pathname}`, { redirect: "manual", headers });
   const contentType = response.headers.get("content-type") || "";
   const securityHeaders = Boolean(response.headers.get("content-security-policy") && response.headers.get("x-content-type-options"));
   const ok = response.status === expectedStatus && contentType.includes(expectedType) && securityHeaders;

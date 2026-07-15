@@ -13,4 +13,6 @@ npm-debug.log*
 dev.*.log
 diagnostics/
 backups/
+tmp/
+error.txt
 *.rar

@@ -129,10 +129,11 @@ export function createApp() {
   app.use("/v1/branding", brandingRouter);
   app.use("/v1/instagram", instagramRouter);
   app.use("/v1/prompts", promptsRouter);
-  app.use("/products", productsRouter);
   app.get("/{*clientPath}", (req, res, next) => {
-    if (req.method !== "GET" || isServerPath(req.path) || !req.accepts("html") || !fs.existsSync(path.join(clientDir, "index.html"))) return next();
-    return res.sendFile(path.join(clientDir, "index.html"));
+    const clientIndex = path.join(clientDir, "index.html");
+    if (req.method !== "GET" || isServerPath(req.path) || !fs.existsSync(clientIndex)) return next();
+    if (!isClientPath(req.path) && !req.accepts("html")) return next();
+    return res.sendFile(clientIndex);
   });
   app.use(notFoundHandler);
   app.use(errorHandler);
@@ -143,6 +144,11 @@ export function createApp() {
 function isServerPath(pathname) {
   return pathname === "/api" || pathname.startsWith("/api/") || pathname.startsWith("/v1/")
     || pathname === "/uploads" || pathname.startsWith("/uploads/")
-    || pathname === "/products" || pathname.startsWith("/products/")
     || pathname === "/health" || pathname.startsWith("/health/");
+}
+
+function isClientPath(pathname) {
+  const normalized = pathname.replace(/\/+$/, "") || "/";
+  return new Set(["/", "/products", "/campaigns", "/crm", "/accounts", "/settings"]).has(normalized)
+    || normalized.startsWith("/crm/");
 }

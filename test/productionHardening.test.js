@@ -1,9 +1,19 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import fsSync from "node:fs";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
+
+test("production startup rebuilds the client before serving it", () => {
+  const startup = fsSync.readFileSync("scripts/start-production.ps1", "utf8");
+  const build = startup.indexOf("npm.cmd run build");
+  const server = startup.indexOf("Start-Process -FilePath node.exe");
+
+  assert.notEqual(build, -1);
+  assert.equal(build < server, true);
+});
 
 test("production configuration accepts dynamic LAN URLs and rejects mismatched PostgreSQL ports", async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "alaslee-config-test-"));

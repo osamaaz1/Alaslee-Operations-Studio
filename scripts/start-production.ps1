@@ -37,6 +37,9 @@ $logStamp = Get-Date -Format 'yyyyMMdd-HHmmss'
 $logPath = Join-Path $logRoot ("server-$logStamp.log")
 $errorLogPath = Join-Path $logRoot ("server-$logStamp.error.log")
 
+& npm.cmd run build
+if ($LASTEXITCODE -ne 0) { throw "The production client build failed. The server was not started." }
+
 & npm.cmd run crm:import-history
 if ($LASTEXITCODE -ne 0) { throw "The analyzed customer history could not be imported. The server was not started." }
 

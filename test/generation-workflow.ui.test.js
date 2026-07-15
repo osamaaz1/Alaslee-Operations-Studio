@@ -20,6 +20,16 @@ test("production exposes optional model generation, live per-image progress, and
   assert.match(styles, /prefers-reduced-motion\s*:\s*reduce/);
 });
 
+test("generation failures render a warning without crashing the workspace", () => {
+  const app = fs.readFileSync("client/src/App.jsx", "utf8");
+  const main = fs.readFileSync("client/src/main.jsx", "utf8");
+
+  assert.match(app, /CircleAlert,/);
+  assert.match(app, /<CircleAlert size=\{18\}/);
+  assert.match(main, /import \{ ErrorBoundary \} from "\.\/ErrorBoundary\.jsx"/);
+  assert.match(main, /<ErrorBoundary>\s*<App \/>\s*<\/ErrorBoundary>/);
+});
+
 test("customer workspace removes consent and allows staff to append a new prescription", () => {
   const fields = fs.readFileSync("client/src/features/crm/PrescriptionFields.jsx", "utf8");
   const customers = fs.readFileSync("client/src/features/crm/CustomerList.jsx", "utf8");
