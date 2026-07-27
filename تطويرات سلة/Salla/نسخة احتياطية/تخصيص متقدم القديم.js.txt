@@ -1,0 +1,108 @@
+/* Add custom Js styles below */ 
+(function () {
+  function updateProductsGrid() {
+    const grids = document.querySelectorAll('.products-grid, .products-list, salla-products-list');
+    if (!grids.length) return;
+
+    const width = window.innerWidth;
+
+    grids.forEach(function (grid) {
+      // نحذف أي إعدادات سابقة
+      grid.style.display = '';
+      grid.style.gridTemplateColumns = '';
+      grid.style.gap = '';
+
+      // جوال صغير جدًا: منتج واحد في الصف
+      if (width <= 480) {
+        grid.style.display = 'grid';
+        grid.style.gridTemplateColumns = '1fr';
+        grid.style.gap = '12px';
+      }
+      // جوال عادي: منتجان في الصف
+      else if (width <= 768) {
+        grid.style.display = 'grid';
+        grid.style.gridTemplateColumns = 'repeat(2, minmax(0, 1fr))';
+        grid.style.gap = '12px';
+      }
+    });
+  }
+
+  // عند تحميل الصفحة
+  document.addEventListener('DOMContentLoaded', updateProductsGrid);
+
+  // عند تغيير حجم الشاشة (دوران الجوال مثلاً)
+  window.addEventListener('resize', function () {
+    updateProductsGrid();
+  });
+})();
+(function () {
+  function enhanceProductImages() {
+    if (window.innerWidth > 768) return; // يطبق على الجوال فقط
+
+    const imgs = document.querySelectorAll(
+      '.product-card img, .product-card__img, .product-card__image-wrapper img'
+    );
+
+    imgs.forEach(function (img) {
+      img.style.width = '100%';
+      img.style.height = '190px';
+      img.style.objectFit = 'cover';
+      img.style.borderRadius = '12px';
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', enhanceProductImages);
+})();
+(function () {
+  function enableTouchZoom() {
+    if (window.innerWidth > 768) return; // يطبق على الجوال فقط
+
+    const imgs = document.querySelectorAll(
+      '.product-card img, .product-card__img, .product-card__image-wrapper img'
+    );
+
+    imgs.forEach(function (img) {
+      // إلغاء أي سلوك افتراضي للضغط المستمر إن لزم
+      img.style.touchAction = 'manipulation';
+
+      img.addEventListener('touchstart', function (e) {
+        // لمسة واحدة فقط
+        if (e.touches.length === 1) {
+          img.classList.add('product-image-zoomed');
+        }
+      });
+
+      img.addEventListener('touchend', function () {
+        img.classList.remove('product-image-zoomed');
+      });
+
+      img.addEventListener('touchcancel', function () {
+        img.classList.remove('product-image-zoomed');
+      });
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', enableTouchZoom);
+})();
+document.addEventListener('DOMContentLoaded', function() {
+  const questions = document.querySelectorAll('.faq-question');
+  
+  questions.forEach(function(question) {
+    question.addEventListener('click', function() {
+      const answer = this.nextElementSibling;
+      const isActive = this.classList.contains('active');
+      
+      // إغلاق كل الأسئلة الأخرى
+      document.querySelectorAll('.faq-question').forEach(q => {
+        q.classList.remove('active');
+        q.nextElementSibling.classList.remove('active');
+      });
+      
+      // فتح/إغلاق السؤال الحالي
+      if (!isActive) {
+        this.classList.add('active');
+        answer.classList.add('active');
+      }
+    });
+  });
+});

@@ -1,0 +1,1418 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>الخطة التنفيذية الشاملة لتطوير متجر الأصلي على سلة برو</title>
+  <style>
+    :root {
+      --ink:#1c1917;
+      --ink-2:#44403c;
+      --muted:#78716c;
+      --paper:#fafaf9;
+      --white:#ffffff;
+      --line:#d6d3d1;
+      --soft:#f5f5f4;
+      --gold:#a16207;
+      --gold-2:#ca8a04;
+      --gold-soft:#fef3c7;
+      --red:#b91c1c;
+      --red-soft:#fef2f2;
+      --green:#166534;
+      --green-soft:#f0fdf4;
+      --blue:#1d4ed8;
+      --blue-soft:#eff6ff;
+      --amber:#92400e;
+      --amber-soft:#fffbeb;
+    }
+    * { box-sizing:border-box; }
+    html { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    body {
+      margin:0;
+      background:#e7e5e4;
+      color:var(--ink);
+      font-family:"Segoe UI",Tahoma,Arial,sans-serif;
+      font-size:10.4pt;
+      line-height:1.65;
+    }
+    main { width:210mm; margin:0 auto; background:var(--white); display:flex; flex-direction:column; }
+    .cover { order:0; }
+    main > .sheet:not(.chapter) { order:1; }
+    #toc { order:2; }
+    #scope { order:3; }
+    #audit { order:4; }
+    #roadmap { order:5; }
+    #data { order:6; }
+    #catalog { order:7; }
+    #ux { order:8; }
+    #seo { order:9; }
+    #tracking { order:10; }
+    #crm { order:11; }
+    #finance { order:12; }
+    #integration { order:13; }
+    #point { order:14; }
+    #cost { order:15; }
+    #kpis { order:16; }
+    #checklists { order:17; }
+    #sources { order:18; }
+    .sheet { padding:14mm 15mm 15mm; }
+    .chapter { break-before:page; }
+    .avoid { break-inside:avoid; }
+    h1,h2,h3,h4 { margin:0 0 3mm; color:var(--ink); line-height:1.28; }
+    h1 { font-size:27pt; font-weight:800; letter-spacing:-.3px; }
+    h2 { font-size:20pt; font-weight:800; border-bottom:2px solid var(--gold); padding-bottom:2.2mm; }
+    h3 { font-size:14.5pt; font-weight:750; margin-top:6mm; }
+    h4 { font-size:11.5pt; font-weight:750; margin-top:4mm; }
+    p { margin:0 0 3.2mm; }
+    ul,ol { margin:1.5mm 0 3.5mm; padding-right:6mm; }
+    li { margin:.8mm 0; }
+    a { color:#854d0e; text-decoration:none; }
+    .eyebrow { color:var(--gold); font-size:9pt; font-weight:800; letter-spacing:.8px; text-transform:uppercase; }
+    .subtitle { color:var(--ink-2); font-size:13.5pt; line-height:1.55; }
+    .small { font-size:8.7pt; color:var(--muted); }
+    .tiny { font-size:7.7pt; color:var(--muted); }
+    .mono { direction:ltr; unicode-bidi:embed; font-family:Consolas,"Courier New",monospace; font-size:.92em; overflow-wrap:anywhere; word-break:break-word; }
+    .ltr { direction:ltr; unicode-bidi:embed; text-align:left; }
+    .cover {
+      height:297mm;
+      padding:0;
+      position:relative;
+      overflow:hidden;
+      background:linear-gradient(155deg,#0c0a09 0%,#1c1917 56%,#713f12 100%);
+      color:white;
+      break-after:page;
+    }
+    .cover-art {
+      position:absolute; inset:0 0 auto 0; width:100%; height:112mm;
+      object-fit:cover; object-position:center 42%; opacity:.72;
+      filter:saturate(.72) contrast(1.1);
+    }
+    .cover-shade { position:absolute; inset:0; background:linear-gradient(180deg,rgba(12,10,9,.05) 0,rgba(12,10,9,.35) 32%,rgba(12,10,9,.96) 58%,rgba(12,10,9,1) 100%); }
+    .cover-content { position:absolute; inset:0; padding:22mm 17mm 16mm; display:flex; flex-direction:column; justify-content:flex-end; }
+    .cover-logo { width:45mm; height:37mm; object-fit:contain; object-position:center; background:white; border-radius:4mm; padding:3mm; margin-bottom:7mm; }
+    .cover h1 { color:white; max-width:168mm; font-size:28pt; }
+    .cover .subtitle { color:#e7e5e4; max-width:172mm; }
+    .cover-meta { display:grid; grid-template-columns:1fr 1fr; gap:3mm; margin-top:10mm; padding-top:6mm; border-top:1px solid rgba(255,255,255,.28); }
+    .cover-meta div { font-size:9pt; color:#d6d3d1; }
+    .cover-meta strong { display:block; color:white; font-size:10.5pt; }
+    .badge { display:inline-block; padding:.6mm 2.3mm; border-radius:99px; font-size:8pt; font-weight:800; vertical-align:middle; white-space:nowrap; }
+    .p0 { color:#991b1b; background:#fee2e2; }
+    .p1 { color:#92400e; background:#fef3c7; }
+    .p2 { color:#1e40af; background:#dbeafe; }
+    .ok { color:#166534; background:#dcfce7; }
+    .neutral { color:#44403c; background:#e7e5e4; }
+    .callout { border:1px solid var(--line); border-right:4px solid var(--gold); background:var(--soft); border-radius:3mm; padding:4mm 4.5mm; margin:4mm 0; break-inside:avoid; }
+    .callout strong:first-child { display:block; margin-bottom:1.2mm; }
+    .critical { background:var(--red-soft); border-color:#fecaca; border-right-color:var(--red); }
+    .warning { background:var(--amber-soft); border-color:#fde68a; border-right-color:var(--amber); }
+    .success { background:var(--green-soft); border-color:#bbf7d0; border-right-color:var(--green); }
+    .info { background:var(--blue-soft); border-color:#bfdbfe; border-right-color:var(--blue); }
+    .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:4mm; }
+    .grid-3 { display:grid; grid-template-columns:repeat(3,1fr); gap:3mm; }
+    .grid-4 { display:grid; grid-template-columns:repeat(4,1fr); gap:2.5mm; }
+    .card { border:1px solid var(--line); border-radius:3mm; padding:4mm; background:white; break-inside:avoid; }
+    .card h3,.card h4 { margin-top:0; }
+    .metric { border:1px solid var(--line); border-top:3px solid var(--gold); padding:3.2mm; border-radius:2.5mm; background:white; break-inside:avoid; }
+    .metric .value { font-size:19pt; line-height:1.1; font-weight:850; color:var(--ink); direction:ltr; unicode-bidi:embed; text-align:right; }
+    .metric .label { font-size:8.4pt; color:var(--muted); margin-top:1.4mm; }
+    table { width:100%; border-collapse:collapse; margin:3mm 0 5mm; font-size:8.65pt; line-height:1.45; break-inside:auto; }
+    thead { display:table-header-group; }
+    tr { break-inside:avoid; }
+    th { background:var(--ink); color:white; font-weight:750; padding:2.6mm 2.2mm; border:1px solid var(--ink); text-align:right; vertical-align:top; }
+    td { padding:2.4mm 2.2mm; border:1px solid var(--line); vertical-align:top; }
+    tbody tr:nth-child(even) td { background:#fafaf9; }
+    .compact td,.compact th { padding:1.8mm 1.7mm; font-size:8.1pt; }
+    .toc { columns:2; column-gap:10mm; margin-top:6mm; }
+    .toc a { display:flex; justify-content:space-between; gap:3mm; padding:2.1mm 0; border-bottom:1px dotted var(--line); color:var(--ink); break-inside:avoid; }
+    .toc span:first-child { font-weight:700; }
+    .ref { color:var(--gold); font-size:7.5pt; font-weight:800; white-space:nowrap; }
+    .flow { display:flex; align-items:stretch; gap:2mm; margin:4mm 0 5mm; direction:rtl; break-inside:avoid; max-width:100%; }
+    .flow-box { flex:1; min-width:0; overflow-wrap:anywhere; word-break:break-word; border:1px solid var(--line); border-radius:2.5mm; padding:3mm; text-align:center; background:white; }
+    .flow-box strong { display:block; }
+    .arrow { align-self:center; color:var(--gold); font-size:17pt; font-weight:900; }
+    .checklist { list-style:none; padding-right:0; }
+    .checklist li { position:relative; padding-right:6mm; }
+    .checklist li:before { content:"□"; position:absolute; right:0; top:-.2mm; color:var(--gold); font-weight:900; }
+    .number-list { counter-reset:item; list-style:none; padding:0; }
+    .number-list li { counter-increment:item; position:relative; padding:2.5mm 10mm 2.5mm 0; border-bottom:1px solid var(--line); }
+    .number-list li:before { content:counter(item); position:absolute; right:0; top:2.3mm; width:7mm; height:7mm; border-radius:50%; background:var(--ink); color:white; display:grid; place-items:center; font-size:8pt; font-weight:800; }
+    .decision { border:2px solid var(--green); background:var(--green-soft); border-radius:4mm; padding:5mm; margin:5mm 0; break-inside:avoid; }
+    .decision .headline { color:var(--green); font-size:16pt; font-weight:850; margin-bottom:1mm; }
+    .socials { display:flex; flex-wrap:wrap; gap:2mm; direction:ltr; justify-content:flex-end; }
+    .socials span { border:1px solid var(--line); border-radius:99px; padding:1mm 2.5mm; background:white; font-size:8.5pt; }
+    .source-list { font-size:8.15pt; line-height:1.5; }
+    .source-list li { margin-bottom:2.2mm; padding-bottom:1.6mm; border-bottom:1px solid #eee; word-break:break-word; }
+    .footer-note { margin-top:8mm; border-top:1px solid var(--line); padding-top:3mm; color:var(--muted); font-size:8.2pt; }
+    @media print {
+      body { background:white; }
+      main { width:auto; margin:0; }
+      .sheet { padding:9mm 10mm 11mm; }
+      #tracking { font-size:10pt; }
+      #tracking h3 { margin-top:4.8mm; margin-bottom:2.2mm; }
+      #tracking table { margin-top:2.2mm; margin-bottom:3.5mm; }
+      #tracking li { margin:.45mm 0; }
+      #finance { break-before:auto; border-top:1px solid var(--line); padding-top:7mm; }
+      #point { font-size:10pt; }
+      #point h3 { margin-top:4.4mm; margin-bottom:2mm; }
+      #point .compact td, #point .compact th { padding:1.5mm 1.5mm; font-size:7.8pt; }
+      #point li { margin:.4mm 0; }
+      #cost { font-size:9.75pt; }
+      #cost h3 { margin-top:4.2mm; margin-bottom:2mm; }
+      #cost table { margin-top:2mm; margin-bottom:3mm; font-size:8.15pt; }
+      #cost td, #cost th { padding:1.8mm 1.7mm; }
+      #cost .compact td, #cost .compact th { padding:1.45mm; font-size:7.75pt; }
+      #cost .callout { padding:3mm 3.5mm; margin:3mm 0; }
+      #cost li { margin:.35mm 0; }
+      #kpis { font-size:9.8pt; }
+      #kpis h3 { margin-top:4.3mm; margin-bottom:2mm; }
+      #kpis table { margin-top:2mm; margin-bottom:3mm; }
+      #kpis .compact td, #kpis .compact th { padding:1.45mm; font-size:7.75pt; }
+      #kpis .card { padding:3mm; }
+      #kpis li { margin:.35mm 0; }
+      #kpis .callout { padding:3mm 3.5mm; margin:3mm 0; }
+      a { color:inherit; }
+    }
+    @page { size:A4; margin:10mm 8mm 13mm; }
+    @page:first { margin:0; }
+  </style>
+</head>
+<body>
+<main>
+  <section class="cover">
+    <img class="cover-art" src="../Logo Eyes.png" alt="هوية متجر الأصلي للنظارات">
+    <div class="cover-shade"></div>
+    <div class="cover-content">
+      <img class="cover-logo" src="../Logo.png" alt="شعار الأصلي ALASLEE">
+      <div class="eyebrow">خطة نمو وتشغيل متكاملة — نسخة تنفيذية</div>
+      <h1>الخطة الشاملة لتطوير متجر «الأصلي» على سلة برو</h1>
+      <p class="subtitle">من إصلاح البيانات وSEO والقياس وتجربة الشراء، إلى المحاسبة والمخزون والربط مع دفترة وقرار سلة بوينت — بأقل تكلفة إضافية ممكنة.</p>
+      <div class="cover-meta">
+        <div><strong>النطاق</strong>Alaslee.com + سلة Pro + دفترة Advanced</div>
+        <div><strong>تاريخ التدقيق</strong>17 يوليو 2026</div>
+        <div><strong>الهدف</strong>رفع التحويل والربحية وجودة البيانات والاستعداد للنمو</div>
+        <div><strong>مبدأ التكلفة</strong>لا اشتراكات جديدة قبل استنفاد الأدوات الحالية المجانية</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sheet chapter" id="data">
+    <div class="eyebrow">الفصل 4</div>
+    <h2>البيانات وData Validation: اجمع ما يفيد، لا ما يربك</h2>
+    <div class="callout success">
+      <strong>القاعدة الذهبية</strong>
+      كل حقل يجب أن يملك غرضاً ومالكاً ونوعاً وقاعدة تحقق ومدة احتفاظ ومكاناً واحداً مرجعياً. لا تجعل العميل يكتب قيمة يمكنه اختيارها من قائمة، ولا تجمع بيانات صحية للتسويق.
+    </div>
+    <h3>مصدر الحقيقة لكل كيان</h3>
+    <div class="flow">
+      <div class="flow-box"><strong>سلة</strong>المحتوى، الصور، SEO، خيارات المنتج، الطلب والقناة</div>
+      <div class="arrow">←</div>
+      <div class="flow-box"><strong>طبقة الربط</strong>SKU / IDs / أحداث / منع التكرار / سجلات</div>
+      <div class="arrow">←</div>
+      <div class="flow-box"><strong>دفترة</strong>الفاتورة، القيود، التكلفة، الذمم، الموردون والإقفال</div>
+    </div>
+    <table class="compact">
+      <thead><tr><th>الكيان</th><th>النظام المرجعي</th><th>المفتاح</th><th>قاعدة المنع</th></tr></thead>
+      <tbody>
+        <tr><td>المنتج التسويقي</td><td>سلة</td><td><span class="mono">salla_product_id</span></td><td>لا تُنسخ صور/SEO إلى دفترة كمرجع وحيد</td></tr>
+        <tr><td>الصنف المالي/المخزني</td><td>دفترة أو النظام المتفق عليه</td><td><span class="mono">SKU</span> فريد</td><td>لا مزامنة بلا crosswalk بين variant وitem</td></tr>
+        <tr><td>الطلب</td><td>سلة</td><td><span class="mono">salla_order_id</span></td><td>كل إعادة إرسال تستخدم idempotency key</td></tr>
+        <tr><td>الفاتورة والمرتجع</td><td>دفترة</td><td>رقم الفاتورة + مرجع طلب سلة</td><td>فاتورة قانونية واحدة لكل بيع</td></tr>
+        <tr><td>العميل</td><td>سلة للاتصال، دفترة للذمة</td><td>هاتف موحد ثم بريد</td><td>لا دمج تلقائي إذا اختلفت الذمم/الهوية</td></tr>
+        <tr><td>المورد/المشتريات/التكلفة</td><td>دفترة</td><td><span class="mono">supplier_id / SKU</span></td><td>لا تُدار من ملاحظات سلة</td></tr>
+      </tbody>
+    </table>
+    <h3>قاموس بيانات العميل المقترح</h3>
+    <table class="compact">
+      <thead><tr><th>الحقل</th><th>النوع</th><th>الإلزام</th><th>التحقق/التوحيد</th><th>الاستخدام</th></tr></thead>
+      <tbody>
+        <tr><td>معرف سلة</td><td>رقم/ID</td><td>نظامي</td><td>غير قابل للتعديل</td><td>منع الازدواج والربط</td></tr>
+        <tr><td>الاسم الكامل</td><td>نص</td><td>عند الشراء</td><td>2–80 حرفاً؛ إزالة المسافات المكررة؛ لا أرقام فقط</td><td>الشحن والفاتورة والخدمة</td></tr>
+        <tr><td>الجوال</td><td>هاتف</td><td>نعم</td><td>تحويل الأرقام العربية؛ توحيد السعودية إلى <span class="mono">+9665XXXXXXXX</span>؛ رفض الوهمي</td><td>التسليم والهوية</td></tr>
+        <tr><td>البريد</td><td>Email</td><td>يفضل</td><td>lowercase + trim + صيغة صحيحة؛ لا <span class="mono">test@</span></td><td>الفواتير والاسترداد والبريد</td></tr>
+        <tr><td>الدولة</td><td>قائمة ISO</td><td>للشحن</td><td>لا نص حر</td><td>الدفع والشحن والعملة</td></tr>
+        <tr><td>المدينة/الحي</td><td>قائمة/عنوان وطني</td><td>للشحن</td><td>اختيار خدمة العنوان، لا تهجئات حرة قدر الإمكان</td><td>التسليم والتحليل الجغرافي</td></tr>
+        <tr><td>اللغة</td><td>قائمة</td><td>تلقائي</td><td><span class="mono">ar / en</span></td><td>التواصل</td></tr>
+        <tr><td>نوع العميل</td><td>قائمة</td><td>داخلي</td><td>B2C / B2B / موظف / اختبار</td><td>الفاتورة والشرائح</td></tr>
+        <tr><td>الفئة المفضلة</td><td>اختيار متعدد</td><td>اختياري</td><td>طبي/شمسي/عدسات/أطفال/قراءة؛ حد أقصى 3</td><td>تخصيص لا بيانات صحية</td></tr>
+        <tr><td>مقاس/ملاءمة عامة</td><td>قائمة</td><td>اختياري</td><td>ضيّق/متوسط/عريض + مصدر القياس</td><td>اقتراح إطار مناسب</td></tr>
+        <tr><td>مصدر الاكتساب الأول</td><td>قائمة ثابتة</td><td>تلقائي</td><td>UTM first-touch غير قابل للاستبدال</td><td>CAC والإسناد</td></tr>
+        <tr><td>مصدر الاكتساب الأخير</td><td>قائمة ثابتة</td><td>تلقائي</td><td>UTM last non-direct</td><td>تحسين الحملات</td></tr>
+        <tr><td>موافقة التسويق</td><td>Boolean لكل قناة</td><td>نعم قبل التسويق</td><td>القناة + الوقت + النص/الإصدار + المصدر</td><td>PDPL والرسائل</td></tr>
+        <tr><td>حالة العميل</td><td>قائمة داخلية</td><td>داخلي</td><td>جديد/نشط/معرّض للفقد/غير نشط/محظور</td><td>الاحتفاظ</td></tr>
+        <tr><td>معرف دفترة</td><td>ID</td><td>بعد الترحيل</td><td>فريد ومقفل</td><td>crosswalk وذمة العميل</td></tr>
+      </tbody>
+    </table>
+    <p class="small">حقول العميل المخصصة في Pro تسمح حتى 5 حقول في القسم و10 أقسام، لكنها تُعبأ من بطاقة العميل؛ لا تفترض أنها نموذج تسجيل أمام المتسوق. <a class="ref" href="#s3">[S3]</a></p>
+    <h3>نموذج وصفة النظر: الطريقة الآمنة والأقل أخطاء</h3>
+    <div class="grid-2">
+      <div class="card">
+        <h4>المسار الموصى به</h4>
+        <ol>
+          <li>اختيار: «إطار فقط / رفع وصفة / إدخال يدوي / فحص بالفرع».</li>
+          <li>إذا «رفع وصفة»: حقل ملف إلزامي + اسم صاحب الوصفة + تاريخها.</li>
+          <li>إذا «إدخال يدوي»: تظهر حقول العين اليمنى OD واليسرى OS منفصلة.</li>
+          <li>شاشة مراجعة تُعيد القيم قبل الإرسال وتطلب تأكيد يمين/يسار.</li>
+          <li>لا يبدأ التصنيع قبل مراجعة موظف مؤهل واتصال عند أي تعارض.</li>
+        </ol>
+      </div>
+      <div class="card">
+        <h4>لماذا «خدمة حسب الطلب»؟</h4>
+        <p>توثيق سلة يذكر دعماً للنص والرقم والاختيارات والملف والصورة والتاريخ والوقت والموقع، مع الإلزام والظهور الشرطي. هذا أنسب من ملاحظات حرة. لا يوجد توثيق رسمي يضمن Regex أو min/max، لذلك يبقى تحقق النطاق النهائي في المراجعة البشرية أو طبقة مخصصة. <a class="ref" href="#s5">[S5]</a></p>
+      </div>
+    </div>
+    <table class="compact">
+      <thead><tr><th>مجموعة الوصفة</th><th>الحقل</th><th>نوع الإدخال</th><th>قاعدة التحقق التشغيلية</th></tr></thead>
+      <tbody>
+        <tr><td rowspan="5">OD — اليمنى</td><td>SPH</td><td>رقمي/قائمة معتمدة</td><td>قيمة ضمن نطاق مخزون/مختبر المتجر وبخطوة 0.25؛ لا تفترض نطاقاً طبياً عاماً</td></tr>
+        <tr><td>CYL</td><td>رقمي/قائمة</td><td>إذا غير صفر يصبح AXIS إلزامياً</td></tr>
+        <tr><td>AXIS</td><td>رقم صحيح</td><td>1–180 فقط عند وجود CYL</td></tr>
+        <tr><td>ADD</td><td>رقمي/قائمة</td><td>يظهر فقط لعدسات القراءة/المتعددة</td></tr>
+        <tr><td>PD أحادي</td><td>رقمي</td><td>يفضل إدخاله بواسطة مختص أو من وصفة موثوقة</td></tr>
+        <tr><td rowspan="5">OS — اليسرى</td><td>SPH</td><td>رقمي/قائمة معتمدة</td><td>نفس قاعدة OD مع لون/عنوان واضح يمنع الخلط</td></tr>
+        <tr><td>CYL</td><td>رقمي/قائمة</td><td>إذا غير صفر يصبح AXIS إلزامياً</td></tr>
+        <tr><td>AXIS</td><td>رقم صحيح</td><td>1–180 فقط عند وجود CYL</td></tr>
+        <tr><td>ADD</td><td>رقمي/قائمة</td><td>يظهر شرطياً</td></tr>
+        <tr><td>PD أحادي</td><td>رقمي</td><td>مراجعة مجموع PD إذا أُدخل ثنائياً</td></tr>
+        <tr><td>مشترك</td><td>نوع العدسة/الطلاء</td><td>قائمة</td><td>قيم من كتالوج المختبر فقط؛ السعر واضح قبل الدفع</td></tr>
+        <tr><td>مشترك</td><td>ملف الوصفة</td><td>ملف</td><td>PDF/JPG/PNG؛ حد حجم؛ فحص وصول وصلاحيات ومدة احتفاظ</td></tr>
+        <tr><td>مشترك</td><td>تأكيد</td><td>Checkbox</td><td>القيم من وصفة سارية وأن المراجعة النهائية للمتجر</td></tr>
+      </tbody>
+    </table>
+    <div class="callout critical">
+      <strong>بيانات الوصفة بيانات صحية حساسة.</strong>
+      اجمع الحد الأدنى للطلب، بموافقة صريحة منفصلة، صلاحيات محدودة وسجل وصول، ولا تنسخها إلى قوائم الإعلانات أو حقول التسويق. حدّد مدة حذف، وآلية طلب نسخة/تصحيح/إتلاف، وخطة تسرب. اللائحة تشترط غرضاً واضحاً، توثيق الموافقة، سهولة سحبها، وإشعاراً وفق الحالات النظامية. <a class="ref" href="#s38">[S38]</a>
+    </div>
+    <h3>قواعد تنظيف البيانات القديمة</h3>
+    <ol>
+      <li><strong>صدّر أولاً:</strong> احتفظ بنسخة خام لا تُعدّل ونسخة عمل.</li>
+      <li><strong>وحّد الأرقام:</strong> العربية/الفارسية إلى 0–9، ثم صيغة E.164.</li>
+      <li><strong>اكتشف التكرار:</strong> هاتف مطابق ← بريد مطابق ← اسم+مدينة للمراجعة، وليس الدمج التلقائي.</li>
+      <li><strong>افصل الاختبارات:</strong> وسم موظف/طلب تجريبي حتى لا يلوث LTV وROAS.</li>
+      <li><strong>لا تمسح السجل المالي:</strong> تعطيل/أرشفة أفضل من حذف عميل له فاتورة أو ذمة.</li>
+      <li><strong>سجل التعديلات:</strong> من غيّر، ماذا، متى، وقيمة قبل/بعد؛ سجل سلة Pro العام قصير المدى، فصدّر دورياً.</li>
+    </ol>
+  </section>
+
+  <section class="sheet chapter" id="catalog">
+    <div class="eyebrow">الفصل 5</div>
+    <h2>الكتالوج والتصنيفات: حوّل 604 منتجات إلى تجربة بيع</h2>
+    <h3>بنية قائمة مقترحة ضمن مستويين</h3>
+    <table>
+      <thead><tr><th>التصنيف الرئيسي</th><th>التصنيفات الفرعية</th><th>ما يتحول إلى فلتر/علامة</th></tr></thead>
+      <tbody>
+        <tr><td>نظارات طبية</td><td>رجالية، نسائية، أطفال</td><td>العلامة، شكل الإطار، العرض، الخامة، اللون، السعر</td></tr>
+        <tr><td>نظارات شمسية</td><td>رجالية، نسائية، أطفال</td><td>العلامة، مستقطبة، UV، الشكل، اللون، السعر</td></tr>
+        <tr><td>العدسات اللاصقة</td><td>طبية، تجميلية، محاليل وملحقات</td><td>العلامة، مدة الاستبدال، BC، DIA، اللون</td></tr>
+        <tr><td>عدسات النظارات</td><td>طبية، قراءة، حماية من الضوء/طلاءات</td><td>المعامل، الطلاء، الاستخدام، المختبر</td></tr>
+        <tr><td>الخدمات</td><td>فحص نظر، صيانة، تركيب عدسات</td><td>الفرع، الموعد، حالة التوفر</td></tr>
+        <tr><td>العروض</td><td>وصل حديثاً، الأكثر مبيعاً، تصفية مدروسة</td><td>لا فئات علامة مكررة؛ المجموعة ديناميكية قدر الإمكان</td></tr>
+      </tbody>
+    </table>
+    <p>سلة تدعم تصنيفين متداخلين، حتى 15 تصنيفاً للمنتج، SEO للفئة وترتيباً يدوياً مستقلاً. العلامات يجب أن تُدار كـ Brand لا كعشرات البنود الرئيسية. <a class="ref" href="#s13">[S13]</a></p>
+    <h3>قالب بيانات المنتج الإلزامي</h3>
+    <table class="compact">
+      <thead><tr><th>المجموعة</th><th>الحقول</th><th>قواعد الجودة</th></tr></thead>
+      <tbody>
+        <tr><td>الهوية</td><td>SKU، Brand، Model، MPN، GTIN لكل variant</td><td>فريدة؛ لا تستخدم مسار URL كـ SKU؛ crosswalk بدفترة</td></tr>
+        <tr><td>التسمية</td><td>العلامة + الموديل + النوع + اللون + المقاس</td><td>مثال: «Polo PH 4207U نظارة شمسية سوداء 56»</td></tr>
+        <tr><td>الإطار</td><td>الشكل، الخامة، اللون، عدسة/جسر/ذراع بالملليمتر، fit</td><td>أرقام فقط للمقاسات؛ جدول مقاسات موحد</td></tr>
+        <tr><td>العدسة الشمسية</td><td>اللون، UV، استقطاب، فئة/نفاذية إن موثقة</td><td>لا ادعاء «حماية» بلا مستند مصنع</td></tr>
+        <tr><td>العدسات اللاصقة</td><td>الدرجة، BC، DIA، مدة الاستبدال، محتوى العبوة، العناية</td><td>قوائم؛ تاريخ/دفعة عند الحاجة؛ تحذيرات واضحة</td></tr>
+        <tr><td>التجاري</td><td>التكلفة، السعر، VAT، الهامش، المورد، مهلة التوريد، حد إعادة الطلب</td><td>التكلفة ليست صفراً؛ السعر والعملة متسقان</td></tr>
+        <tr><td>المخزون</td><td>الفرع/المستودع، المتاح، المحجوز، الحالة</td><td>لا مخزون سالب؛ تعريف واضح للحجز</td></tr>
+        <tr><td>المحتوى</td><td>وصف فريد، ما يتضمنه الصندوق، الضمان، الإرجاع، الملاءمة</td><td>لا نسخ مورد حرفي ولا وصف عام مكرر</td></tr>
+        <tr><td>الصور</td><td>أمامي، جانبي، 45°، تفاصيل، المقاس، على وجه، التغليف</td><td>خلفية موحدة؛ أبعاد ثابتة؛ alt وصفي ≤70 حرفاً</td></tr>
+        <tr><td>SEO</td><td>Title، slug، meta، alt، canonical، schema</td><td>عنوان/وصف فريدان؛ SAR؛ Product data كاملة</td></tr>
+      </tbody>
+    </table>
+    <h3>نظام SKU مقترح</h3>
+    <div class="callout info">
+      <strong class="mono">AL-[BRAND]-[TYPE]-[MODEL]-[COLOR]-[SIZE]</strong>
+      مثال: <span class="mono">AL-POLO-SUN-PH4207U-BLK-56</span>. لا تغيّر SKU تاريخياً بعد بدء المعاملات؛ أنشئ crosswalk للقديم والجديد. GTIN ليس SKU، وMPN هو رقم المصنع. سلة توصي بإدخال GTIN/MPN الصحيح لكل خيار. <a class="ref" href="#s12">[S12]</a>
+    </div>
+    <h3>ترتيب المنتجات الذي يدفع للبيع</h3>
+    <p>لا ترتب أبجدياً. احسب أسبوعياً «درجة الترويج» لأعلى 24 منتجاً في كل فئة ثم رتبها بالسحب في سلة. <a class="ref" href="#s15">[S15]</a></p>
+    <table class="compact">
+      <thead><tr><th>العامل</th><th>الوزن المقترح</th><th>ملاحظة</th></tr></thead>
+      <tbody>
+        <tr><td>معدل التحويل 30 يوماً</td><td>30%</td><td>لا تثق بعينة زيارات صغيرة</td></tr>
+        <tr><td>الربح الإجمالي لكل مشاهدة</td><td>25%</td><td>السعر وحده لا يكفي</td></tr>
+        <tr><td>صحة المخزون وسرعة الدوران</td><td>20%</td><td>عقوبة للمتاح أقل من 2</td></tr>
+        <tr><td>التقييم وعدد المراجعات</td><td>15%</td><td>مشتري موثّق فقط</td></tr>
+        <tr><td>استراتيجية/حداثة</td><td>10%</td><td>حد زمني للمنتج الجديد</td></tr>
+      </tbody>
+    </table>
+    <p class="small">صيغة بسيطة: <span class="mono">Score = .30×CVR + .25×GP/View + .20×Stock + .15×Rating + .10×Strategy</span>. طبّع القيم 0–100 قبل الجمع.</p>
+    <h3>عروض بلا تطبيق مدفوع</h3>
+    <div class="grid-3">
+      <div class="card"><h4>رفع AOV</h4><p>إطار + علبة + منظف بسعر مجموعة، أو عدسات + محلول. استخدم المجموعة المدمجة لا تطبيقاً خارجياً. <a class="ref" href="#s16">[S16]</a></p></div>
+      <div class="card"><h4>حماية الهامش</h4><p>اشترِ X وخذ Y على ملحق منخفض التكلفة بدلاً من خصم الإطار الأعلى هامشاً.</p></div>
+      <div class="card"><h4>تصفية المخزون</h4><p>عروض حسب عمر المخزون، لا خصم شامل. أوقف الإعلان عن المقاس/الخيار النافد.</p></div>
+    </div>
+  </section>
+
+  <section class="sheet chapter" id="ux">
+    <div class="eyebrow">الفصل 6</div>
+    <h2>الهوية وتجربة المتجر: فخامة هادئة تقود إلى الشراء</h2>
+    <div class="grid-2">
+      <div class="card">
+        <h3>نظام بصري مقترح</h3>
+        <ul>
+          <li>أسود دافئ <span class="mono">#1C1917</span> للنص والرأس.</li>
+          <li>خلفية حجرية <span class="mono">#FAFAF9</span> ومساحات بيضاء واسعة.</li>
+          <li>ذهبي داكن <span class="mono">#A16207</span> كلون إبراز محدود، لا للنص الصغير على الأبيض.</li>
+          <li>خط عربي واضح واحد، ومقياس 16px للنص على الجوال.</li>
+          <li>أيقونات SVG متسقة، أهداف لمس ≥44px، وتباين 4.5:1.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>ما نمنعه</h3>
+        <ul>
+          <li>دوارات كثيرة، ونصوص مهمة داخل الصور فقط.</li>
+          <li>ألوان ذهبية متعددة وظلال ثقيلة وGlass effects تبطئ الصفحة.</li>
+          <li>أكثر من CTA أساسي في الشاشة الواحدة.</li>
+          <li>صور أسعار قديمة لا تتزامن مع المنتج.</li>
+          <li>تعطيل النسخ أو التكبير أو focus ring.</li>
+        </ul>
+      </div>
+    </div>
+    <h3>ترتيب الصفحة الرئيسية</h3>
+    <ol class="number-list">
+      <li><strong>شريط قيمة واحد:</strong> رسالة شحن/أصالة/خدمة مثبتة ومحددة، لا ثلاث رسائل متحركة.</li>
+      <li><strong>Header:</strong> شعار واضح، بحث بارز، 5–6 أقسام فقط، حساب وسلة.</li>
+      <li><strong>Hero واحد:</strong> عنوان HTML «نظارات أصلية تناسبك» + وصف قصير + CTA «تسوق النظارات»؛ مدة العرض وشروطه نصياً.</li>
+      <li><strong>تسوق حسب النية:</strong> طبي، شمسي، عدسات، أطفال، قراءة/خدمة.</li>
+      <li><strong>الأكثر مبيعاً:</strong> 8 منتجات ببيانات مكتملة، لا 30 بطاقة.</li>
+      <li><strong>اختيار المقاس/شكل الوجه:</strong> دليل قصير وروابط إلى فلاتر فعلية.</li>
+      <li><strong>الثقة:</strong> الأصالة، الضمان، الإرجاع، فحص/صيانة، توصيل — بصياغة مثبتة فقط.</li>
+      <li><strong>العلامات:</strong> كل شعار يفتح صفحة Brand الصحيحة؛ لا روابط <span class="mono">#</span>.</li>
+      <li><strong>التقييمات والأدلة:</strong> مراجعات مشتري موثق + أحدث مقالتين.</li>
+      <li><strong>Footer امتثال:</strong> CR، VAT، منصة الأعمال الصحيحة، تواصل، شحن، إرجاع، خصوصية، شكاوى، وحسابات مؤكدة.</li>
+    </ol>
+    <h3>قالب صفحة المنتج عالية التحويل</h3>
+    <table>
+      <thead><tr><th>فوق الطية</th><th>بعد قرار الشراء</th><th>الجوال</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>صور واضحة؛ Brand/Model؛ نوع؛ تقييم؛ السعر SAR شامل/غير شامل بوضوح؛ توفر؛ المقاس؛ الخيارات؛ موعد توصيل تقديري؛ CTA.</td>
+          <td>المقاسات والملاءمة؛ الخامة والعدسة؛ محتوى العلبة؛ الأصالة والضمان؛ الإرجاع؛ الوصفة؛ FAQ؛ مراجعات؛ بدائل ومكملات.</td>
+          <td>معرض قابل للسحب؛ خيارات كبيرة؛ زر إضافة ثابت لا يحجب المحتوى؛ لا نافذة منبثقة مبكرة؛ أخطاء تحت الحقل.</td>
+        </tr>
+      </tbody>
+    </table>
+    <h3>الفلاتر الأساسية</h3>
+    <div class="socials" style="direction:rtl;justify-content:flex-start">
+      <span>العلامة</span><span>رجالي/نسائي/أطفال</span><span>طبي/شمسي</span><span>شكل الإطار</span><span>ضيّق/متوسط/عريض</span><span>المقاس</span><span>الخامة</span><span>اللون</span><span>السعر</span><span>مستقطب</span><span>متوفر</span><span>وصفة طبية</span>
+    </div>
+    <p style="margin-top:3mm">ميزة الفلاتر في Pro مبنية على خيارات المنتج، وتسمح للعميل أيضاً بالترتيب حسب الأكثر مبيعاً والأعلى تقييماً والسعر. <a class="ref" href="#s14">[S14]</a></p>
+    <h3>اختبار قبول UX قبل النشر</h3>
+    <ul class="checklist">
+      <li>شراء كامل على iPhone وAndroid من 4G سعودي.</li>
+      <li>العثور على «Ray-Ban شمسي أسود متوسط» خلال أقل من 3 نقرات.</li>
+      <li>تكبير الصور ونسخ الموديل والمقاس.</li>
+      <li>استخدام لوحة المفاتيح والتركيز المرئي والتباين.</li>
+      <li>اختبار خطأ الهاتف/البريد/الوصفة قرب الحقل، لا أعلى الصفحة فقط.</li>
+      <li>لا حركة تخطيط عند تحميل الصور؛ كل صورة لها width/height أو aspect-ratio.</li>
+      <li>لا رابط ينتهي # ولا زر بلا نتيجة.</li>
+    </ul>
+  </section>
+
+  <section class="sheet">
+    <div class="eyebrow">مقدمة القرار</div>
+    <h2>النتيجة التنفيذية في صفحة واحدة</h2>
+    <div class="decision">
+      <div class="headline">القرار الموصى به: لا تُلغِ دفترة، وفعّل سلة بوينت كواجهة كاشير فقط.</div>
+      <p>سلة بوينت GO مفيد لتوحيد البيع الحضوري مع المتجر والمخزون، لكنه لا يوثّق وظائف دفتر الأستاذ، ميزان المراجعة، القيود اليومية، الموردين، المشتريات، المصروفات والذمم. لذلك لا يحل محل دفترة المتقدم في وضعك الحالي. استخدم سلة للتجارة والبيع، ودفترة كسجل محاسبي وضريبي، مع مصدر واحد واضح لكل نوع بيانات.</p>
+    </div>
+    <div class="grid-4">
+      <div class="metric"><div class="value">681</div><div class="label">رابطاً في خريطة الموقع</div></div>
+      <div class="metric"><div class="value">604</div><div class="label">صفحات منتجات</div></div>
+      <div class="metric"><div class="value">72</div><div class="label">تصنيفاً — بينها تكرارات</div></div>
+      <div class="metric"><div class="value">17</div><div class="label">منتجاً بلا صورة في sitemap</div></div>
+    </div>
+    <div class="callout critical">
+      <strong>أكبر فرصة نمو ليست إعلاناً جديداً؛ إنها إصلاح أساس المتجر.</strong>
+      روابط <span class="mono">hreflang</span> لبعض الفئات تُرجع 410، العملة العامة وبيانات المنتجات ظهرت USD بدلاً من SAR، رابط التوثيق يحتوي رقماً تجريبياً <span class="mono">0000000000</span>، وصفحات السياسات بها حقول <span class="mono">[أدخل بريدك]</span>، وروابط كثيرة لشعارات العلامات تنتهي إلى <span class="mono">#</span>. هذه نقاط ثقة وفهرسة وتحويل يجب إصلاحها قبل زيادة الإنفاق الإعلاني.
+    </div>
+    <h3>أولويات الـ 7 أيام</h3>
+    <ol class="number-list">
+      <li><strong>إيقاف تسرب الثقة والفهرسة:</strong> إصلاح روابط 410 وhreflang، SAR، رابط التوثيق، حقول السياسات الناقصة، وروابط العلامات.</li>
+      <li><strong>تثبيت قياس صحيح:</strong> GA4 الرسمي + اختبار Meta Pixel/CAPI + أحداث التجارة، ومنع أي تكرار في الوسوم.</li>
+      <li><strong>إنشاء نسخة احتياطية وخط أساس:</strong> تصدير المنتجات والعملاء والطلبات والتقارير قبل أي دمج أو حذف.</li>
+      <li><strong>تحديد مصادر الحقيقة:</strong> سلة للمحتوى والطلب، دفترة للمحاسبة، وSKU مفتاح الربط الوحيد.</li>
+      <li><strong>تنظيف أعلى 50 منتجاً:</strong> صور، مواصفات، عنوان، وصف، SKU/MPN/GTIN، مخزون، تكلفة، وصف ميتا.</li>
+      <li><strong>استبدال الوصفة الحرة:</strong> مسار منظم لرفع الوصفة أو إدخال حقول OD/OS مع مراجعة بشرية.</li>
+    </ol>
+  </section>
+
+  <section class="sheet chapter" id="toc">
+    <div class="eyebrow">فهرس التنفيذ</div>
+    <h2>محتويات التقرير</h2>
+    <div class="toc">
+      <a href="#scope"><span>1. النطاق والمنهج والقيود</span><span>01</span></a>
+      <a href="#audit"><span>2. تدقيق Alaslee.com الحالي</span><span>02</span></a>
+      <a href="#roadmap"><span>3. خارطة 90 يوماً</span><span>03</span></a>
+      <a href="#data"><span>4. البيانات وData Validation</span><span>04</span></a>
+      <a href="#catalog"><span>5. المنتجات والتصنيفات والبيع</span><span>05</span></a>
+      <a href="#ux"><span>6. الهوية وتجربة المتجر</span><span>06</span></a>
+      <a href="#seo"><span>7. خطة SEO المتكاملة</span><span>07</span></a>
+      <a href="#tracking"><span>8. القياس والحملات الإعلانية</span><span>08</span></a>
+      <a href="#crm"><span>9. العملاء والاحتفاظ</span><span>09</span></a>
+      <a href="#finance"><span>10. المالية والمحاسبة للمبتدئ</span><span>10</span></a>
+      <a href="#integration"><span>11. ربط سلة ودفترة عبر API</span><span>11</span></a>
+      <a href="#point"><span>12. هل سلة بوينت بديل؟</span><span>12</span></a>
+      <a href="#cost"><span>13. خفض التكلفة بلا اشتراكات</span><span>13</span></a>
+      <a href="#kpis"><span>14. المؤشرات والحوكمة</span><span>14</span></a>
+      <a href="#checklists"><span>15. قوائم تنفيذ جاهزة</span><span>15</span></a>
+      <a href="#sources"><span>16. المصادر الرسمية</span><span>16</span></a>
+      <a href="#execution"><span>17. دليل التنفيذ العملي لأهم 10 نقاط</span><span>17</span></a>
+    </div>
+    <div class="callout info" style="margin-top:10mm">
+      <strong>كيف تستخدم هذا الملف؟</strong>
+      ابدأ بجدول P0، ولا تشتر أي تطبيق جديد. نفّذ أسبوعاً بأسبوع، وسجّل قبل/بعد لكل مؤشر. أي خطوة حذف أو دمج أو تغيير فاتورة قانونية تحتاج نسخة احتياطية واختباراً على عينة أولاً.
+    </div>
+  </section>
+
+  <section class="sheet chapter" id="scope">
+    <div class="eyebrow">الفصل 1</div>
+    <h2>النطاق والمنهج والقيود</h2>
+    <div class="grid-2">
+      <div class="card">
+        <h3>ما تمت مراجعته</h3>
+        <ul>
+          <li>الموقع العام Alaslee.com وrobots وخرائط الموقع وصفحات وفئات ومنتجات عينية.</li>
+          <li>DNS وHTTPS وسلوك Cloudflare من شبكة التدقيق.</li>
+          <li>المصادر الرسمية الحالية لسلة، دفترة، زاتكا، سدايا، ووزارة التجارة.</li>
+          <li>حسابات العلامة المقدمة: Facebook وInstagram وThreads وX وTikTok.</li>
+          <li>قدرات سلة Pro، سلة بوينت GO/PRO، دفترة Advanced، وموصل دفترة.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>ما يحتاج دخولاً للحساب</h3>
+        <ul>
+          <li>إعدادات Checkout وGA4 وCAPI ومحتوى GTM الفعلي.</li>
+          <li>حدود باقة دفترة القديمة/الحالية وحالة زاتكا وCSID.</li>
+          <li>من يصدر الفاتورة القانونية الآن وسلوك المرتجعات.</li>
+          <li>المخزون حسب الفروع، التكلفة، فروقات الربط، ومعدل التحويل.</li>
+          <li>اختبارات سرعة حقيقية من جوال سعودي وبيانات CrUX.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="callout warning">
+      <strong>قيد مهم في التدقيق العام</strong>
+      Cloudflare قدّم تحدي تحقق 403 لشبكة التدقيق في هولندا. لذلك لا يعني ذلك أن زوار السعودية محجوبون. يجب إعادة الاختبار عبر 4G سعودي ومن أداة فحص الرابط في Google Search Console. لم تُختلق أي درجة Lighthouse لأن القياس لم يكتمل.
+    </div>
+    <h3>افتراضات العمل</h3>
+    <table>
+      <thead><tr><th>الافتراض</th><th>لماذا</th><th>طريقة التحقق</th></tr></thead>
+      <tbody>
+        <tr><td>النشاط في السعودية ومسجل لضريبة القيمة المضافة</td><td>سلة، رقم VAT، وربط زاتكا</td><td>فحص بيانات المنشأة وإشعار المرحلة الثانية</td></tr>
+        <tr><td>Hostinger هو المسجّل أو مستضيف خدمة أخرى، لا DNS الحالي</td><td>خوادم الأسماء الحالية <span class="mono">ns1/ns2.salla.cloud</span></td><td>لوحة Hostinger + WHOIS + إعدادات DNS في سلة</td></tr>
+        <tr><td>دفترة هو النظام المحاسبي القانوني الحالي</td><td>استخدام ميزان المراجعة والقيود والمشتريات</td><td>تحديد آخر شهر إقفال ومصدر الفاتورة</td></tr>
+        <tr><td>الهدف صفر اشتراك إضافي متكرر</td><td>طلب المالك</td><td>اعتماد قائمة الأدوات المجانية فقط قبل التنفيذ</td></tr>
+      </tbody>
+    </table>
+    <p class="small">هذا تقرير تطوير وتشغيل، وليس رأياً قانونياً أو إقراراً ضريبياً. تُراجع قرارات زاتكا والإقفال والحفظ مع محاسب سعودي مؤهل.</p>
+  </section>
+
+  <section class="sheet chapter" id="audit">
+    <div class="eyebrow">الفصل 2</div>
+    <h2>تدقيق Alaslee.com: ما الذي يمنع النمو الآن؟</h2>
+    <div class="grid-4">
+      <div class="metric"><div class="value">186</div><div class="label">صورة في الرئيسية</div></div>
+      <div class="metric"><div class="value">33</div><div class="label">ملف/وسم script تقريباً</div></div>
+      <div class="metric"><div class="value">124</div><div class="label">رابط علامة ينتهي إلى #</div></div>
+      <div class="metric"><div class="value">28</div><div class="label">صورة فقط لها width+height</div></div>
+    </div>
+    <h3>لوحة المخاطر المثبتة</h3>
+    <table>
+      <thead><tr><th style="width:14%">الأولوية</th><th style="width:25%">المشكلة</th><th>الدليل العام</th><th style="width:25%">الإجراء</th></tr></thead>
+      <tbody>
+        <tr><td><span class="badge p0">P0 حرج</span></td><td>روابط لغات وفئات مكسورة</td><td>روابط <span class="mono">/ar/c…</span> و<span class="mono">/en/c…</span> في hreflang تُرجع 410، وبعض الفئات لا تُظهر منتجات للزاحف.</td><td>تصحيح hreflang/canonical، واختبار 10 فئات في GSC قبل طلب الفهرسة.</td></tr>
+        <tr><td><span class="badge p0">P0 حرج</span></td><td>عملة متناقضة</td><td>الزحف العام وProduct schema أظهرا USD، بينما المتجر سعودي والشروط تشير إلى SAR.</td><td>ضبط SAR افتراضياً، اختبار من السعودية، ومطابقة schema وMerchant feed.</td></tr>
+        <tr><td><span class="badge p0">P0 ثقة</span></td><td>توثيق وسياسات غير مكتملة</td><td>رابط منصة الأعمال يحتوي <span class="mono">0000000000</span>، والسياسات بها <span class="mono">[أدخل بريدك]</span> و<span class="mono">[أدخل رقمك]</span>.</td><td>تصحيح أو إخفاء الشارة فوراً، واستكمال الهوية وقنوات الشكاوى والسياسات.</td></tr>
+        <tr><td><span class="badge p0">P0 بيانات</span></td><td>وصفة النظر كنص حر</td><td>FAQ يطلب إرسال الوصفة أو كتابتها في ملاحظات الطلب، بلا فصل OD/OS أو تحقق.</td><td>نموذج خدمة حسب الطلب مع رفع ملف/حقول شرطية ومراجعة موظف بصريات.</td></tr>
+        <tr><td><span class="badge p0">P0 قياس</span></td><td>قياس ناقص أو غير قابل للإثبات</td><td>Meta Pixel ظاهر؛ GA4/TikTok/Snap/X لم تظهر كتفعيلات خاصة مؤكدة. حاوية GTM الظاهرة قد تكون العامة لسلة.</td><td>ربط رسمي واحد لكل منصة، اختبار DebugView/Test Events وPurchase بقيمة وSAR.</td></tr>
+        <tr><td><span class="badge p1">P1 SEO</span></td><td>فوضى التصنيفات</td><td>«سوبر شمسي» مكرر، «كالفين/كلفين»، «نظارات قراءة/للقراءة»، و72 فئة علامة × نوع.</td><td>تحويل العلامات إلى Brand/Filter، ودمج المتكرر مع 301 قبل الحذف.</td></tr>
+        <tr><td><span class="badge p1">P1 بيع</span></td><td>بيانات منتجات ضعيفة</td><td>منتج عيني يعرض الموديل والسعر والكمية دون المقاس والخامة واللون وUV والضمان؛ 17 منتجاً بلا صورة في sitemap.</td><td>قالب بيانات إلزامي، بدءاً بأعلى 50 منتجاً، ثم كامل 604.</td></tr>
+        <tr><td><span class="badge p1">P1 UX</span></td><td>روابط وبطل بلا تحويل</td><td>124 رابط شعار علامة ينتهي #، والنص/السعر داخل صور البطل بلا CTA نصي في DOM.</td><td>ربط صفحات العلامات، CTA واحد واضح، وشروط العرض ومدة في نص HTML.</td></tr>
+        <tr><td><span class="badge p1">P1 أداء</span></td><td>حمولة كبيرة واحتمال CLS</td><td>الرئيسية نحو 363KB HTML و186 صورة؛ 28 فقط ذات أبعاد محددة.</td><td>حذف التكرار، تحديد الأبعاد، تقليل البطل والدوارات، وقياس CWV سعودياً.</td></tr>
+      </tbody>
+    </table>
+    <h3>ملاحظات دقيقة على البنية الحالية</h3>
+    <div class="grid-2">
+      <div class="card">
+        <h4>نقاط جيدة نُبقي عليها</h4>
+        <ul>
+          <li>HTTP يعيد إلى HTTPS، TLS 1.3 وشهادة سليمة، وHSTS مفعّل.</li>
+          <li><span class="mono">robots.txt</span> يسمح بالزحف ويعلن sitemap. <a class="ref" href="#s40">[S40]</a></li>
+          <li>الرئيسية لها canonical وH1 واحد وOrganization schema.</li>
+          <li>كثير من الصور WebP و143 صورة lazy-loaded.</li>
+          <li>CR وVAT ظاهران في الفوتر، بعد التحقق من صحتهما.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h4>ثغرات إضافية</h4>
+        <ul>
+          <li>124 صورة alt باسم العلامة فقط و14 باسم المتجر؛ ليست وصفاً للصورة.</li>
+          <li><span class="mono">user-select:none</span> يمنع نسخ الموديل والمقاسات والسياسات.</li>
+          <li>تضارب اسم الهوية بين صيغ عربية/إنجليزية مختلفة.</li>
+          <li>صفحة فحص تعرض وعداً مجانياً ثم عدم توفر وخدمة بسعر USD وصورة افتراضية.</li>
+          <li>اسم X المقدم <span class="mono">@alaslee.1</span> غير صالح لأن X لا يقبل النقطة؛ يلزم الاسم الحقيقي.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="callout critical">
+      <strong>لا ترفع ميزانية الإعلانات قبل إغلاق P0.</strong>
+      الإعلان سيضخم تكلفة المرور إلى صفحات بها فئات معطلة وعملة غير متسقة وثقة ناقصة وقياس غير مثبت. أصلح القاعدة أولاً ثم وسّع الإنفاق بناءً على ROAS وهامش المساهمة لا على المبيعات وحدها.
+    </div>
+  </section>
+
+  <section class="sheet chapter" id="roadmap">
+    <div class="eyebrow">الفصل 3</div>
+    <h2>خارطة تنفيذ 90 يوماً</h2>
+    <table>
+      <thead><tr><th>الفترة</th><th>النتيجة المطلوبة</th><th>الأعمال</th><th>بوابة النجاح</th></tr></thead>
+      <tbody>
+        <tr><td><strong>اليوم 0–2</strong><br><span class="badge p0">حماية</span></td><td>نسخة آمنة وخط أساس</td><td>تصدير المنتجات والعملاء والطلبات والمخزون وتقارير 12 شهراً؛ تصوير إعدادات الضرائب والدفع والربط؛ إنشاء سجل تغيير.</td><td>ملفات مؤرخة قابلة للفتح + مسؤول لكل نظام.</td></tr>
+        <tr><td><strong>اليوم 3–7</strong><br><span class="badge p0">إصلاح سريع</span></td><td>إزالة الأخطاء الحرجة</td><td>410/hreflang، SAR، التوثيق، placeholders، روابط العلامات، صور 17 منتجاً، الهوية، user-select، GA4/Meta QA.</td><td>اختبار 10 روابط و3 أجهزة وشراء تجريبي واحد بلا أخطاء.</td></tr>
+        <tr><td><strong>الأسبوع 2–3</strong><br><span class="badge p0">بيانات</span></td><td>قاموس موحد وربط قابل للمطابقة</td><td>SKU موحد، crosswalk سلة↔دفترة، تنظيف العملاء، نموذج الوصفة، تعريف مصدر المخزون والفاتورة.</td><td>50 SKU متطابقة 100% + لا عميل مكرر في عينة 100.</td></tr>
+        <tr><td><strong>الأسبوع 3–5</strong><br><span class="badge p1">كتالوج</span></td><td>أفضل 50 منتجاً جاهزة للبيع</td><td>صور، مواصفات، عنوان/وصف/SEO، فلاتر، أحجام، مخزون، تكلفة، ترتيب بالهامش والتحويل.</td><td>اكتمال بيانات ≥95% للعينة ورفض Merchant صفر قدر الإمكان.</td></tr>
+        <tr><td><strong>الأسبوع 5–7</strong><br><span class="badge p1">تحويل</span></td><td>رحلة شراء أسرع وأكثر ثقة</td><td>إعادة بناء الرئيسية/القوائم/صفحة المنتج، CTA ثابت على الجوال، الثقة، الأسئلة، التقييمات، السلة المتروكة بالبريد.</td><td>اختبار مستخدمين 5 + Checkout ناجح على iOS/Android.</td></tr>
+        <tr><td><strong>الأسبوع 6–9</strong><br><span class="badge p1">اكتساب</span></td><td>حملات قابلة للقياس</td><td>Meta/TikTok/Snap حسب الإنفاق الفعلي، Catalog، UTM، صفحات هبوط، استبعاد المشترين، حملات ديناميكية.</td><td>تطابق المشتريات والقيمة بين المنصة وGA4/سلة ضمن نطاق مفسّر.</td></tr>
+        <tr><td><strong>الأسبوع 8–12</strong><br><span class="badge p2">نمو</span></td><td>SEO واحتفاظ وربحية</td><td>دمج التصنيفات، قوالب 604، 8 أدلة محتوى، bundles، إعادة شراء، إقفال مالي ومخزون ABC.</td><td>لوحة أسبوعية + إقفال شهر خلال 5 أيام + نمو عضوي قابل للقياس.</td></tr>
+      </tbody>
+    </table>
+    <h3>نموذج المسؤوليات</h3>
+    <table class="compact">
+      <thead><tr><th>الدور</th><th>مسؤولياته</th><th>لا يملك أن يفعل منفرداً</th></tr></thead>
+      <tbody>
+        <tr><td>المالك</td><td>الأولوية، الميزانية، السعر، الهوية، اعتماد السياسات</td><td>تغيير قيود أو ضرائب دون المحاسب</td></tr>
+        <tr><td>مشغل سلة</td><td>المنتجات، الفئات، المحتوى، الطلبات، QA</td><td>حذف جماعي أو تعديل مخزون افتتاحي دون نسخة</td></tr>
+        <tr><td>المحاسب</td><td>دفترة، الإقفال، VAT، الذمم، المطابقة، تكلفة المخزون</td><td>إعادة هيكلة الكتالوج دون تنسيق SKU</td></tr>
+        <tr><td>مسؤول التكامل</td><td>API، webhooks، السجلات، retries، reconciliation</td><td>إنشاء فاتورة ثانية أو تغيير mapping بلا اعتماد</td></tr>
+        <tr><td>المحتوى/التصوير</td><td>الصور، المواصفات، SEO، الفيديو، السوشيال</td><td>نشر ادعاءات طبية أو أصالة بلا إثبات</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="sheet chapter" id="seo">
+    <div class="eyebrow">الفصل 7</div>
+    <h2>خطة SEO المتكاملة: أصلح الفهرسة ثم ابنِ الطلب</h2>
+    <div class="callout critical">
+      <strong>الوضع العام يستحق تحقيقاً عاجلاً في Google Search Console.</strong>
+      بحث عام بعدة صيغ <span class="mono">site:alaslee.com</span> لم يُظهر نتائج، مع وجود 410 في hreflang وفئات لا تُقرأ جيداً. هذا ليس بديلاً عن بيانات GSC، لكنه إشارة قوية. أثبت ملكية Domain property، أرسل <span class="mono">https://alaslee.com/sitemap.xml</span>، وافحص 10 منتجات و10 فئات. دليل سلة يشرح ذلك رسمياً. <a class="ref" href="#s8">[S8]</a>
+    </div>
+    <h3>المرحلة 1 — إصلاح تقني خلال 7 أيام</h3>
+    <table>
+      <thead><tr><th>الفحص</th><th>الوضع/الخطر</th><th>الإصلاح</th><th>التحقق</th></tr></thead>
+      <tbody>
+        <tr><td>hreflang</td><td>روابط ar/en للفئات ترجع 410، وصفحات en للمنتجات ليست ترجمة حقيقية</td><td>إن لم توجد إنجليزية: أوقف hreflang الإنجليزي. إن وجدت: canonical ذاتي وتبادل صحيح ومحتوى مترجم.</td><td>HTTP 200 + GSC URL Inspection + فاحص hreflang</td></tr>
+        <tr><td>Canonical</td><td>روابط sitemap والسياسات تختلف عن canonical</td><td>اجعل sitemap يعلن URL النهائي فقط، واستخدم 301 من القديم.</td><td>لا redirect chain؛ canonical يساوي URL النهائي</td></tr>
+        <tr><td>الفئات</td><td>بعضها لا يعرض عناصر للزاحف</td><td>محتوى HTML قابل للزحف، عنوان ووصف، منتجات وروابط حقيقية، pagination سليمة.</td><td>View source/HTML + فحص Google</td></tr>
+        <tr><td>العملة</td><td>USD في schema/الزحف</td><td>SAR افتراضي للسوق السعودي؛ feed وschema والسعر المرئي متطابقة.</td><td>Rich Results + Merchant Center</td></tr>
+        <tr><td>Sitemap</td><td>681 URL؛ 17 منتجاً بلا صور؛ كل المنتجات lastmod في دقيقتين بتاريخ واحد</td><td>إصلاح المنتجات ثم إعادة الإرسال؛ لا تتلاعب lastmod يدوياً إن كانت سلة تديره.</td><td>Coverage/Pages + Image indexing</td></tr>
+        <tr><td>Cloudflare</td><td>شبكة NL رأت 403 challenge</td><td>اختبار Googlebot من GSC و4G سعودي؛ تصعيد إلى سلة إن وقع الزاحف/العملاء في التحدي.</td><td>Live Test ناجح ولقطات من 3 مناطق</td></tr>
+        <tr><td>Structured Data</td><td>SKU غير صحيح، مراجعات ناقصة، Organization باسم المنتج</td><td>تصحيح Product/Offer/Brand/MPN/GTIN/Review؛ Organization ثابت للمتجر.</td><td>Rich Results بلا أخطاء حرجة</td></tr>
+      </tbody>
+    </table>
+    <h3>المرحلة 2 — قوالب On-page</h3>
+    <table class="compact">
+      <thead><tr><th>الصفحة</th><th>قالب Title</th><th>قالب H1/وصف</th></tr></thead>
+      <tbody>
+        <tr><td>الرئيسية</td><td>الأصلي للنظارات | نظارات طبية وشمسية وعدسات أصلية</td><td>H1 واحد: الأصلي للنظارات — وصف قيمة حقيقي 80–120 كلمة</td></tr>
+        <tr><td>الفئة</td><td>{الفئة} الأصلية أونلاين | الأصلي للنظارات</td><td>{الفئة}: مقدمة 120–220 كلمة + دليل اختيار وروابط فلاتر</td></tr>
+        <tr><td>العلامة</td><td>نظارات {العلامة} الأصلية | طبي وشمسي | الأصلي</td><td>نبذة موثقة + أشهر الموديلات + روابط طبي/شمسي</td></tr>
+        <tr><td>المنتج</td><td>{Brand} {Model} {Type} {Color} {Size} | الأصلي</td><td>اسم مطابق + مواصفات فريدة + ملاءمة + ضمان/إرجاع</td></tr>
+        <tr><td>الدليل</td><td>{السؤال الأساسي}: دليل عملي لاختيار النظارة | الأصلي</td><td>إجابة مباشرة ثم أقسام وروابط منتجات مناسبة</td></tr>
+      </tbody>
+    </table>
+    <div class="callout info">
+      <strong>مثال Meta description لمنتج</strong>
+      «تسوق نظارة Polo PH 4207U الشمسية الأصلية باللون الأسود، مقاس 56، مع تفاصيل العدسة والإطار والضمان والتوصيل داخل السعودية من الأصلي للنظارات.» لا تكرر النص نفسه على مئات المنتجات.
+    </div>
+    <h3>المرحلة 3 — تجميع النية بدل تشتت 72 فئة</h3>
+    <table class="compact">
+      <thead><tr><th>Cluster</th><th>صفحة المال</th><th>محتوى داعم</th><th>روابط داخلية</th></tr></thead>
+      <tbody>
+        <tr><td>النظارات الطبية</td><td>/نظارات-طبية</td><td>المقاس، شكل الوجه، الخامات، قراءة المقاسات</td><td>إلى الفئة والمنتجات/العلامات المناسبة</td></tr>
+        <tr><td>النظارات الشمسية</td><td>/نظارات-شمسية</td><td>UV، الاستقطاب، القيادة، المقاس والوجه</td><td>فلاتر مستقطب/رجالي/نسائي</td></tr>
+        <tr><td>عدسات لاصقة</td><td>/العدسات</td><td>BC/DIA، الاستبدال، الاستخدام والعناية</td><td>حسب العلامة والنوع — مراجعة مختص</td></tr>
+        <tr><td>الأطفال</td><td>/نظارات-أطفال</td><td>المتانة، المقاس، الراحة، المتابعة</td><td>أطفال طبي/شمسي وخدمة الفرع</td></tr>
+        <tr><td>العلامات</td><td>/brands/{brand}</td><td>دليل أصالة، موديلات، تاريخ مختصر موثق</td><td>طبي/شمسي/وصل حديثاً</td></tr>
+      </tbody>
+    </table>
+    <h3>خطة محتوى أول 12 أسبوعاً</h3>
+    <div class="grid-2">
+      <div class="card">
+        <h4>الأدلة الثمانية الأولى</h4>
+        <ol>
+          <li>كيف تقرأ مقاس الإطار 52–18–140؟</li>
+          <li>كيف تختار نظارة تناسب شكل الوجه؟</li>
+          <li>نظارة شمسية مستقطبة أم UV400؟</li>
+          <li>دليل الإطار الضيق والمتوسط والعريض.</li>
+          <li>شرح BC وDIA للعدسات اللاصقة.</li>
+          <li>متى تُستبدل العدسات اللاصقة؟</li>
+          <li>كيف تحافظ على الإطار والعدسات؟</li>
+          <li>كيف تتأكد من أصالة النظارة والضمان؟</li>
+        </ol>
+      </div>
+      <div class="card">
+        <h4>معيار النشر</h4>
+        <ul>
+          <li>إجابة أصلية، لا حشو ولا نص مولد بلا مراجعة.</li>
+          <li>اسم الكاتب/المراجع، خاصة المحتوى البصري/الصحي.</li>
+          <li>صور أصلية وalt وصفي وروابط فئات.</li>
+          <li>تاريخ تحديث ومصادر صحية موثوقة عند الادعاء.</li>
+          <li>CTA مفيد واحد، لا تحويل كل مقال إلى إعلان.</li>
+        </ul>
+        <p>مدونة سلة الرسمية متاحة مجاناً؛ لا حاجة لتطبيق SEO مدفوع قبل إصلاح الأساس. <a class="ref" href="#s9">[S9]</a></p>
+      </div>
+    </div>
+    <h3>Checklist لكل منتج</h3>
+    <ul class="checklist">
+      <li>Title فريد، H1 واحد، slug مقروء ويتضمن الموديل/SKU دون حشو.</li>
+      <li>Meta 140–165 حرفاً تقريباً، لا نصاً عاماً من المتجر.</li>
+      <li>3 صور على الأقل للمنتج الأساسي؛ alt يصف الزاوية/اللون/الموديل.</li>
+      <li>Brand/MPN/GTIN/Color/Material/Size وSAR في schema.</li>
+      <li>لا Review schema دون تقييم وتاريخ ونص فعلي.</li>
+      <li>روابط إلى الفئة والعلامة ودليل المقاس ومنتجات بديلة.</li>
+      <li>لا صفحة مفهرسة لمنتج بلا صورة/وصف/توفر إلا لسبب مقصود.</li>
+    </ul>
+  </section>
+
+  <section class="sheet chapter" id="tracking">
+    <div class="eyebrow">الفصل 8</div>
+    <h2>القياس والحملات: مصدر واحد لكل حدث</h2>
+    <div class="flow">
+      <div class="flow-box"><strong>المتجر</strong>View / Search / Item / Cart / Checkout / Purchase</div>
+      <div class="arrow">←</div>
+      <div class="flow-box"><strong>تكاملات سلة الرسمية</strong>GA4 + Meta + TikTok/Snap/X حسب الاستخدام</div>
+      <div class="arrow">←</div>
+      <div class="flow-box"><strong>لوحة القرار</strong>سلة + GA4 + منصة الإعلان + دفترة/الهامش</div>
+    </div>
+    <div class="callout warning">
+      <strong>قاعدة منع تضاعف المبيعات</strong>
+      استخدم تكاملاً رسمياً واحداً لكل منصة. لا ترسل Meta Pixel من تطبيق سلة ومن GTM مرة أخرى. عند الجمع بين Pixel وCAPI يجب مشاركة <span class="mono">event_id</span> نفسه ليتم deduplication. GTM للأحداث المخصصة فقط بعد جرد الوسوم.
+    </div>
+    <h3>Stack صفري الاشتراك الإضافي</h3>
+    <table>
+      <thead><tr><th>الأداة</th><th>الحالة المقترحة</th><th>ماذا تفعل</th><th>اختبار القبول</th></tr></thead>
+      <tbody>
+        <tr><td>GA4 الرسمي</td><td><span class="badge p0">فعّل الآن</span></td><td>سلوك، مصادر، funnel، إيراد</td><td>DebugView يرى purchase مرة واحدة بقيمة وSAR <a class="ref" href="#s20">[S20]</a></td></tr>
+        <tr><td>Google Search Console</td><td><span class="badge p0">فعّل الآن</span></td><td>الفهرسة، الكلمات، CWV، أخطاء</td><td>Domain verified + sitemap success <a class="ref" href="#s8">[S8]</a></td></tr>
+        <tr><td>Google Merchant Center</td><td><span class="badge p1">بعد تنظيف 50</span></td><td>Free listings وShopping feed</td><td>السعر/التوفر/SAR/GTIN بلا رفض <a class="ref" href="#s21">[S21]</a></td></tr>
+        <tr><td>Meta Pixel + CAPI + Catalog</td><td><span class="badge p0">راجع الحالي</span></td><td>Facebook وInstagram تحت Business واحد</td><td>Test Events + dedup + match quality <a class="ref" href="#s22">[S22]</a></td></tr>
+        <tr><td>TikTok Extension</td><td>فقط إن توجد حملات</td><td>Pixel + Events API + Catalog</td><td>Events Manager يرى المسار والقيمة <a class="ref" href="#s23">[S23]</a></td></tr>
+        <tr><td>Snap Extension</td><td>فقط إن توجد حملات</td><td>Pixel + CAPI + Catalog</td><td>Test Events بلا تكرار <a class="ref" href="#s24">[S24]</a></td></tr>
+        <tr><td>X Pixel/Catalog</td><td>بعد تصحيح اسم الحساب</td><td>قياس حملات X</td><td>لا تربط <span class="mono">@alaslee.1</span>؛ احصل على المعرف الصحيح</td></tr>
+      </tbody>
+    </table>
+    <h3>مواصفات أحداث التجارة</h3>
+    <table class="compact">
+      <thead><tr><th>الحدث</th><th>الحقول اللازمة</th><th>متى يُطلق</th><th>منع الخطأ</th></tr></thead>
+      <tbody>
+        <tr><td><span class="mono">view_item_list</span></td><td>item_list_id/name، items</td><td>ظهور فئة/بحث فعلي</td><td>لا عند تحميل الصفحة فقط إن لم تظهر البطاقات</td></tr>
+        <tr><td><span class="mono">select_item</span></td><td>item_id=SKU، item_list، index</td><td>النقر على منتج</td><td>SKU ثابت</td></tr>
+        <tr><td><span class="mono">view_item</span></td><td>SKU، brand، category، variant، value، SAR</td><td>صفحة منتج مكتملة</td><td>القيمة رقم لا نص</td></tr>
+        <tr><td><span class="mono">add_to_cart</span></td><td>items، quantity، value، SAR</td><td>نجاح الإضافة</td><td>لا عند ضغط فاشل</td></tr>
+        <tr><td><span class="mono">begin_checkout</span></td><td>cart items، coupon، value</td><td>بدء Checkout</td><td>مرة لكل جلسة/محاولة منطقية</td></tr>
+        <tr><td><span class="mono">add_payment_info</span></td><td>payment_type، value</td><td>اختيار طريقة ناجح</td><td>لا ترسل بيانات بطاقة</td></tr>
+        <tr><td><span class="mono">purchase</span></td><td>transaction_id، items، tax، shipping، coupon، value، SAR</td><td>تأكيد طلب مدفوع/قاعدة سلة المحددة</td><td>transaction_id يمنع التكرار</td></tr>
+        <tr><td><span class="mono">refund</span></td><td>transaction_id، items/value</td><td>مرتجع فعلي</td><td>جزئي مقابل كامل</td></tr>
+      </tbody>
+    </table>
+    <h3>نظام UTM موحد للحسابات</h3>
+    <div class="callout info ltr">
+      <strong class="mono">https://alaslee.com/?utm_source=instagram&utm_medium=organic_social&utm_campaign=evergreen_profile&utm_content=bio</strong>
+    </div>
+    <table class="compact">
+      <thead><tr><th>المعامل</th><th>القيم المعتمدة</th><th>مثال</th></tr></thead>
+      <tbody>
+        <tr><td><span class="mono">utm_source</span></td><td>facebook, instagram, threads, tiktok, snapchat, x, google</td><td>instagram</td></tr>
+        <tr><td><span class="mono">utm_medium</span></td><td>paid_social, organic_social, cpc, email, referral</td><td>paid_social</td></tr>
+        <tr><td><span class="mono">utm_campaign</span></td><td><span class="mono">yyyy_goal_product_market</span></td><td><span class="mono">2026_sales_sunglasses_sa</span></td></tr>
+        <tr><td><span class="mono">utm_content</span></td><td>format_hook_variant</td><td><span class="mono">reel_face_shape_v2</span></td></tr>
+        <tr><td><span class="mono">utm_term</span></td><td>الكلمة/الجمهور عند الحاجة</td><td><span class="mono">broad_25_44</span></td></tr>
+      </tbody>
+    </table>
+    <h3>ربط الحسابات المقدمة</h3>
+    <div class="socials">
+      <span>alaslee.com</span><span>facebook: alaslee.1</span><span>instagram: alaslee.1</span><span>threads: @alaslee.1</span><span>tiktok: @alaslee.1</span><span>X: يحتاج تصحيحاً</span>
+    </div>
+    <ul>
+      <li>Facebook وInstagram في Meta Business واحد مع Pixel/CAPI/Catalog، وملكية الدومين.</li>
+      <li>Threads لا يملك تكامل Pixel مستقل موثقاً في سلة؛ استخدم رابط UTM، وادمج المحتوى مع منظومة Meta حيث ينطبق.</li>
+      <li>TikTok عبر Business Extension الرسمي، لا كود يدوي ثانٍ.</li>
+      <li>لا تضف رابط X حتى يرسل المالك اسم مستخدم صالحاً دون نقطة.</li>
+      <li>الفوتر حالياً لا يعرض Facebook/Threads/X؛ أضف فقط الحسابات المؤكدة والنشطة.</li>
+    </ul>
+    <h3>بروتوكول QA قبل أي حملة</h3>
+    <ol>
+      <li>امسح بيانات اختبار قديمة وحدد منتجاً وسعراً معروفين.</li>
+      <li>نفّذ View → Cart → Checkout → Purchase من متصفح خاص وجوال.</li>
+      <li>تحقق من SKU/value/currency/transaction_id في كل أداة.</li>
+      <li>أعد تحميل صفحة الشكر؛ يجب ألا تتكرر purchase.</li>
+      <li>نفّذ refund جزئياً ثم كاملاً، ثم قارن 7 أيام بين عدد الطلبات وقيمتها في سلة وGA4 والمنصة ووثّق فرق الإسناد.</li>
+    </ol>
+  </section>
+
+  <section class="sheet chapter" id="crm">
+    <div class="eyebrow">الفصل 9</div>
+    <h2>العملاء والاحتفاظ: استفد من Pro قبل شراء CRM</h2>
+    <p>سلة تعرض مؤشرات العميل وعمليات الشراء والسلات المتروكة والمحفظة والأمنيات وتسمح بالشرائح والحقول المخصصة. ابدأ بذلك؛ لا تضف اشتراك CRM جديداً قبل إثبات فجوة حقيقية.</p>
+    <div class="callout warning">
+      <strong>الموافقة قبل البكسلات والرسائل</strong>
+      حدّث إشعار الخصوصية والكوكيز، افصل موافقة التسويق، وسجّل وقت/نص الموافقة. لا ترسل الوصفة أو حقولاً صحية إلى أدوات الإعلان. <a class="ref" href="#s7">[S7]</a> <a class="ref" href="#s38">[S38]</a>
+    </div>
+    <h3>شرائح عملية قابلة للتنفيذ</h3>
+    <table class="compact">
+      <thead><tr><th>الشريحة</th><th>القاعدة</th><th>العرض/الرسالة</th><th>المؤشر</th></tr></thead>
+      <tbody>
+        <tr><td>زائر ترك سلة</td><td>سلة خلال 1–24 ساعة</td><td>تذكير مفيد بلا خصم أولاً؛ بريد مجاني</td><td>Recovery rate</td></tr>
+        <tr><td>عميل جديد</td><td>أول طلب مكتمل</td><td>دليل استخدام/عناية + طلب تقييم بعد الاستلام</td><td>Second purchase 90d</td></tr>
+        <tr><td>عميل عدسات</td><td>اشترى عدسات استبدال دورية</td><td>تذكير إعادة شراء في الوقت المناسب</td><td>Reorder rate</td></tr>
+        <tr><td>VIP</td><td>أعلى 10% في الربح/LTV لا الإيراد فقط</td><td>وصول مبكر، خدمة، لا خصم دائم</td><td>Retention وMargin</td></tr>
+        <tr><td>معرض للفقد</td><td>كان نشطاً وتأخر عن دورته</td><td>تذكير/اقتراح حسب مشترياته</td><td>Win-back</td></tr>
+        <tr><td>غير مربح</td><td>مرتجعات/خدمة/خصومات تتجاوز الربح</td><td>لا استهداف مدفوع؛ راجع السبب والسياسة</td><td>Contribution margin</td></tr>
+        <tr><td>مخزون نفد</td><td>أمنية/أعلمني عند التوفر</td><td>تنبيه توفر، لا رسالة عامة</td><td>Restock conversion</td></tr>
+      </tbody>
+    </table>
+    <h3>رحلات بلا اشتراكات إضافية</h3>
+    <table>
+      <thead><tr><th>الرحلة</th><th>التوقيت</th><th>القناة الأقل تكلفة</th><th>المحتوى</th></tr></thead>
+      <tbody>
+        <tr><td>السلة المتروكة 1</td><td>بعد 1–2 ساعة</td><td>Email</td><td>المنتج + فائدة + رابط العودة؛ بلا خصم</td></tr>
+        <tr><td>السلة المتروكة 2</td><td>بعد 18–24 ساعة</td><td>Email</td><td>إجابة على الشحن/الإرجاع/المقاس؛ خصم فقط إن كان الهامش يسمح</td></tr>
+        <tr><td>ما بعد الشراء</td><td>بعد التوصيل</td><td>Email/سلة</td><td>العناية، الضمان، كيفية التواصل</td></tr>
+        <tr><td>طلب تقييم</td><td>3–7 أيام بعد الاستلام</td><td>أداة سلة</td><td>تقييم المنتج والخدمة؛ لا شراء تقييم إيجابي</td></tr>
+        <tr><td>إعادة شراء</td><td>حسب مدة المنتج</td><td>ميزة التذكير</td><td>المنتج السابق مباشرة لا رسالة عامة</td></tr>
+        <tr><td>Win-back</td><td>90/180 يوماً حسب الفئة</td><td>Email</td><td>وصل حديثاً يناسب تاريخ العميل</td></tr>
+      </tbody>
+    </table>
+    <p>السلات المتروكة تدعم حتى 5 تذكيرات وقنوات متعددة؛ ابدأ بالبريد لأن SMS/WhatsApp/صانع التطبيق قد تضيف تكلفة. <a class="ref" href="#s18">[S18]</a></p>
+    <h3>المحفظة والكاش باك بحذر محاسبي</h3>
+    <ul>
+      <li>المحفظة متاحة للباقات المدفوعة مع دومين خاص. <a class="ref" href="#s19">[S19]</a></li>
+      <li>اعتبر الرصيد التزاماً على المتجر حتى الاستخدام/الانتهاء وفق سياسة واضحة.</li>
+      <li>لا تمنح كاش باك على كل شيء؛ اربطه بفئة أو حد سلة وهامش.</li>
+      <li>تأكد من mapping في دفترة: رصيد محفظة، استرداد، استخدام جزئي، انتهاء.</li>
+      <li>اختبر المرتجع الذي دُفع جزء منه بالمحفظة كي لا يُرد مرتين.</li>
+    </ul>
+    <h3>الشراء كضيف</h3>
+    <p>لا تغلقه تلقائياً. يقلل الاحتكاك، لكن الضيف لا يُضاف تلقائياً للتسويق ولا يقيّم. اختبر معدل التحويل وجودة البيانات؛ اطلب إنشاء الحساب بعد الشراء بدلاً من فرضه قبل الدفع.</p>
+  </section>
+
+  <section class="sheet chapter" id="finance">
+    <div class="eyebrow">الفصل 10</div>
+    <h2>المالية والمحاسبة — خطة مفهومة لغير المحاسب</h2>
+    <div class="callout success">
+      <strong>الفكرة ببساطة</strong>
+      سلة تخبرك ماذا طلب العميل ومن أي قناة. دفترة يجب أن يثبت ماذا بعنا، ماذا قبضنا، ماذا استرددنا، كم كلفنا المخزون، لمن ندين، ومن يدين لنا، وما الضريبة والربح الحقيقي. لا تستخدم رقم «المبيعات» بديلاً عن الربح أو النقد.
+    </div>
+    <h3>خريطة مالية مناسبة لمتجر نظارات</h3>
+    <table class="compact">
+      <thead><tr><th>المجموعة</th><th>حسابات مقترحة</th><th>ملاحظة تشغيلية</th></tr></thead>
+      <tbody>
+        <tr><td>الإيرادات</td><td>نظارات طبية، شمسية، عدسات لاصقة، عدسات نظارات، إكسسوارات، خدمات</td><td>لا تفرط في التفصيل؛ التصنيف يجب أن يفيد قراراً</td></tr>
+        <tr><td>مقابلات الإيراد</td><td>خصومات، مرتجعات، كوبونات ممولة، شحن محصل</td><td>افصل الخصم عن المبيعات كي ترى الهامش</td></tr>
+        <tr><td>المخزون</td><td>إطارات، عدسات، عدسات لاصقة/محاليل، إكسسوارات</td><td>دفعات/انتهاء للمنتجات التي تحتاج ذلك</td></tr>
+        <tr><td>تكلفة المبيعات</td><td>تكلفة كل فئة + تصنيع/تركيب مباشر</td><td>SKU بلا تكلفة يفسد الربح</td></tr>
+        <tr><td>النقد والتحصيل</td><td>صندوق، بنك، ذمم بوابات الدفع، نقد عند الاستلام</td><td>لا تسجل دفعة البوابة كبيع جديد</td></tr>
+        <tr><td>الالتزامات</td><td>موردون، VAT مستحق، محافظ/كاش باك، مبالغ عملاء مقدمة</td><td>رصيد المحفظة ليس إيراداً عند منحه</td></tr>
+        <tr><td>المصروفات</td><td>بوابات دفع، شحن، تسويق، رواتب، إيجار، برامج، صيانة، تغليف</td><td>اربط كل مصروف بمركز تكلفة/قناة إن أمكن</td></tr>
+        <tr><td>الأصول</td><td>أجهزة، أثاث، معدات فحص، تحسينات فرع</td><td>لا تُحمّل الأصل كله كمصروف بلا سياسة محاسب</td></tr>
+      </tbody>
+    </table>
+    <h3>دورة البيع الصحيحة</h3>
+    <div class="flow">
+      <div class="flow-box"><strong>طلب سلة</strong>رقم/عميل/SKU/خصم/شحن/VAT</div><div class="arrow">←</div>
+      <div class="flow-box"><strong>حالة معتمدة</strong>مدفوع/تم التنفيذ حسب السياسة</div><div class="arrow">←</div>
+      <div class="flow-box"><strong>فاتورة دفترة</strong>مرجع سلة + طريقة الدفع</div><div class="arrow">←</div>
+      <div class="flow-box"><strong>تحصيل ومطابقة</strong>بوابة/بنك/صندوق</div>
+    </div>
+    <ul>
+      <li>لا ترحّل الطلب الملغي كإيراد، ولا تعدّل فاتورة مكتملة لإخفاء مرتجع؛ استخدم إشعاراً دائناً/مرتجعاً صحيحاً.</li>
+      <li>البيع بالبطاقة: مدين «ذمم بوابة الدفع»، لا البنك مباشرة؛ عند التسوية يُثبت البنك والرسوم والفرق.</li>
+      <li>الدفع عند الاستلام: يبقى تحصيلاً لدى شركة الشحن حتى إيداعه ومطابقته.</li>
+      <li>الشحن والخصم والضريبة يجب أن تتطابق على مستوى الطلب، لا الإجمالي الشهري فقط.</li>
+    </ul>
+    <h3>دورة الشراء والمخزون</h3>
+    <div class="flow">
+      <div class="flow-box"><strong>طلب احتياج</strong>ROP / مبيعات / مخزون قديم</div><div class="arrow">←</div>
+      <div class="flow-box"><strong>فاتورة/طلب مورد</strong>SKU، كمية، تكلفة، موعد</div><div class="arrow">←</div>
+      <div class="flow-box"><strong>استلام وفحص</strong>كمية/حالة/دفعة/فاتورة</div><div class="arrow">←</div>
+      <div class="flow-box"><strong>تسجيل ودفع</strong>مخزون + مورد + VAT مدخلات</div>
+    </div>
+    <p>باقة دفترة المتقدمة تدعم الموردين وفواتير الشراء والمخزون والمصروفات والقيود، لكن صفحة الأسعار الحالية تضع أوامر الشراء وتوزيع المصروف على المنتج في باقة أعلى؛ تحقق من حسابك قبل بناء إجراء يعتمد عليها. <a class="ref" href="#s29">[S29]</a></p>
+    <h3>إجراء يومي — 15 إلى 30 دقيقة</h3>
+    <ul class="checklist">
+      <li>عدد طلبات سلة حسب الحالة = عدد ما رُحّل/استُثني مع سبب.</li>
+      <li>مطابقة إجمالي المنتجات والخصم والشحن وVAT والمدفوع لكل طلب فاشل.</li>
+      <li>مراجعة webhooks/connector الفاشلة قبل إعادة المحاولة؛ لا تضغط «إعادة» عشوائياً.</li>
+      <li>إقفال وردية الكاشير: نقد متوقع/فعلي، بطاقات، مرتجعات، فرق واسم الموظف.</li>
+      <li>مراجعة مخزون سالب/نفاد/تعديل يدوي غير مفسر.</li>
+      <li>تسجيل مصروف اليوم بإيصال وفئة وطريقة دفع، لا تجميعه آخر الشهر.</li>
+    </ul>
+    <h3>إجراء أسبوعي</h3>
+    <div class="grid-2">
+      <div class="card">
+        <h4>المبيعات والتحصيل</h4>
+        <ul>
+          <li>مطابقة كل دفعة بوابة مع الطلبات والرسوم والمرتجعات.</li>
+          <li>COD مع كشوف شركة الشحن.</li>
+          <li>أعمار الذمم للعملاء والموردين.</li>
+          <li>ربح إجمالي حسب فئة وSKU وقناة.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h4>المخزون</h4>
+        <ul>
+          <li>جرد دوري لأصناف A الأعلى قيمة/حركة.</li>
+          <li>نفاد وتغطية الأيام وحد إعادة الطلب.</li>
+          <li>مخزون بلا حركة 90/180/365 يوماً.</li>
+          <li>تواريخ انتهاء العدسات/المحاليل والدفعات إن تنطبق.</li>
+        </ul>
+      </div>
+    </div>
+    <h3>إقفال شهري خلال 5 أيام عمل</h3>
+    <table class="compact">
+      <thead><tr><th>اليوم</th><th>الأعمال</th><th>الناتج</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>تثبيت الفترة؛ ترحيل مبيعات/مرتجعات؛ كشوف البوابات وCOD والصندوق؛ كل فواتير المورد والمصروف.</td><td>سجل معاملات كامل</td></tr>
+        <tr><td>2</td><td>مطابقة البنك والبوابات والصندوق؛ مراجعة AR/AP؛ فروقات الشحن؛ محافظ العملاء.</td><td>كشف مطابقة وفروقات</td></tr>
+        <tr><td>3</td><td>جرد/تسويات معتمدة؛ تكلفة المبيعات؛ دفعات/انتهاء؛ مخزون سالب؛ VAT مدخلات/مخرجات.</td><td>مخزون وVAT مضبوط</td></tr>
+        <tr><td>4</td><td>استحقاقات ومقدمات وأصول/إهلاك حسب المحاسب؛ مراجعة القيود غير العادية.</td><td>ميزان مراجعة أولي</td></tr>
+        <tr><td>5</td><td>مراجعة P&amp;L والميزانية والتدفق؛ مقارنة بالشهر/الهدف؛ قفل الفترة ونسخة احتياطية.</td><td>حزمة إدارة شهرية</td></tr>
+      </tbody>
+    </table>
+    <h3>حزمة التقارير التي يقرأها المالك</h3>
+    <table class="compact">
+      <thead><tr><th>التقرير</th><th>السؤال الذي يجيب عنه</th><th>الإجراء</th></tr></thead>
+      <tbody>
+        <tr><td>قائمة الدخل</td><td>هل النشاط مربح بعد التكلفة والمصروف؟</td><td>ضبط سعر/مزيج/مصروف</td></tr>
+        <tr><td>الميزانية</td><td>ماذا نملك وماذا علينا؟</td><td>سيولة وديون ومخزون</td></tr>
+        <tr><td>التدفق النقدي</td><td>لماذا الربح لا يساوي النقد؟</td><td>شراء/تحصيل/دفع</td></tr>
+        <tr><td>ميزان المراجعة</td><td>هل الحسابات متوازنة ومنطقية؟</td><td>تحقيق قبل الإقرار <a class="ref" href="#s31">[S31]</a></td></tr>
+        <tr><td>أعمار العملاء/الموردين</td><td>من تأخر؟ ومتى ندفع؟</td><td>تحصيل وتخطيط نقد</td></tr>
+        <tr><td>ربحية SKU/فئة</td><td>ما الذي يبيع ويكسب فعلاً؟</td><td>ترتيب/شراء/إعلان</td></tr>
+        <tr><td>تقرير المخزون القديم</td><td>أين المال المجمد؟</td><td>تصفية ذكية/إيقاف شراء</td></tr>
+      </tbody>
+    </table>
+    <h3>ضوابط لا تُهمل</h3>
+    <ul>
+      <li>فصل من ينشئ المورد عن من يعتمد الدفع قدر الإمكان.</li>
+      <li>كل تعديل مخزون له سبب ومستند؛ الجرد لا يغير الكمية بلا اعتماد.</li>
+      <li>لا يُحذف قيد/فاتورة لإصلاح خطأ بعد الإقفال؛ قيد عكسي/إشعار صحيح.</li>
+      <li>صلاحيات أقل ما يلزم، 2FA، مستخدم منفصل لكل موظف، ولا مشاركة كلمات مرور.</li>
+      <li>حفظ السجلات والفواتير والمستندات المحاسبية وفق المدة النظامية؛ دليل VAT يشير إلى 6 سنوات على الأقل في الحالة العامة. <a class="ref" href="#s37">[S37]</a></li>
+    </ul>
+    <h3>زاتكا: ما يجب تأكيده فوراً</h3>
+    <div class="callout critical">
+      <strong>ظهور QR وحده لا يثبت اكتمال المرحلة الثانية.</strong>
+      المرحلة الثانية تتطلب ربط الحل بمنصة فاتورة والصيغة المطلوبة. في B2B القياسي يتم التخليص قبل التسليم، وفي B2C المبسط يتم الإبلاغ ضمن المهلة النظامية. تحقق هل وصل إشعار المرحلة، وهل الربط وCSID لكل جهاز/فرع فعّال، ومن النظام الذي يصدر الأصل. <a class="ref" href="#s36">[S36]</a> <a class="ref" href="#s37">[S37]</a>
+    </div>
+  </section>
+
+  <section class="sheet chapter" id="integration">
+    <div class="eyebrow">الفصل 11</div>
+    <h2>ربط سلة ودفترة عبر API: هندسة تمنع الفاتورة المكررة</h2>
+    <h3>أول قرار: ما نوع الربط الحالي؟</h3>
+    <table>
+      <thead><tr><th>الاحتمال</th><th>الدليل</th><th>التكلفة/الخطر</th></tr></thead>
+      <tbody>
+        <tr><td>موصل دفترة الرسمي في متجر سلة</td><td>فاتورة سلة شهرية/سنوية للتطبيق</td><td>50 ر.س/شهر أو 500 ر.س/سنة قبل VAT، ولا يشمل دفترة. FAQ يقول إن كميات المخزون لا تتزامن تلقائياً. <a class="ref" href="#s28">[S28]</a></td></tr>
+        <tr><td>تكامل API مخصص</td><td>تطبيق خاص/OAuth/سجلات واستضافة</td><td>لا رسم موصل متكرر، لكن له تكلفة بناء وصيانة وأمن ومراقبة</td></tr>
+        <tr><td>CSV يدوي</td><td>تصدير/استيراد مجدول</td><td>أقل تقنية، أعلى عمل وخطر تأخير/تكرار؛ مناسب لحجم منخفض</td></tr>
+      </tbody>
+    </table>
+    <h3>المعمارية الموصى بها</h3>
+    <div class="flow">
+      <div class="flow-box"><strong>Salla Webhooks</strong>order/customer/product/refund</div><div class="arrow">←</div>
+      <div class="flow-box"><strong>Queue</strong>استقبال سريع + توقيع + idempotency</div><div class="arrow">←</div>
+      <div class="flow-box"><strong>Mapper</strong>SKU/Customer/Tax/Payment/Branch</div><div class="arrow">←</div>
+      <div class="flow-box"><strong>Daftra API</strong>Invoice/Credit/Payment/Item</div>
+    </div>
+    <div class="grid-3">
+      <div class="card"><h4>قاعدة 1</h4><p>لا تنفّذ العمل الثقيل داخل webhook؛ خزّن الحدث ورد 2xx، ثم عالجه.</p></div>
+      <div class="card"><h4>قاعدة 2</h4><p>المفتاح <span class="mono">event + order_id + version</span> يمنع إنشاء نفس المستند مرتين.</p></div>
+      <div class="card"><h4>قاعدة 3</h4><p>كل فشل له retry محدود وdead-letter وتنبيه ومصالحة يومية.</p></div>
+    </div>
+    <h3>خريطة البيانات الأساسية</h3>
+    <table class="compact">
+      <thead><tr><th>سلة</th><th>دفترة</th><th>قاعدة</th></tr></thead>
+      <tbody>
+        <tr><td>order.id / reference_id</td><td>external_reference / notes</td><td>فريد وقابل للبحث؛ لا رقم الطلب المرئي وحده</td></tr>
+        <tr><td>customer.id + phone/email</td><td>client_id</td><td>crosswalk؛ بيع B2B/آجل يحتاج عميلاً حقيقياً لا افتراضياً</td></tr>
+        <tr><td>item.sku + option/variant</td><td>product/item</td><td>لا fallback إلى الاسم؛ الفشل أفضل من صنف خاطئ</td></tr>
+        <tr><td>subtotal</td><td>line totals</td><td>بعد خصم السطر وقبل/بعد VAT حسب إعداد موحد</td></tr>
+        <tr><td>discount/coupon</td><td>discount account/lines</td><td>افصل ممول المتجر/طرف آخر إن ينطبق</td></tr>
+        <tr><td>shipping</td><td>shipping income/line</td><td>التحصيل ليس تكلفة شركة الشحن</td></tr>
+        <tr><td>tax</td><td>VAT output/input</td><td>النسبة والأساس والتقريب على المستوى الصحيح</td></tr>
+        <tr><td>payment method/status</td><td>treasury/bank/gateway receivable</td><td>لا تعتبر COD نقداً قبل التحصيل</td></tr>
+        <tr><td>refund items/value</td><td>credit note/refund</td><td>جزئي/كامل؛ يعيد المخزون فقط وفق الحالة</td></tr>
+        <tr><td>branch/warehouse</td><td>warehouse/cost center</td><td>mapping صريح؛ Pro Point للفرع الرئيسي حسب الدليل</td></tr>
+      </tbody>
+    </table>
+    <h3>أحداث يجب التعامل معها</h3>
+    <p>وثائق سلة توفر OAuth2 وwebhooks للطلبات والعملاء والمنتجات والمرتجعات؛ راقب إلغاء الأحداث القديمة مثل <span class="mono">product.updated</span> لصالح أحداث أكثر تحديداً. <a class="ref" href="#s47">[S47]</a></p>
+    <table class="compact">
+      <thead><tr><th>الحدث</th><th>الإجراء</th><th>لا تفعل</th></tr></thead>
+      <tbody>
+        <tr><td>order.created</td><td>خزّن الطلب وقيّم هل يستحق الترحيل الآن</td><td>لا تنشئ فاتورة نهائية قبل السياسة المعتمدة</td></tr>
+        <tr><td>order.updated/status.updated</td><td>غيّر الحالة أو أنشئ المستند عند «تم التنفيذ» مثلاً</td><td>لا تعيد إنشاء الفاتورة</td></tr>
+        <tr><td>order.refunded</td><td>إشعار دائن/مرتجع/رد دفع مع مرجع الأصل</td><td>لا تحذف الفاتورة الأصلية</td></tr>
+        <tr><td>product price/status/image/category…</td><td>زامن فقط الحقول ذات الملكية المتفق عليها</td><td>لا تجعل نظامين يكتب كل منهما فوق الآخر</td></tr>
+        <tr><td>customer.updated</td><td>حدّث بيانات الاتصال دون كسر الذمة</td><td>لا تدمج عميلين آلياً بناء على الاسم</td></tr>
+      </tbody>
+    </table>
+    <h3>جدول المطابقة اليومية</h3>
+    <table class="compact">
+      <thead><tr><th>التاريخ</th><th>Orders</th><th>Gross</th><th>Discount</th><th>Shipping</th><th>VAT</th><th>Refund</th><th>Net</th><th>Diff</th></tr></thead>
+      <tbody><tr><td>YYYY-MM-DD</td><td>سلة/دفترة</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>0.00 أو سبب موثق</td></tr></tbody>
+    </table>
+    <h3>سيناريوهات اختبار لا بد منها</h3>
+    <div class="grid-2">
+      <ul class="checklist">
+        <li>بطاقة مدفوعة، نقد، COD، رابط/QR.</li>
+        <li>خصم سطر وكوبون وخصم كامل.</li>
+        <li>شحن مجاني وشحن مدفوع.</li>
+        <li>محفظة كاملة ومحفظة جزئية.</li>
+        <li>طلب متعدد المنتجات/options.</li>
+        <li>Bundle وهدية.</li>
+      </ul>
+      <ul class="checklist">
+        <li>إلغاء قبل/بعد الترحيل.</li>
+        <li>مرتجع جزئي وكامل.</li>
+        <li>إعادة webhook ثلاث مرات.</li>
+        <li>SKU غير موجود/عميل مكرر.</li>
+        <li>فشل دفترة ثم استعادة.</li>
+        <li>تقريب VAT وفارق 0.01.</li>
+      </ul>
+    </div>
+    <div class="callout success">
+      <strong>شروط Go قبل الاعتماد</strong>
+      30 يوماً بلا فقد أو تكرار؛ مطابقة يومية عدد/إجمالي/ضريبة/خصم/شحن/تحصيل؛ أعلى 50 SKU متطابقة 100% ثم جرد كامل؛ نجاح المرتجع الجزئي والكامل؛ وإقفال شهر يراجعه المحاسب. لا تُلغِ الموصل أو تغيّر الفاتورة قبل ذلك.
+    </div>
+  </section>
+
+  <section class="sheet chapter" id="point">
+    <div class="eyebrow">الفصل 12</div>
+    <h2>هل سلة بوينت بديل عن دفترة؟</h2>
+    <div class="decision">
+      <div class="headline">لا. هو بديل/تحسين للكاشير، وليس بديلاً لنظام المحاسبة.</div>
+      <p>فعّل Salla Point GO المجاني على Pro للفرع الرئيسي كتجربة بيع حضوري متزامنة، واجعل طلباته تمر في نفس قناة الربط إلى دفترة. لا تشترك في Point PRO للدفع SoftPOS إلا إذا أثبتت التجربة أن رسومه أقل من جهازك/مزودك الحالي وأن الحاجة حقيقية.</p>
+    </div>
+    <table class="compact">
+      <thead><tr><th>القدرة</th><th>سلة بوينت</th><th>دفترة Advanced</th><th>الحكم</th></tr></thead>
+      <tbody>
+        <tr><td>بيع حضوري وكاشير</td><td>نعم، متزامن مع سلة</td><td>نعم، POS سحابي</td><td>Point أبسط لقناة سلة</td></tr>
+        <tr><td>مخزون أونلاين/حضوري</td><td>تحديث وحجز فوري موثق</td><td>إدارة مخزون؛ الربط يحتاج ضبط</td><td>Point تشغيلي قوي</td></tr>
+        <tr><td>عملاء وسجل طلبات</td><td>نعم</td><td>نعم + أرصدة/ذمم</td><td>دفترة أعمق مالياً</td></tr>
+        <tr><td>تقارير منتج/فرع/موظف</td><td>نعم</td><td>نعم</td><td>كلاهما</td></tr>
+        <tr><td>فاتورة مبسطة/QR</td><td>موثق ضمن البيع</td><td>فوترة إلكترونية وربط زاتكا حسب الإعداد</td><td>لا تصدر فاتورتين</td></tr>
+        <tr><td>دليل حسابات وقيود يومية</td><td>غير موثق</td><td>نعم</td><td>دفترة لازم</td></tr>
+        <tr><td>أستاذ وميزان مراجعة وقوائم</td><td>غير موثق</td><td>نعم</td><td>دفترة لازم</td></tr>
+        <tr><td>موردون ومشتريات وذمم</td><td>غير موثق</td><td>نعم</td><td>دفترة لازم</td></tr>
+        <tr><td>مصروفات وبنوك وخزن</td><td>غير موثق</td><td>نعم</td><td>دفترة لازم</td></tr>
+        <tr><td>VAT مدخلات/مخرجات وإقرار</td><td>ضريبة/فاتورة المبيعات فقط</td><td>تقارير ضريبية ومدخلات شراء</td><td>Point لا يكفي</td></tr>
+      </tbody>
+    </table>
+    <h3>الأسعار والحدود الحالية التي تؤثر في القرار</h3>
+    <ul>
+      <li><strong>Point GO:</strong> مجاني، مع نقد ورابط/QR ومزامنة وتقارير وفاتورة؛ أحدث دليل يقيد Plus/Pro بالفرع الرئيسي، وتعدد فروع نقاط البيع لسبيشل. <a class="ref" href="#s26">[S26]</a></li>
+      <li><strong>Point PRO / SoftPOS على Pro:</strong> صفحة التطبيق تعرض 79 ر.س/شهر أو 687 ر.س/سنة قبل VAT، و49 ر.س للجهاز الإضافي؛ تحقق من السعر داخل الحساب قبل الالتزام. <a class="ref" href="#s25">[S25]</a></li>
+      <li><strong>دفترة Advanced:</strong> صفحة الأسعار العامة تعرض 55$ شهرياً أو ما يعادل 41.25$/شهر سنوياً (495$/سنة)، مع حدود منشورة منها 500 فاتورة/عرض شهرياً، 300 عميل، 3 مستودعات، 5 خزن/بنوك، ومستخدم إضافي؛ تحقق من عقدك/باقتك القديمة. <a class="ref" href="#s29">[S29]</a></li>
+    </ul>
+    <h3>تجربة Point خلال 30 يوماً</h3>
+    <ol>
+      <li>فرع رئيسي فقط، موظفان وصلاحيات منفصلة، 50 SKU مع باركود.</li>
+      <li>نقد وQR/رابط دون Point PRO المدفوع.</li>
+      <li>اختبار وردية، بيع، حجز، إلغاء، مرتجع، نفاد وإنترنت منقطع.</li>
+      <li>تأكد أن طلب Point يدخل دفترة مرة واحدة وبالفرع/الضريبة/الدفع الصحيح.</li>
+      <li>قارن فرق وقت الكاشير والمخزون والرسوم قبل قرار دائم.</li>
+    </ol>
+  </section>
+
+  <section class="sheet chapter" id="cost">
+    <div class="eyebrow">الفصل 13</div>
+    <h2>خفض التكلفة بلا اشتراكات جديدة</h2>
+    <h3>استخدم أولاً — موجود/مجاني رسمياً</h3>
+    <table class="compact">
+      <thead><tr><th>الحاجة</th><th>الأداة</th><th>القرار</th></tr></thead>
+      <tbody>
+        <tr><td>SEO وفهرسة</td><td>إعدادات سلة + GSC + sitemap + المدونة</td><td>لا تطبيق SEO مدفوع</td></tr>
+        <tr><td>تحليلات</td><td>GA4 الرسمي + تقارير سلة</td><td>لا منصة Analytics جديدة</td></tr>
+        <tr><td>Meta/TikTok/Snap/X</td><td>تكاملات سلة الرسمية المجانية حسب الحاجة</td><td>لا Universal pixel مدفوع</td></tr>
+        <tr><td>ولاء/استرجاع</td><td>محفظة سلة والكاش باك المدمج</td><td>لا تطبيق ولاء قبل اختبار</td></tr>
+        <tr><td>Bundles وعروض</td><td>مجموعة المنتجات والعروض المدمجة</td><td>لا تطبيق عروض إضافي</td></tr>
+        <tr><td>سلات متروكة</td><td>Email داخل سلة</td><td>أجّل SMS/WhatsApp المدفوع</td></tr>
+        <tr><td>صفحات حملات</td><td>صفحات هبوط سلة غير المحدودة</td><td>لا Landing page builder</td></tr>
+        <tr><td>كاشير</td><td>Salla Point GO للفرع الرئيسي</td><td>لا SoftPOS قبل قياس الجدوى</td></tr>
+      </tbody>
+    </table>
+    <h3>خيارات تكلفة الربط والمحاسبة</h3>
+    <table>
+      <thead><tr><th>الخيار</th><th>التكلفة</th><th>العمل/المخاطر</th><th>التوصية</th></tr></thead>
+      <tbody>
+        <tr><td><strong>A — الحالي الآمن</strong><br>Pro + Advanced + الموصل</td><td>الاشتراكان + 500 ر.س/سنة للموصل قبل VAT</td><td>أقل تغيير؛ مخزون الموصل غير مؤكد</td><td><span class="badge ok">الموصى الآن</span></td></tr>
+        <tr><td><strong>B — تطبيق خاص</strong><br>Salla OAuth/Webhooks + Daftra API</td><td>لا اشتراك موصل، لكن بناء/صيانة/استضافة</td><td>أمن، tokens، queue، مراقبة، توافق API</td><td>فقط إذا توجد خبرة وصافي وفر حقيقي</td></tr>
+        <tr><td><strong>C — CSV</strong></td><td>لا اشتراك ربط</td><td>عمل يدوي، تأخير، تكرار، صعب مع الحجم</td><td>خطة طوارئ أو حجم منخفض</td></tr>
+        <tr><td><strong>D — تخفيض دفترة</strong></td><td>فرق اشتراك محتمل</td><td>قد تفقد API/مراكز تكلفة/حدوداً مهمة</td><td>لا قبل تحليل 12 شهراً واختبار شهرين</td></tr>
+      </tbody>
+    </table>
+    <div class="callout warning">
+      <strong>الـ API المخصص ليس «مجاني كلياً».</strong>
+      ربط الدومين عبر Hostinger لا يعني وجود Backend مناسب. تحقق أن الاستضافة الحالية توفر HTTPS endpoint دائم، قاعدة بيانات، Cron/queue، تخزين أسرار واتصالات صادرة. إن لم تتوفر، قد تكون كلفة الصيانة أعلى من 500 ر.س سنوياً.
+    </div>
+    <h3>اشتراكات لا أوصي بها الآن</h3>
+    <div class="socials" style="direction:rtl;justify-content:flex-start">
+      <span>تطبيق SEO</span><span>CRM جديد</span><span>ولاء خارجي</span><span>Popup مدفوع</span><span>Universal Pixel</span><span>ERP ثالث</span><span>ثيم مدفوع قبل إصلاح المحتوى</span><span>واتساب آلي قبل إثبات العائد</span>
+    </div>
+    <h3>قرار تخفيض دفترة — بوابة حسابية</h3>
+    <p>استخرج آخر 12 شهراً واحسب: أقصى فواتير/شهر، عدد العملاء النشطين، المستودعات، الخزن/البنوك، المستخدمين، الحاجة إلى API ومراكز التكلفة. لا تنتقل إلى باقة أقل إذا اقترب أي مؤشر من الحد أو سيتحول العمل اليدوي إلى تكلفة أكبر من الوفر.</p>
+  </section>
+
+  <section class="sheet chapter" id="kpis">
+    <div class="eyebrow">الفصل 14</div>
+    <h2>المؤشرات والحوكمة: كيف نعرف أن التطوير نجح؟</h2>
+    <div class="callout info">
+      <strong>التحسن العالي هدف، وليس وعداً رقمياً.</strong>
+      ثبّت خط الأساس من آخر 28 يوماً قبل أي تغيير، وقارن بفترة مماثلة مع استبعاد أيام العروض الاستثنائية. الأهداف أدناه نطاقات داخلية معقولة للاختبار خلال 90–180 يوماً، وتتأثر بالسعر والمخزون وجودة الزيارات والموسمية.
+    </div>
+
+    <h3>لوحة القيادة التنفيذية</h3>
+    <table class="compact">
+      <thead><tr><th>المحور</th><th>المؤشر</th><th>خط الأساس</th><th>هدف القبول</th><th>المصدر/التواتر</th><th>المالك</th></tr></thead>
+      <tbody>
+        <tr><td>البيانات</td><td>طلبات بهاتف سعودي صالح</td><td>يُقاس أولاً</td><td>≥ 98%</td><td>تصدير سلة / أسبوعي</td><td>خدمة العملاء</td></tr>
+        <tr><td>البيانات</td><td>SKU فريد لكل Variant نشط</td><td>يُقاس</td><td>100%</td><td>سلة + Daftra / أسبوعي</td><td>مسؤول الكتالوج</td></tr>
+        <tr><td>البيانات</td><td>تكلفة شراء غير صفرية للأصناف المباعة</td><td>يُقاس</td><td>100%</td><td>دفترة / شهري</td><td>المحاسب</td></tr>
+        <tr><td>القياس</td><td>تغطية حدث Purchase مقابل الطلبات المؤهلة</td><td>يُقاس</td><td>≥ 95%</td><td>GA4/منصات/سلة / يومي</td><td>التسويق</td></tr>
+        <tr><td>القياس</td><td>فرق قيمة الإيراد بين القياس وسلة</td><td>يُقاس</td><td>≤ 1% بعد تفسير الإلغاءات</td><td>مطابقة يومية</td><td>التسويق + المالية</td></tr>
+        <tr><td>القياس</td><td>Purchase مكرر لنفس الطلب</td><td>يُقاس</td><td>0</td><td>event_id/order_id / يومي</td><td>التقنية</td></tr>
+        <tr><td>SEO</td><td>روابط داخلية تقود إلى 4xx/410</td><td>يوجد حالياً</td><td>0</td><td>زحف / شهري</td><td>SEO</td></tr>
+        <tr><td>SEO</td><td>أهم 50 منتجاً مكتملة البيانات والصور</td><td>يُقاس</td><td>≥ 95%</td><td>تدقيق يدوي / أسبوعي</td><td>الكتالوج</td></tr>
+        <tr><td>SEO</td><td>منتجات Merchant Center مقبولة</td><td>بعد الربط</td><td>≥ 95%</td><td>Merchant Center / أسبوعي</td><td>التسويق</td></tr>
+        <tr><td>تجاري</td><td>معدل التحويل</td><td>آخر 28 يوماً</td><td>+20% إلى +40% نسبياً</td><td>GA4 + سلة / أسبوعي</td><td>مدير المتجر</td></tr>
+        <tr><td>تجاري</td><td>متوسط قيمة الطلب</td><td>آخر 28 يوماً</td><td>+10% إلى +20% نسبياً</td><td>سلة/دفترة / أسبوعي</td><td>التجارة</td></tr>
+        <tr><td>احتفاظ</td><td>استرداد السلات المتروكة</td><td>آخر 28 يوماً</td><td>8%–15% كبداية</td><td>سلة / أسبوعي</td><td>CRM</td></tr>
+        <tr><td>مالية</td><td>مطابقة طلبات/فواتير/مدفوعات</td><td>يُقاس</td><td>100% يومياً</td><td>سلة + دفترة + بوابة</td><td>المالية</td></tr>
+        <tr><td>مالية</td><td>إقفال الشهر</td><td>يُقاس</td><td>خلال 5 أيام عمل</td><td>دفترة / شهري</td><td>المحاسب</td></tr>
+        <tr><td>مخزون</td><td>فرق الجرد للأصناف A</td><td>جرد افتتاحي</td><td>&lt; 1%</td><td>جرد دوري / أسبوعي</td><td>المخزون</td></tr>
+      </tbody>
+    </table>
+
+    <h3>قاموس المعادلات — لا تقرأ ROAS وحده</h3>
+    <table class="compact">
+      <thead><tr><th>المؤشر</th><th>المعادلة</th><th>القرار الذي يخدمه</th></tr></thead>
+      <tbody>
+        <tr><td>معدل التحويل CVR</td><td><span class="mono">orders ÷ qualified_sessions × 100</span></td><td>جودة الزيارات وصفحة المنتج والدفع</td></tr>
+        <tr><td>متوسط الطلب AOV</td><td><span class="mono">net_sales ÷ orders</span></td><td>الباقات والبيع المتقاطع والحد المجاني للشحن</td></tr>
+        <tr><td>هامش الربح الإجمالي</td><td><span class="mono">net_sales − COGS</span></td><td>هل المنتج يربح قبل التسويق والتشغيل؟</td></tr>
+        <tr><td>هامش المساهمة</td><td><span class="mono">net_sales − COGS − payment − shipping_support − variable_costs</span></td><td>الحد الأقصى الآمن لاكتساب العميل</td></tr>
+        <tr><td>CAC</td><td><span class="mono">ad_spend ÷ new_customers</span></td><td>كلفة العميل الجديد، لا كلفة الطلب فقط</td></tr>
+        <tr><td>ROAS</td><td><span class="mono">attributed_revenue ÷ ad_spend</span></td><td>كفاءة منصة إعلانية ضمن حدود الإسناد</td></tr>
+        <tr><td>MER</td><td><span class="mono">total_revenue ÷ total_ad_spend</span></td><td>صحة التسويق الكلية دون تضخيم إسناد المنصات</td></tr>
+        <tr><td>LTV مساهمة</td><td><span class="mono">orders_per_customer × contribution_per_order</span></td><td>قيمة العميل الفعلية وتمويل الاحتفاظ</td></tr>
+        <tr><td>Sell-through</td><td><span class="mono">units_sold ÷ (opening_units + received_units)</span></td><td>عمق الشراء والتصريف</td></tr>
+        <tr><td>GMROI</td><td><span class="mono">gross_margin ÷ average_inventory_cost</span></td><td>العائد على ريال المخزون</td></tr>
+        <tr><td>استرداد السلة</td><td><span class="mono">recovered_carts ÷ eligible_abandoned_carts</span></td><td>فعالية الرسائل وتوقيتاتها</td></tr>
+      </tbody>
+    </table>
+    <p class="small">صافي المبيعات = المبيعات بعد الخصم والمرتجعات وقبل/بعد الضريبة وفق تعريف ثابت موثق. لا تخلط الإيراد شامل VAT مع إيراد دون VAT بين الأنظمة.</p>
+
+    <h3>إيقاع الإدارة والمسؤوليات</h3>
+    <div class="grid-3">
+      <div class="card"><h4>يومياً — 15 دقيقة</h4><ul><li>طلبات مقابل فواتير ومدفوعات.</li><li>أخطاء الربط والتكرار.</li><li>مخزون سلبي وطلبات معلقة.</li><li>إنفاق/إيراد شاذ في الحملات.</li></ul></div>
+      <div class="card"><h4>أسبوعياً — 60 دقيقة</h4><ul><li>CVR وAOV والهامش حسب القناة.</li><li>أعلى/أضعف 20 SKU.</li><li>بحث الموقع وصفحات الهبوط.</li><li>تجربة واحدة وقرار واضح.</li></ul></div>
+      <div class="card"><h4>شهرياً — إقفال</h4><ul><li>بنوك وبوابات وVAT ومرتجعات.</li><li>جرد وتسويات وتكلفة بضاعة.</li><li>قائمة دخل وتدفق وربحية قناة.</li><li>سجل قرارات الشهر التالي.</li></ul></div>
+    </div>
+
+    <h3>نظام التجارب الذي يمنع القرارات العشوائية</h3>
+    <ol>
+      <li>سجّل فرضية واحدة: «إظهار المقاس قرب السعر سيرفع إضافة السلة».</li>
+      <li>غيّر متغيراً واحداً على مجموعة محددة؛ لا تغيّر السعر والصورة والنص معاً.</li>
+      <li>حدّد قبل البدء مؤشراً رئيسياً وحارساً مثل المرتجعات أو الهامش.</li>
+      <li>لا تحكم من يوم واحد؛ استخدم دورة شراء كاملة وحجماً كافياً أو اعتبر النتيجة اتجاهية.</li>
+      <li>وثّق النتيجة: اعتمد/ارفض/أعد الاختبار، ثم انقل الفائز إلى بقية المنتجات.</li>
+    </ol>
+    <div class="callout warning"><strong>ممنوع قياس النجاح بالإيراد وحده.</strong> قد ترتفع المبيعات مع خصم يحرق الهامش، أو مع إعلانات تنسب لنفسها طلبات عضوية. القرار النهائي يكون على هامش المساهمة والتدفق النقدي ودقة القياس.</div>
+  </section>
+
+  <section class="sheet chapter" id="checklists">
+    <div class="eyebrow">الفصل 15</div>
+    <h2>قوائم تنفيذ جاهزة: من اليوم الأول إلى الإطلاق</h2>
+
+    <h3>أول 48 ساعة — وقف التسرب والمخاطر</h3>
+    <ul class="checklist">
+      <li>استبدال رابط توثيق الأعمال الوهمي <span class="mono">0000000000</span> بالرابط الصحيح أو حذفه لحين التحقق.</li>
+      <li>استبدال <span class="mono">[أدخل بريدك]</span> و<span class="mono">[أدخل رقمك]</span> في السياسات ببيانات اتصال فعلية.</li>
+      <li>إضافة صفحة تواصل واضحة: الهاتف، البريد، WhatsApp، العنوان، ساعات العمل ووقت الرد على الشكاوى.</li>
+      <li>التأكد من العملة SAR في المتجر وSchema والخلاصات والإعلانات؛ التحقيق فوراً إذا ظهر USD لزائر سعودي.</li>
+      <li>اختبار الموقع من جوال سعودي 4G ومن Search Console بسبب ظهور تحدي Cloudflare/noindex لشبكة التدقيق الخارجية.</li>
+      <li>فحص فهرسة الصفحة الرئيسية و5 تصنيفات و10 منتجات عبر URL Inspection؛ لا تعتمد على بحث <span class="mono">site:</span> وحده.</li>
+      <li>إيقاف أي تكامل Pixel مكرر وترك طريقة رسمية واحدة لكل منصة.</li>
+      <li>تجميد حذف المنتجات/الفواتير أو تبديل مصدر الفاتورة حتى اكتمال المطابقة.</li>
+    </ul>
+
+    <h3>الأسبوع الأول — إعداد حسابات سلة</h3>
+    <table class="compact">
+      <thead><tr><th>داخل سلة</th><th>الإجراء التنفيذي</th><th>اختبار القبول</th></tr></thead>
+      <tbody>
+        <tr><td>الإعدادات ← بيانات المتجر</td><td>وحّد الاسم العربي/الإنجليزي، الشعار، بيانات المنشأة، VAT ووسائل التواصل</td><td>نفس الهوية في الهيدر والفوتر والفاتورة</td></tr>
+        <tr><td>الدومين وDNS</td><td>وثّق المسجل وNS الحاليين، وانسخ MX/TXT قبل أي تعديل؛ لا تغيّر DNS لأجل «التسريع»</td><td>HTTPS وWWW/بدونه وبريد الدومين تعمل</td></tr>
+        <tr><td>SEO</td><td>اربط GSC، ارفع sitemap، راجع العناوين والوصف والـcanonical واللغة</td><td>لا 410 من روابط داخلية، ولا نسخة لغة وهمية</td></tr>
+        <tr><td>المنتجات</td><td>SKU/GTIN/MPN/Brand/مقاس/مادة/لون/UV/Polarized/صور/تكلفة</td><td>أعلى 50 منتجاً ≥95% اكتمال</td></tr>
+        <tr><td>التصنيفات</td><td>ادمج المكرر، مستويان كحد عملي، اربط شعارات العلامات بصفحاتها</td><td>كل رابط فعلي، ولا cannibalization واضح</td></tr>
+        <tr><td>خدمة حسب الطلب</td><td>ابنِ نموذج وصفة منظماً ومشروطاً بدلاً من ملاحظة حرة</td><td>لا يقبل OD/OS ناقصاً؛ الملف اختياري/مطلوب حسب المسار</td></tr>
+        <tr><td>الخصوصية</td><td>موافقة مستقلة للتسويق، غرض واضح، إلغاء سهل، وصول محدود للوصفة</td><td>سجل موافقة ورفض؛ لا رسالة لمن رفض</td></tr>
+        <tr><td>السلات المتروكة</td><td>ابدأ Email مجاني بتذكيرين محسوبين، بلا خصم في الرسالة الأولى</td><td>لا إرسال لطلب مكتمل أو غير موافق</td></tr>
+        <tr><td>الموظفون</td><td>حساب منفصل وصلاحية أقل لازمة لكل موظف، مع 2FA حيث يتوفر</td><td>لا حساب Admin مشترك</td></tr>
+      </tbody>
+    </table>
+
+    <h3>اختبار رحلة الطلب قبل الإطلاق</h3>
+    <table class="compact">
+      <thead><tr><th>#</th><th>السيناريو</th><th>ما يجب التحقق منه</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>ضيف — جوال</td><td>بحث ← فلتر ← منتج ← مقاس ← دفع؛ لا حقول زائدة ولا رابط مكسور</td></tr>
+        <tr><td>2</td><td>عميل مسجل</td><td>عنوان وطني/موقع، محفظة، تاريخ الطلبات، موافقة تسويق مستقلة</td></tr>
+        <tr><td>3</td><td>وصفة طبية</td><td>OD/OS وSPH/CYL/AXIS/ADD/PD، شروط واضحة، وصول مقيد، عرض على الطلب</td></tr>
+        <tr><td>4</td><td>كوبون وشحن</td><td>الخصم، VAT، حد الشحن، الإجمالي في سلة = بوابة = دفترة</td></tr>
+        <tr><td>5</td><td>دفع فاشل ثم ناجح</td><td>لا فاتورة مكررة ولا Purchase مزدوج</td></tr>
+        <tr><td>6</td><td>إلغاء قبل التجهيز</td><td>تحرير المخزون، حالة دفترة الصحيحة، لا إيراد نهائي</td></tr>
+        <tr><td>7</td><td>مرتجع كامل</td><td>إشعار دائن/مرتجع، ضريبة، بوابة، مخزون وحالة قياس</td></tr>
+        <tr><td>8</td><td>مرتجع جزئي</td><td>الصنف والخصم والشحن والضريبة لا تُحسب مرتين</td></tr>
+        <tr><td>9</td><td>بيع Point</td><td>نفس SKU ومخزون وعميل، فاتورة واحدة، وردية صحيحة</td></tr>
+        <tr><td>10</td><td>نفاد متزامن</td><td>لا بيع سالب بين الفرع والأونلاين</td></tr>
+      </tbody>
+    </table>
+
+    <h3>فحص القياس والإعلانات — قبل صرف ريال إضافي</h3>
+    <ul class="checklist">
+      <li>GA4: <span class="mono">view_item → add_to_cart → begin_checkout → purchase</span> مع currency=SAR وقيمة صحيحة.</li>
+      <li>Purchase يحمل <span class="mono">transaction_id = salla_order_id</span> ولا يتكرر عند تحديث صفحة النجاح.</li>
+      <li>Meta/TikTok/Snap: Browser وServer deduplicated بنفس <span class="mono">event_id</span> إن استُخدما معاً.</li>
+      <li>UTM معيارية: <span class="mono">source / medium / campaign / content / term</span>، ولا تستخدم اختصارات متغيرة.</li>
+      <li>اختبار طلب حقيقي منخفض القيمة ثم إلغاء/مرتجع منضبط؛ قارن القيم في كل نظام.</li>
+      <li>Catalog item IDs تطابق IDs التي ترسلها الأحداث، والمنتجات غير المسموح بها مستبعدة.</li>
+      <li>Consent يوقف الوسوم التسويقية عند الرفض بحسب الإعداد، مع حفظ الوسوم الضرورية فقط.</li>
+      <li>لوحة يومية تشرح فرق الطلبات المدفوعة/المكتملة/الملغاة بدل توقع التطابق الخام.</li>
+    </ul>
+
+    <h3>إقفال مالي شهري — ترتيب العمل</h3>
+    <ol class="number-list">
+      <li><strong>اقطع الفترة:</strong> ثبّت آخر طلب/دفع/مرتجع تابع للشهر وساعة القطع والمنطقة الزمنية.</li>
+      <li><strong>طابق قنوات البيع:</strong> سلة والأفرع/Point مقابل فواتير وإشعارات دفترة.</li>
+      <li><strong>طابق التحصيل:</strong> البنك، النقد، بوابات الدفع، COD والمحفظة؛ سجّل عمولة كل بوابة.</li>
+      <li><strong>راجع VAT:</strong> مخرجات المبيعات، مدخلات المشتريات، الدائن، الفروقات والتقريب مع المحاسب.</li>
+      <li><strong>المخزون والتكلفة:</strong> مشتريات مستلمة، مرتجعات، تالف/عينات، تسويات، تكلفة الأصناف المباعة.</li>
+      <li><strong>المصروفات والمستحقات:</strong> شحن، إيجار، رواتب، إعلان، رسوم برامج، مصروفات مقدمة/مستحقة.</li>
+      <li><strong>راجع التقارير:</strong> الأستاذ، أعمار الذمم، ميزان المراجعة، قائمة الدخل، المركز المالي والتدفق.</li>
+      <li><strong>أقفل واعتمد:</strong> نسخة PDF/Excel وسجل تسويات وتوقيع المحاسب؛ لا تعدّل فترة مقفلة بلا قيد واضح.</li>
+    </ol>
+
+    <h3>بوابة قبول ربط سلة–دفترة</h3>
+    <div class="grid-2">
+      <div class="card"><h4>لا تنتقل قبل</h4><ul class="checklist"><li>30 يوماً بلا فقد/تكرار.</li><li>100% مطابقة طلب–فاتورة.</li><li>100% تطابق أعلى 50 SKU.</li><li>نجاح المرتجع الكامل والجزئي.</li><li>VAT draft مطابق.</li><li>إقفال شهر راجعه المحاسب.</li></ul></div>
+      <div class="card"><h4>خطة رجوع</h4><ul class="checklist"><li>تصدير الطلبات قبل التغيير.</li><li>نسخ crosswalk وconfig والأسرار بأمان.</li><li>إمكانية إيقاف webhook دون حذف.</li><li>صف انتظار Dead-letter قابلة لإعادة آمنة.</li><li>إعادة تشغيل الموصل السابق خلال ساعات.</li><li>مالك اتصال واضح لكل حادثة.</li></ul></div>
+    </div>
+
+    <h3>قائمة أمن وخصوصية مختصرة</h3>
+    <ul class="checklist">
+      <li>مدير كلمات مرور، كلمة فريدة، MFA، لا مشاركة حسابات.</li>
+      <li>صلاحيات حسب الدور ومراجعة ربع سنوية وحذف وصول المغادر فوراً.</li>
+      <li>API tokens في Secret Store/متغيرات خادم لا في كود أو Sheet أو Browser.</li>
+      <li>تدوير الأسرار وسجل وصول وتنبيه عند فشل/ارتفاع غير طبيعي.</li>
+      <li>تقليل بيانات الوصفة والهوية، تشفير النقل، وصول الموظف المختص فقط، وسياسة حذف.</li>
+      <li>خطة استجابة: احتواء، حفظ أدلة، تقييم، وإشعار الجهة خلال المدة النظامية إن انطبقت الشروط. <a class="ref" href="#s38">[S38]</a></li>
+    </ul>
+
+    <h3>تعريف «تم» بعد 90 يوماً</h3>
+    <div class="callout success">
+      <strong>النتيجة المقبولة</strong>
+      لا أخطاء P0 مفتوحة؛ الهوية والسياسات والعملة صحيحة؛ أفضل 50 منتجاً مكتملة؛ التصنيفات غير مكررة وروابطها سليمة؛ القياس بلا تكرار وبفارق قيمة ≤1% بعد التسويات؛ طلبات وفواتير ومخزون متطابقة؛ إقفال شهر ناجح؛ وتجربتان تجاريتان رابحتان على الأقل دون تدهور الهامش أو المرتجعات.
+    </div>
+  </section>
+
+  <section class="sheet chapter" id="sources">
+    <div class="eyebrow">الفصل 16</div>
+    <h2>المصادر الرسمية والأدلة</h2>
+    <p>آخر مراجعة: 17 يوليو 2026. استُخدمت صفحات سلة ودفترة الرسمية، والجهات الحكومية السعودية، إلى جانب فحص علني لنطاق المتجر. الأسعار والميزات والأنظمة قابلة للتغير؛ راجع الصفحة وحسابك قبل أي التزام مالي أو تقني.</p>
+
+    <h3>سلة — الباقة، البيانات، المنتجات، SEO والتسويق</h3>
+    <ol class="source-list">
+      <li id="s1"><strong>S1 — باقات سلة ومزايا Pro.</strong> <a href="https://salla.com/plans/">salla.com/plans</a></li>
+      <li id="s2"><strong>S2 — إدارة موظفي المتجر والصلاحيات.</strong> <a href="https://help.salla.sa/article/إدارة-موظفي-المتجر/rv0afs2hf4d4y935vf1vmbpp">مركز مساعدة سلة</a></li>
+      <li id="s3"><strong>S3 — تخصيص حقول العملاء وحدودها حسب الباقة.</strong> <a href="https://help.salla.sa/article/تخصيص-حقول-العملاء/z5kf4u4iztoj18fhefe53us2">مركز مساعدة سلة</a></li>
+      <li id="s4"><strong>S4 — خيارات الطلب في السلة وأنواع الحقول والقيود.</strong> <a href="https://help.salla.sa/article/إعداد-خيارات-الطلب-في-السلة/pxpzpi5ujxdglq2ex62sk2qa">مركز مساعدة سلة</a></li>
+      <li id="s5"><strong>S5 — خدمة «حسب الطلب» وأنواع الحقول والاشتراط.</strong> <a href="https://help.salla.sa/article/خدمة-حسب-الطلب/ze451vqp70sh3o39w6nui6j6">مركز مساعدة سلة</a></li>
+      <li id="s6"><strong>S6 — تحديد موقع/عنوان العميل عند إتمام الطلب.</strong> <a href="https://help.salla.sa/article/تحديد-موقع-العميل-في-صفحة-إتمام-الطلب/mvktxl8thm9nf0vybj8rw912">مركز مساعدة سلة</a></li>
+      <li id="s7"><strong>S7 — موافقة العميل على سياسة الخصوصية.</strong> <a href="https://help.salla.sa/article/موافقة-العميل-على-سياسة-خصوصية-المتجر/loqvq0l5sn8jthz02aw49gl7">مركز مساعدة سلة</a></li>
+      <li id="s8"><strong>S8 — ربط وتحسين الظهور عبر Google Search Console.</strong> <a href="https://help.salla.sa/article/تحسين-ظهور-متجرك-على-محركات-البحث-من-خلال-google-search-console/pej8fqgeudwdobagltnjxd47">مركز مساعدة سلة</a></li>
+      <li id="s9"><strong>S9 — إعدادات SEO للمتجر والمنتج والتصنيف والعلامة والمدونة.</strong> <a href="https://help.salla.sa/article/تحسين-ظهور-متجرك-على-محركات-البحث-seo/oi134aj2ud6ts12ysumrm5za">مركز مساعدة سلة</a></li>
+      <li id="s10"><strong>S10 — إضافة المنتج الملموس وإعداد بياناته.</strong> <a href="https://help.salla.sa/article/إضافة-منتج-ملموس-جاهز/j26383gile80wtexu77744u9">مركز مساعدة سلة</a></li>
+      <li id="s11"><strong>S11 — صور وفيديوهات المنتجات والنص البديل.</strong> <a href="https://help.salla.sa/article/إضافة-صور-وفيديوهات-المنتجات/k5lbgvorfpzcjzqbxdx8ox77">مركز مساعدة سلة</a></li>
+      <li id="s12"><strong>S12 — GTIN وMPN لتعزيز ظهور المنتج.</strong> <a href="https://help.salla.sa/article/إضافة-mpn-gtin-لتعزيز-ظهور-المنتج-على-محركات-البحث/e66aj1t93yqvmixcw3dk06t2">مركز مساعدة سلة</a></li>
+      <li id="s13"><strong>S13 — إدارة تصنيفات المنتجات وترتيبها.</strong> <a href="https://help.salla.sa/article/إدارة-تصنيفات-المنتجات/ghxuwuy7ivin8wyath9w22ch">مركز مساعدة سلة</a></li>
+      <li id="s14"><strong>S14 — تصفية وفلترة المنتجات.</strong> <a href="https://help.salla.sa/article/تصفية-وفلترة-المنتجات/fj9xwn0a8ear6hegg2mm5qyy">مركز مساعدة سلة</a></li>
+      <li id="s15"><strong>S15 — ترتيب المنتجات يدوياً وآلياً.</strong> <a href="https://help.salla.sa/article/ترتيب-المنتجات/zcob32c1sysl65m5uada2xpq">مركز مساعدة سلة</a></li>
+      <li id="s16"><strong>S16 — منتج مجموعة/Bundle مكون من عدة منتجات.</strong> <a href="https://help.salla.sa/article/منتج-مؤلف-من-عدة-منتجات-مجموعة-منتجات-multiple-bundle-product/uiiuungjg24n3bbtcqbt6phy">مركز مساعدة سلة</a></li>
+      <li id="s17"><strong>S17 — إدارة صفحات هبوط المنتج.</strong> <a href="https://help.salla.sa/article/إدارة-صفحات-هبوط-المنتج/tdv9ztwxkf2u1ahgyy1yevmc">مركز مساعدة سلة</a></li>
+      <li id="s18"><strong>S18 — إدارة السلات المتروكة والتذكيرات.</strong> <a href="https://help.salla.sa/article/إدارة-صفحة-السلات-المتروكة/dm3tfjxk5thcslttb2uxepvx">مركز مساعدة سلة</a></li>
+      <li id="s19"><strong>S19 — تفعيل محفظة العميل والكاش باك.</strong> <a href="https://help.salla.sa/article/تفعيل-التاجر-لمحفظة-العميل/aa3i0jwmlgph6itbobkyiohq">مركز مساعدة سلة</a></li>
+      <li id="s20"><strong>S20 — تطبيق Google Analytics الرسمي في متجر تطبيقات سلة.</strong> <a href="https://apps.salla.sa/ar/app/165566897">متجر تطبيقات سلة</a></li>
+      <li id="s21"><strong>S21 — الربط مع Google Merchant Center.</strong> <a href="https://help.salla.sa/article/ربط-تجارتك-مع-مركز-جوجل-للبيع-بالتجزئة-google-merchant-center-1/ygf4bcokk8jzyvtsdvyucey0">مركز مساعدة سلة</a></li>
+      <li id="s22"><strong>S22 — Meta Pixel وCatalog وConversions API الرسمية.</strong> <a href="https://apps.salla.sa/ar/kit/pixelapps">حزمة Pixels الرسمية</a> — <a href="https://apps.salla.sa/ar/app/471742749">Meta CAPI</a></li>
+      <li id="s23"><strong>S23 — TikTok Business Extension وربط Pixel/Events/Catalog.</strong> <a href="https://help.salla.sa/article/الربط-مع-تطبيقات-التيك-توك-من-خلال-tiktok-business-extension/qsocu1p1hcsme3yjmq4qc09c">مركز مساعدة سلة</a></li>
+      <li id="s24"><strong>S24 — Snap Business Extension وربط Pixel/CAPI/Catalog.</strong> <a href="https://help.salla.sa/article/الربط-مع-تطبيقات-السناب-من-خلال-snap-business-extension/bc4caiy58eek7dmswse6vii4">مركز مساعدة سلة</a></li>
+    </ol>
+
+    <h3>سلة بوينت، الربط وواجهات API</h3>
+    <ol class="source-list" start="25">
+      <li id="s25"><strong>S25 — Salla Point: صفحة التطبيق والأسعار المعروضة.</strong> <a href="https://apps.salla.sa/en/app/1268123532">Salla App Store</a></li>
+      <li id="s26"><strong>S26 — دليل البدء مع سلة بوينت والباقة/الفروع.</strong> <a href="https://help.salla.sa/article/دليل-البدء-مع-سلة-بوينت/po4oioshrwxgomjuw2t9n50b">مركز مساعدة سلة</a></li>
+      <li id="s27"><strong>S27 — تقارير سلة بوينت.</strong> <a href="https://help.salla.sa/article/تقارير-سلة-بوينت/a5dilpk2huccim5z65e0b9wr">مركز مساعدة سلة</a></li>
+      <li id="s28"><strong>S28 — ربط دفترة مع سلة: التوقيت، النقل اليدوي والمخزون.</strong> <a href="https://help.salla.sa/article/دفترة-daftra/wtxmqqzyuciei8y87ehy4v77">مركز مساعدة سلة</a> — <a href="https://apps.salla.sa/ar/app/851057819">صفحة التطبيق والسعر</a></li>
+      <li id="s44"><strong>S44 — ربط دومين خارجي مع سلة.</strong> <a href="https://help.salla.sa/article/ربط-دومين-من-خارج-سلة/hqykbuouvfa47ecry8ikrsh0">مركز مساعدة سلة</a></li>
+      <li id="s45"><strong>S45 — عناوين البريد المرتبطة بدومين المتجر وسجلات DNS.</strong> <a href="https://help.salla.sa/article/إنشاء-عناوين-بريد-إلكتروني-مرتبطة-بدومين-المتجر/mgexijm4l6lo8wyfaf76otsi">مركز مساعدة سلة</a></li>
+      <li id="s46"><strong>S46 — إنشاء التطبيقات الخاصة ونشرها.</strong> <a href="https://help.salla.sa/article/طريقة-إنشاء-تطبيقات-خاصة-ونشرها-1/ddivmwvwi575q35dx8o8a2wx">مركز مساعدة سلة</a></li>
+      <li id="s47"><strong>S47 — وثائق Salla OAuth والأحداث/Webhooks.</strong> <a href="https://docs.salla.dev/421117m0">OAuth</a> — <a href="https://docs.salla.dev/421119m0">Events</a></li>
+      <li id="s48"><strong>S48 — تصدير الطلبات من سلة.</strong> <a href="https://help.salla.sa/article/تصدير-الطلبات/euirzajvhdhdk6b2e0r4tcj8">مركز مساعدة سلة</a></li>
+    </ol>
+
+    <h3>دفترة — المحاسبة والمخزون</h3>
+    <ol class="source-list" start="29">
+      <li id="s29"><strong>S29 — باقات دفترة الحالية ومزايا/حدود Advanced.</strong> <a href="https://www.daftra.com/plans">daftra.com/plans</a></li>
+      <li id="s30"><strong>S30 — بوابة مطوري Daftra API.</strong> <a href="https://developers.daftra.com/">developers.daftra.com</a></li>
+      <li id="s31"><strong>S31 — تقرير ميزان المراجعة.</strong> <a href="https://docs.daftra.com/tutorial/عرض-تقرير-ميزان-المراجعة-مجاميع-وأرصد/">دليل دفترة</a></li>
+      <li id="s32"><strong>S32 — قيود اليومية الآلية واليدوية.</strong> <a href="https://docs.daftra.com/user_manual/قيود-اليومية-الآلية-واليدوية-على-دفتر/">دليل دفترة</a></li>
+      <li id="s33"><strong>S33 — دليل المصروفات في دفترة.</strong> <a href="https://docs.daftra.com/user_manual/دليل-المصروفات-في-دفترة/">دليل دفترة</a></li>
+      <li id="s34"><strong>S34 — القيود المحاسبية للمشتريات والمرتجعات.</strong> <a href="https://docs.daftra.com/user_manual/purchases-and-returns-accounting-entries/">دليل دفترة</a></li>
+      <li id="s35"><strong>S35 — تسوية الجرد للمنتج أو المخزون.</strong> <a href="https://docs.daftra.com/user_manual/كيفية-عمل-تسوية-جرد-لمنتج-أو-للمخزون/">دليل دفترة</a></li>
+      <li id="s49"><strong>S49 — استيراد الفواتير عبر Excel كخطة تشغيل يدوية.</strong> <a href="https://docs.daftra.com/user_manual/استيراد-الفواتير-من-خلال-إكسيل/">دليل دفترة</a></li>
+    </ol>
+
+    <h3>الأنظمة السعودية والامتثال</h3>
+    <ol class="source-list" start="36">
+      <li id="s36"><strong>S36 — هيئة الزكاة والضريبة والجمارك: ما هي الفوترة الإلكترونية؟</strong> <a href="https://zatca.gov.sa/ar/E-Invoicing/Introduction/Pages/What-is-e-invoicing.aspx">ZATCA</a></li>
+      <li id="s37"><strong>S37 — الدليل التفصيلي للفوترة الإلكترونية.</strong> <a href="https://zatca.gov.sa/ar/E-Invoicing/Introduction/Guidelines/Documents/E-Invoicing-Detailed-Guidelines.pdf">ZATCA — PDF</a></li>
+      <li id="s38"><strong>S38 — نظام حماية البيانات الشخصية وأدلة الجهة المختصة.</strong> <a href="https://dgp.sdaia.gov.sa/wps/portal/pdp/knowledgecenter/details/PDPL2">منصة حوكمة البيانات الوطنية — سدايا</a></li>
+      <li id="s39"><strong>S39 — معايير امتثال المتاجر الإلكترونية.</strong> <a href="https://mc.gov.sa/ar/mediacenter/News/Pages/15-03-24-01.aspx">وزارة التجارة</a></li>
+      <li id="s50"><strong>S50 — نظام التجارة الإلكترونية ولائحته.</strong> <a href="https://mc.gov.sa/ar/ECC/pages/default.aspx">وزارة التجارة</a></li>
+    </ol>
+
+    <h3>أدلة المتجر العامة التي تم فحصها</h3>
+    <ol class="source-list" start="40">
+      <li id="s40"><strong>S40 — ملف robots.txt العام.</strong> <a href="https://alaslee.com/robots.txt">alaslee.com/robots.txt</a></li>
+      <li id="s41"><strong>S41 — خريطة الموقع العامة.</strong> <a href="https://alaslee.com/sitemap.xml">alaslee.com/sitemap.xml</a></li>
+      <li id="s42"><strong>S42 — عينة صفحة منتج تم تحليلها.</strong> <a href="https://alaslee.com/polo-ph-4207u-562487/p1394596959">Polo PH 4207U</a></li>
+      <li id="s43"><strong>S43 — صفحة العلامات التجارية العامة.</strong> <a href="https://alaslee.com/brands">alaslee.com/brands</a></li>
+    </ol>
+
+    <h3>منهج التدقيق وحدوده</h3>
+    <ul>
+      <li>الفحص العلني شمل DNS وTLS والتحويلات وrobots/sitemap وعينات HTML وmetadata وstructured data والروابط والصور والسياسات والتكاملات الظاهرة.</li>
+      <li>لم يُمنح التقرير وصولاً إدارياً إلى سلة أو دفترة أو GA4 أو GSC أو مديري الإعلانات؛ لذلك وُسمت عناصر الحساب الداخلي بصيغة «تحقق» لا بصيغة حكم نهائي.</li>
+      <li>ظهور Cloudflare Human Verification لشبكة تدقيق أجنبية لا يثبت حجب العملاء في السعودية؛ يستلزم اختباراً محلياً وURL Inspection.</li>
+      <li>تعذر اعتماد نتيجة Lighthouse عامة موثوقة وقت التدقيق؛ لذلك لم تُخترع درجة أداء، واعتمدت الخطة على مؤشرات قابلة للقياس بعد الوصول.</li>
+      <li>الأرقام التي تصف صفحات/منتجات المتجر لقطة بتاريخ التدقيق، وقد تتغير بعد النشر أو الاستيراد.</li>
+    </ul>
+
+    <div class="callout warning">
+      <strong>تنبيه مهني</strong>
+      هذا تقرير تشغيل وتقنية ونمو، وليس فتوى قانونية أو اعتماداً ضريبياً. راجع المحاسب/المستشار السعودي في إعداد VAT والفوترة الإلكترونية وحالات المرتجعات، وراجع مسؤول حماية البيانات في الوصفات الطبية والاحتفاظ والنقل خارج المملكة.
+    </div>
+
+    <div class="footer-note">
+      أُعد لمتجر «الأصلي» — Alaslee.com — سلة Pro + دفترة Advanced. الحسابات المزوّدة: Facebook/Instagram/Threads/TikTok: <span class="mono">alaslee.1</span>. أمّا <span class="mono">X @alaslee.1</span> فغير صالح بنيوياً لأن اسم X لا يقبل النقطة؛ يجب تزويد/حجز اسم صحيح قبل الربط.
+    </div>
+  </section>
+
+  <section class="sheet chapter" id="execution">
+    <div class="eyebrow">الملحق التنفيذي</div>
+    <h2>دليل التنفيذ العملي لأهم 10 نقاط في سلة</h2>
+    <p>هذا الملحق يحول الخطة إلى خطوات داخل لوحة سلة. اتبعه بالترتيب نفسه، ولا تنتقل للنقطة التالية قبل اجتياز التحقق المكتوب في العمود الأخير.</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>النقطة</th>
+          <th>المكان داخل سلة</th>
+          <th>الخطوات الدقيقة</th>
+          <th>علامة الاكتمال</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>1. إعداد البيانات والحقول</strong></td>
+          <td>الإعدادات ← صفحة إتمام الطلب / خيارات الطلب / خدمة حسب الطلب</td>
+          <td>أنشئ الحقول التي تحتاجها فعلاً فقط: نوع النظارة، الجنس/الفئة العمرية، المقاس، لون الإطار، نوع العدسة، رفع الوصفة، ملاحظات اختيارية. اجعل القيم الثابتة Dropdown أو Radio، واجعل النص الحر فقط لما لا يمكن ضبطه. ألغِ أي حقل لا تستخدمه.</td>
+          <td>لا يوجد حقل حر لبيانات يمكن حصرها، وكل طلب يخرج ببيانات قابلة للمعالجة بدون مراجعة يدوية طويلة.</td>
+        </tr>
+        <tr>
+          <td><strong>2. Data Validation</strong></td>
+          <td>نموذج الطلب + إعدادات الحقول + التحقق اليدوي</td>
+          <td>اجعل رقم الهاتف إلزامياً وبصيغة رقمية صحيحة، والبريد بصيغة بريد، والـSKU أو رقم الوصفة ضمن حقول مخصصة إذا لزم. استخدم قوائم منسدلة للقيم المغلقة، ونصاً قصيراً للقيم المفتوحة. أضف رسالة خطأ واضحة لكل حقل ناقص أو بصيغة خاطئة.</td>
+          <td>لا تمر أي طلبات ناقصة البيانات الأساسية، والنماذج غير صالحة تُرفض قبل الدفع أو مباشرة بعده حسب السيناريو.</td>
+        </tr>
+        <tr>
+          <td><strong>3. بناء الكتالوج</strong></td>
+          <td>المنتجات ← إضافة/تعديل منتج</td>
+          <td>وحّد اسم المنتج: العلامة + الموديل + النوع + اللون + المقاس. أضف SKU ثابتاً، Brand، MPN/GTIN إن توفر، صورة رئيسية واضحة، 3–6 صور إضافية، وصفاً وظيفياً، وسعر التكلفة قبل هامش الربح. ابدأ بأفضل 50 منتجاً ثم عمّم القالب.</td>
+          <td>كل منتج رئيسي يملك حقولاً مكتملة، ولا يوجد منتج بيع حقيقي بدون صورة أو SKU أو وصف قابل للفهم.</td>
+        </tr>
+        <tr>
+          <td><strong>4. ترتيب التصنيفات</strong></td>
+          <td>المنتجات ← التصنيفات + العلامات التجارية</td>
+          <td>ادمج التصنيفات المكررة، واجعل الهيكل 2 مستويات فقط ما أمكن: نوع النظارة ثم العلامة أو الفئة الفرعية. اربط كل شعار علامة بصفحة فعلية، لا برابط #. رتّب المنتجات داخل كل فئة حسب الهامش، الطلب، والجاهزية للمخزون، لا حسب التاريخ فقط.</td>
+          <td>لا يوجد تكرار واضح بين التصنيفات، وكل فئة تعرض منتجات منطقية عند التصفح والفلترة.</td>
+        </tr>
+        <tr>
+          <td><strong>5. SEO</strong></td>
+          <td>الإعدادات ← SEO + كل صفحة منتج/تصنيف/علامة</td>
+          <td>اضبط عنواناً ووصفاً افتراضياً، ثم خصص Title وMeta لكل صفحة مهمة. أصلح canonical وhreflang إن كانت موجودة، أرسل sitemap إلى Search Console، وتأكد أن العملة SAR والبيانات المنظمة Product/Offer صحيحة. امنع الصفحات الضعيفة من التضخم.</td>
+          <td>فحص Search Console لا يظهر أخطاء 410 في الصفحات المهمة، ونتائج Rich Results خالية من الأخطاء الحرجة.</td>
+        </tr>
+        <tr>
+          <td><strong>6. القياس والإعلانات</strong></td>
+          <td>التطبيقات / Google Analytics / Meta / TikTok / Snap</td>
+          <td>ثبّت GA4 الرسمي مرة واحدة فقط، ثم Pixel/CAPI مرة واحدة فقط لكل منصة. فعّل أحداث view_item, add_to_cart, begin_checkout, purchase مع قيمة SAR. استخدم UTM موحداً لكل حملة، ولا تطلق أي إعلان قبل اختبار الأحداث في DebugView وواجهة المنصة.</td>
+          <td>تطابق الأحداث بين سلة والمنصات، ولا يوجد تكرار واضح في الوسوم أو شراء بدون قيمة.</td>
+        </tr>
+        <tr>
+          <td><strong>7. تجربة الشراء</strong></td>
+          <td>المظهر ← الصفحة الرئيسية / صفحة المنتج / السلة</td>
+          <td>خفف الهيدر، اجعل البحث واضحاً، أظهر CTA واحداً رئيسياً، وحافظ على 44px كحد أدنى للأزرار على الجوال. صفحة المنتج يجب أن تعرض الفائدة، المقاس، الصور، الضمان، سياسة الإرجاع، والأسئلة الأكثر شيوعاً. احذف كل عنصر يشتت المستخدم من أول شاشة.</td>
+          <td>اختبار شراء على الهاتف يتم بلا عقبات، والزائر يصل للشراء دون الحاجة للرجوع أو الحيرة.</td>
+        </tr>
+        <tr>
+          <td><strong>8. المالية ودفترة</strong></td>
+          <td>ربط سلة ← دفترة + دورة الطلب</td>
+          <td>اجعل سلة مصدر الطلب ودفترة مصدر الحسابات. اربط الطلب بالفاتورة عبر SKU أو Order ID، وميّز بين البيع والتحصيل والمرتجع والرسوم. سجّل المخزون، تكلفة البضاعة، ضريبة القيمة المضافة، والمصروفات في دفترة فقط، ولا تكرر القيد يدوياً في أكثر من مكان.</td>
+          <td>يمكنك مطابقة الطلبات والفواتير والأرصدة يومياً دون تضارب، وميزان المراجعة يفسر الناتج المالي الحقيقي.</td>
+        </tr>
+        <tr>
+          <td><strong>9. الاحتفاظ بالعملاء</strong></td>
+          <td>السلات المتروكة + رسائل ما بعد الشراء + الشرائح</td>
+          <td>فعّل تذكير السلة المتروكة عبر البريد أولاً، ثم رسالة ما بعد الشراء، ثم طلب التقييم بعد التسليم. أنشئ شرائح مثل: أول طلب، عميل متكرر، عميل عالي القيمة، عميل لم يشتر 90 يوماً. لا تستخدم خصماً عاماً قبل قياس الهامش.</td>
+          <td>يوجد تدفق واضح بعد الشراء، وتستطيع استهداف العملاء حسب السلوك بدل الرسائل العامة.</td>
+        </tr>
+        <tr>
+          <td><strong>10. سلة بوينت والحوكمة</strong></td>
+          <td>تقييم التطبيق + سجل التغيير + النسخ الاحتياطي</td>
+          <td>استخدم سلة بوينت فقط إذا كانت هناك نقطة بيع فعلية تحتاج توحيداً مع المخزون، وليس بديلاً كاملاً عن دفترة. احتفظ بنسخة احتياطية قبل كل تغيير كبير، وسجل: ما الذي تغير، من غيّره، ولماذا. راجع أسبوعياً: فهرسة، تحويل، هامش، مخزون، وفواتير.</td>
+          <td>لا يتم شراء اشتراك جديد بلا سبب، ولا يتم تغيير جوهري بلا نسخة احتياطية واختبار.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout info">
+      <strong>قاعدة تشغيل مختصرة</strong>
+      إذا أردت معرفة أين تبدأ داخل سلة: ابدأ بالبيانات، ثم SEO، ثم القياس، ثم المنتج، ثم التحويل، ثم المحاسبة. أي ترتيب معكوس سيعطيك حركة أكثر من النتيجة.
+    </div>
+  </section>
+</main>
+</body>
+</html>

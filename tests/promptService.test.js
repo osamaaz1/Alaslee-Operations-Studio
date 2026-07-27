@@ -31,6 +31,14 @@ test("every dispatched gallery prompt enforces uncropped safe-area framing", () 
   }
 });
 
+test("product-only gallery prompts require neutral pure-white backgrounds", () => {
+  for (const output of galleryOutputs.filter((item) => item.role !== "model")) {
+    assert.match(output.prompt, /solid pure-white \(#FFFFFF\) background/i);
+    assert.match(output.prompt, /no yellow, cream, beige, gray, gradients, or warm color cast/i);
+    assert.match(output.prompt, /never faded, hazy, dull, or washed out/i);
+  }
+});
+
 test("price-label prompt keeps a replaceable price token and blocks SKU text", () => {
   const prompt = getDefaultPrompts().find((item) => item.id === "price-label");
 
@@ -49,4 +57,3 @@ test("individual gallery can add a culturally respectful gender-specific real-pe
   assert.match(female.find((item) => item.role === "model").prompt, /exactly one real adult woman/i);
   assert.match(male.find((item) => item.role === "model").prompt, /respectful styling suitable for customers in Saudi Arabia/i);
 });
-

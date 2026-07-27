@@ -1,0 +1,368 @@
+/* Alaslee — Salla advanced CSS customization v2.0 */
+
+:root {
+  --color-primary: #1c1917;
+  --color-primary-dark: #0c0a09;
+  --color-primary-light: #44403c;
+  --color-primary-reverse: #ffffff;
+
+  --alaslee-ink: #1c1917;
+  --alaslee-ink-soft: #44403c;
+  --alaslee-muted: #57534e;
+  --alaslee-surface: #ffffff;
+  --alaslee-background: #fafaf9;
+  --alaslee-border: #d6d3d1;
+  --alaslee-gold: #a16207;
+  --alaslee-gold-dark: #854d0e;
+  --alaslee-gold-soft: #fef3c7;
+  --alaslee-focus: #a16207;
+  --alaslee-radius-sm: 10px;
+  --alaslee-radius-md: 16px;
+  --alaslee-shadow-sm: 0 6px 24px rgba(28, 25, 23, 0.07);
+}
+
+body {
+  background-color: var(--alaslee-background);
+  color: var(--alaslee-ink);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-user-select: text !important;
+  user-select: text !important;
+}
+
+button,
+a,
+[role='button'],
+summary {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: rgba(161, 98, 7, 0.14);
+}
+
+button,
+[role='button'] {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+input,
+textarea,
+select {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+::selection {
+  background: var(--alaslee-gold-soft);
+  color: var(--alaslee-ink);
+}
+
+:where(a, button, input, textarea, select, summary, [tabindex]):focus-visible {
+  outline: 3px solid var(--alaslee-focus);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+h1,
+h2,
+h3 {
+  color: var(--alaslee-ink);
+  text-wrap: balance;
+}
+
+/* Header: white premium surface with dark controls and a restrained gold accent. */
+.store-header .main-nav-container,
+.store-header .main-nav-container .inner {
+  background-color: var(--alaslee-surface);
+}
+
+.store-header .main-nav-container {
+  border-bottom: 1px solid var(--alaslee-border);
+  box-shadow: var(--alaslee-shadow-sm);
+}
+
+.store-header .navbar-brand {
+  min-height: 44px;
+  padding-block: 2px;
+}
+
+.store-header .navbar-brand img {
+  width: auto;
+  max-height: 48px;
+  object-fit: contain;
+}
+
+.store-header :where(button, .header-btn, .s-cart-summary-wrapper, .mburger) {
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  color: var(--alaslee-ink);
+  transition: color 180ms ease, background-color 180ms ease;
+}
+
+.store-header :where(.header-btn__icon, .s-cart-summary-wrapper, .mburger) {
+  color: inherit;
+}
+
+.store-header :where(nav a, .main-menu a, [aria-current='page']) {
+  color: var(--alaslee-ink);
+}
+
+.store-header [aria-current='page'] {
+  color: var(--alaslee-gold-dark);
+  font-weight: 700;
+}
+
+@media (hover: hover) {
+  .store-header :where(button, .header-btn, .s-cart-summary-wrapper, .mburger):hover {
+    background-color: var(--alaslee-gold-soft);
+    color: var(--alaslee-gold-dark);
+  }
+
+  .store-header :where(nav a, .main-menu a):hover,
+  .store-footer a:hover {
+    color: var(--alaslee-gold-dark);
+  }
+}
+
+/* Remove legacy inline grid styles; the real grid is the wrapper inside the component. */
+salla-products-list {
+  display: block !important;
+  grid-template-columns: none !important;
+  gap: 0 !important;
+  width: 100%;
+}
+
+.s-products-list-wrapper {
+  width: 100%;
+}
+
+/* Preserve the banner's uploaded aspect ratio instead of cropping text/artwork. */
+.banner.banner--fixed {
+  overflow: hidden;
+  border: 1px solid var(--alaslee-border);
+  border-radius: var(--alaslee-radius-md);
+  background: #f5f5f4;
+}
+
+/* Primary actions: high contrast and touch-friendly without changing checkout logic. */
+:where(.s-button-primary, .btn-primary, .btn--primary) {
+  min-height: 44px;
+  border-radius: var(--alaslee-radius-sm);
+  background-color: var(--alaslee-ink);
+  color: #ffffff;
+  transition: background-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+
+@media (hover: hover) {
+  :where(.s-button-primary, .btn-primary, .btn--primary):hover {
+    background-color: #0c0a09;
+    box-shadow: 0 8px 22px rgba(28, 25, 23, 0.16);
+  }
+}
+
+/* Celia mobile bottom navigation. */
+.selia-bottom-nav {
+  background: var(--alaslee-ink);
+  border-top: 1px solid var(--alaslee-gold);
+  box-shadow: 0 -8px 24px rgba(12, 10, 9, 0.16);
+}
+
+.selia-bottom-nav-button,
+.selia-bottom-nav-icon {
+  min-height: 44px;
+}
+
+.selia-bottom-nav-icon {
+  color: #ffffff;
+}
+
+.selia-bottom-nav :where(a, button, [role='button'], salla-cart-summary) {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+/* Footer: lighter premium surface, stronger text contrast and larger touch targets. */
+.store-footer {
+  border-top: 3px solid var(--alaslee-gold);
+  background: var(--alaslee-background);
+  color: var(--alaslee-ink);
+}
+
+.store-footer .store-footer__inner,
+.store-footer .store-footer__contacts-row,
+.store-footer .footer-bottom {
+  background: var(--alaslee-background);
+  color: var(--alaslee-ink);
+}
+
+.store-footer a {
+  color: var(--alaslee-ink-soft);
+  transition: color 180ms ease;
+}
+
+.store-footer .footer-list a {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  line-height: 1.5;
+}
+
+.store-footer .footer-bottom {
+  border-top: 1px solid var(--alaslee-border);
+}
+
+.store-footer :where(.footer-rights, .text-gray-400) {
+  color: var(--alaslee-muted);
+}
+
+/* Accessible FAQ progressive enhancement. */
+.faq-section {
+  max-width: 920px;
+  margin: 32px auto;
+  padding: 8px;
+  background: transparent;
+}
+
+.faq-item {
+  margin: 0 0 12px;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--alaslee-border);
+  border-radius: var(--alaslee-radius-md);
+  background: var(--alaslee-surface);
+  box-shadow: 0 4px 16px rgba(28, 25, 23, 0.04);
+}
+
+.faq-question {
+  width: 100%;
+  min-height: 56px;
+  margin: 0;
+  padding: 16px 18px;
+  border: 0;
+  background: transparent;
+  color: var(--alaslee-ink);
+  cursor: pointer;
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+  text-align: start;
+  font: inherit;
+  font-size: clamp(16px, 2vw, 18px);
+  font-weight: 700;
+  line-height: 1.6;
+  transition: color 180ms ease, background-color 180ms ease;
+}
+
+.faq-question::after {
+  content: '';
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--alaslee-border);
+  border-radius: 50%;
+  color: var(--alaslee-gold-dark);
+  background:
+    linear-gradient(currentColor 0 0) center / 12px 2px no-repeat,
+    linear-gradient(currentColor 0 0) center / 2px 12px no-repeat;
+  transition: border-color 180ms ease, background-size 180ms ease;
+}
+
+.faq-question.active,
+.faq-question[aria-expanded='true'] {
+  color: var(--alaslee-gold-dark);
+  background: #fffbeb;
+}
+
+.faq-question.active::after,
+.faq-question[aria-expanded='true']::after {
+  border-color: var(--alaslee-gold);
+  background-size: 12px 2px, 2px 0;
+}
+
+.faq-answer {
+  color: var(--alaslee-ink-soft);
+  font-size: 16px;
+  line-height: 1.8;
+  padding: 0 18px 18px;
+}
+
+html[data-alaslee-customization='v2'] .faq-answer {
+  display: none;
+}
+
+html[data-alaslee-customization='v2'] .faq-answer.active {
+  display: block;
+}
+
+.faq-answer[hidden] {
+  display: none !important;
+}
+
+@media (max-width: 767px) {
+  .store-header .main-nav-container {
+    border-bottom-color: #e7e5e4;
+  }
+
+  .banner.banner--fixed {
+    display: block;
+    height: auto !important;
+    aspect-ratio: auto !important;
+    border-radius: 14px;
+  }
+
+  .banner.banner--fixed img {
+    display: block;
+    width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    aspect-ratio: auto !important;
+    object-fit: contain !important;
+    border-radius: inherit;
+  }
+
+  .s-products-list-wrapper {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 12px !important;
+  }
+
+  .store-footer .footer-list a {
+    justify-content: center;
+  }
+
+  .faq-section {
+    margin-block: 24px;
+    padding: 4px;
+  }
+
+  .faq-question {
+    min-height: 52px;
+    padding: 14px;
+  }
+
+  .faq-answer {
+    padding: 0 14px 16px;
+  }
+}
+
+@media (max-width: 359px) {
+  .s-products-list-wrapper {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .store-header *,
+  .store-footer a,
+  .faq-question,
+  .faq-question::after,
+  :where(.s-button-primary, .btn-primary, .btn--primary) {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

@@ -13,7 +13,8 @@ Use the uploaded product references as the source of truth. Preserve the real pr
 - real proportions and perspective; do not stretch, slim, thicken, mirror incorrectly, or redesign any part
 
 Studio requirements:
-- isolated product on a clean pure-white seamless background
+- isolated product on a seamless solid pure-white (#FFFFFF) background with neutral studio lighting; no yellow, cream, beige, gray, gradients, or warm color cast
+- keep the eyeglasses sharp, vibrant, correctly exposed, and faithful to the real colors and details; never faded, hazy, dull, or washed out
 - full product visible, centered, sharp, realistic, and marketplace-ready
 - zoom out enough to leave at least 12% clean white safe margin on all four sides
 - every outermost product edge, including both hinge tips and the full temple/ear bends, must remain inside the canvas; never let the product touch or cross a canvas edge

@@ -29,7 +29,13 @@ export async function listDaftraProducts(actor, query = "", options = {}) {
        WHERE ($1='' OR lower(p.name) LIKE $2 OR lower(COALESCE(p.product_code,'')) LIKE $2 OR lower(COALESCE(p.sku,'')) LIKE $2 OR lower(COALESCE(p.barcode,'')) LIKE $2)
          AND ($3::boolean = false OR COALESCE(p.track_stock,false) = false
            OR GREATEST(COALESCE(p.stock_balance,0)-COALESCE(r.reserved_quantity,0),0) > 0)
-       GROUP BY p.external_id,r.reserved_quantity ORDER BY p.name LIMIT $4`,
+       GROUP BY p.external_id,r.reserved_quantity
+       ORDER BY CASE
+         WHEN $1 <> '' AND lower(COALESCE(p.barcode,'')) = $1 THEN 0
+         WHEN $1 <> '' AND (lower(COALESCE(p.sku,'')) = $1 OR lower(COALESCE(p.product_code,'')) = $1) THEN 1
+         WHEN $1 <> '' AND lower(p.name) = $1 THEN 2
+         ELSE 3
+       END, p.name LIMIT $4`,
       [text, `%${text}%`, availableOnly, limit],
     );
     return result.rows;

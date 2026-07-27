@@ -1,0 +1,119 @@
+/* Add custom CSS styles below */ 
+/* تكبير بسيط عند إضافة كلاس zoomed */
+.product-card img,
+.product-card__img,
+.product-card__image-wrapper img {
+  transition: transform 0.25s ease;
+}
+
+.product-image-zoomed {
+  transform: scale(1.6); /* درجة التكبير */
+  z-index: 9999;
+}
+/* هيدر بلون أزرق */
+.header,
+.site-header,
+.header-main {
+  background-color: #0ea5e9 !important; /* أزرق */
+  border-bottom: 1px solid #0284c7 !important;
+}
+
+/* الروابط داخل الهيدر بلون فاتح لقراءة أفضل */
+.header .nav a,
+.site-header .nav a {
+  font-size: 15px;
+  letter-spacing: 0.03em;
+  color: #f9fafb;
+}
+
+.header .nav a:hover,
+.site-header .nav a:hover {
+  color: #e0f2fe;
+}
+
+/* زر بارز في الهيدر إن وجد */
+.header .nav .btn-primary,
+.site-header .nav .btn-primary {
+  background: #0369a1;
+  color: #ffffff;
+  border-radius: 999px;
+  padding: 0.4rem 1.4rem;
+  font-size: 14px;
+}
+/* ضبط صور السلايدر / البانر على الجوال في ثيم سيليا */
+@media (max-width: 768px) {
+  .hero-slider img,
+  .hero-section img,
+  .s-slider img,
+  .banner img {
+    width: 100% !important;
+    height: 260px !important;   /* عدّلها مثلاً 220 أو 280 حسب ما يناسبك */
+    object-fit: cover !important;
+    border-radius: 12px !important;
+  }
+}
+/* تنسيق الأسئلة الشائعة في ثيم سيليا */
+.faq-section {
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  padding: 3rem 1rem;
+  border-radius: 20px;
+  margin: 2rem 0;
+}
+
+.faq-item {
+  border-bottom: 1px solid #e2e8f0;
+  margin-bottom: 1rem;
+  padding: 1.5rem 0;
+}
+
+.faq-question {
+  font-size: 18px;
+  font-weight: 600;
+  color: #0f172a;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: color 0.3s ease;
+}
+
+.faq-question:hover {
+  color: #0ea5e9;
+}
+
+.faq-question::after {
+  content: '➕';
+  font-size: 20px;
+  transition: transform 0.3s ease;
+}
+
+.faq-question.active::after {
+  transform: rotate(45deg);
+  content: '➖';
+}
+
+.faq-answer {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s ease-out, padding 0.4s ease-out;
+  font-size: 15px;
+  color: #475569;
+  line-height: 1.6;
+  margin-top: 1rem;
+}
+
+.faq-answer.active {
+  max-height: 200px;
+  padding: 1rem 0;
+}
+
+/* على الجوال */
+@media (max-width: 768px) {
+  .faq-section {
+    padding: 2rem 1rem;
+  }
+  
+  .faq-question {
+    font-size: 16px;
+  }
+}
