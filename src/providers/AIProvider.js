@@ -4,6 +4,8 @@ export class AIProvider {
     this.model = model;
   }
 
+  validateOutputs() {}
+
   async generateImages() {
     throw new Error("AIProvider.generateImages() must be implemented by a provider.");
   }

@@ -36,6 +36,8 @@ test("Gemini Agent Platform uses generateContent and returns inline image data",
 
     assert.equal(request.model, "gemini-test");
     assert.deepEqual(request.config.responseModalities, ["TEXT", "IMAGE"]);
+    assert.equal(request.config.imageConfig.aspectRatio, "1:1");
+    assert.equal(request.config.imageConfig.imageSize, "2K");
     assert.equal(request.contents[0].parts[0].text, output.prompt);
     assert.equal(request.contents[0].parts[1].inlineData.mimeType, "image/png");
     assert.equal(result.buffer.toString(), "agent-image");
@@ -63,6 +65,40 @@ test("Gemini Developer API keeps using the interactions image endpoint", async (
   assert.equal(request.model, "gemini-test");
   assert.equal(request.input[0].text, output.prompt);
   assert.equal(request.response_format.type, "image");
+  assert.equal(request.response_format.aspect_ratio, "1:1");
+  assert.equal(request.response_format.image_size, "2K");
   assert.equal(result.buffer.toString(), "developer-image");
   assert.equal(result.mimeType, "image/jpeg");
+});
+
+test("Gemini uses the dynamic portrait aspect ratio and preserves target dimensions", async () => {
+  let request;
+  const client = {
+    interactions: {
+      create: async (input) => {
+        request = input;
+        return { output_image: { data: Buffer.from("portrait-image").toString("base64") } };
+      },
+    },
+  };
+  const provider = new GeminiProvider({
+    apiKey: "test",
+    apiMode: "developer",
+    model: "gemini-test",
+    client,
+  });
+  const [result] = await provider.generateImages({
+    originalImages: [],
+    outputs: [{
+      ...output,
+      role: "dynamic-ad",
+      aspectRatio: "9:16",
+      imageSize: "2K",
+      outputDimensions: { width: 1080, height: 1920 },
+    }],
+  });
+
+  assert.equal(request.response_format.aspect_ratio, "9:16");
+  assert.equal(request.response_format.image_size, "2K");
+  assert.deepEqual(result.outputDimensions, { width: 1080, height: 1920 });
 });

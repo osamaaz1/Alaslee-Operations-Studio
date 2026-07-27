@@ -42,6 +42,7 @@ export class GeminiProvider extends AIProvider {
         buffer: Buffer.from(image.data, "base64"),
         mimeType: image.mimeType,
         generationDurationMs: Date.now() - startedAt,
+        outputDimensions: output.outputDimensions,
       };
       if (onImageGenerated) await onImageGenerated(generated);
       results.push(generated);
@@ -69,8 +70,8 @@ export class GeminiProvider extends AIProvider {
         response_format: {
           type: "image",
           mime_type: "image/jpeg",
-          aspect_ratio: "1:1",
-          image_size: "2K",
+          aspect_ratio: output.aspectRatio || "1:1",
+          image_size: output.imageSize || "2K",
         },
       }),
     );
@@ -85,7 +86,10 @@ export class GeminiProvider extends AIProvider {
         contents: [{ role: "user", parts: [{ text: output.prompt }, ...referenceParts] }],
         config: {
           responseModalities: ["TEXT", "IMAGE"],
-          imageConfig: { aspectRatio: "1:1", imageSize: "2K" },
+          imageConfig: {
+            aspectRatio: output.aspectRatio || "1:1",
+            imageSize: output.imageSize || "2K",
+          },
         },
       }),
     );

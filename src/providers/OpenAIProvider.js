@@ -7,7 +7,7 @@ import { withProviderRetry } from "../utils/retry.js";
 import { referencesForOutputRole } from "../domain/outputReferencePlan.js";
 
 export class OpenAIProvider extends AIProvider {
-  constructor({ apiKey, model }) {
+  constructor({ apiKey, model, client }) {
     super({ name: "gpt", model });
     if (!apiKey) {
       throw new AppError("OPENAI_API_KEY is required when AI_PROVIDER=gpt.", 500);
@@ -16,10 +16,21 @@ export class OpenAIProvider extends AIProvider {
     this.timeoutMs = config.openai.requestTimeoutMs;
     this.imageRequestSize = config.openai.imageRequestSize;
     this.imageQuality = config.openai.imageQuality;
-    this.client = new OpenAI({ apiKey, timeout: this.timeoutMs });
+    this.client = client || new OpenAI({ apiKey, timeout: this.timeoutMs });
+  }
+
+  validateOutputs(outputs = []) {
+    if (outputs.some((output) => output.openAiRequestSize) && !this.model.startsWith("gpt-image-2")) {
+      throw new AppError(
+        "وضع الإعلان الإبداعي يتطلب gpt-image-2 عند استخدام محرك GPT. اختر Gemini أو حدّث نموذج الصور.",
+        422,
+        { code: "dynamic_ad_gpt_model_unsupported" },
+      );
+    }
   }
 
   async generateImages({ productId, originalImages, outputs, outputSize, onImageStarted, onImageGenerated }) {
+    this.validateOutputs(outputs);
     const results = [];
 
     for (const output of outputs) {
@@ -33,7 +44,7 @@ export class OpenAIProvider extends AIProvider {
       const references = await this.#buildReferences(sourceImages);
       const response = await withProviderRetry(
         () =>
-          this.client.images.edit(this.#buildRequest(references, output.prompt, outputSize), {
+          this.client.images.edit(this.#buildRequest(references, output, outputSize), {
             timeout: this.timeoutMs,
           }),
         { attempts: 1 },
@@ -55,6 +66,7 @@ export class OpenAIProvider extends AIProvider {
         buffer: Buffer.from(base64, "base64"),
         referenceRoles: sourceImages.map((image) => image.role),
         generationDurationMs: Date.now() - startedAt,
+        outputDimensions: output.outputDimensions,
       };
       if (onImageGenerated) {
         await onImageGenerated(generated);
@@ -75,13 +87,14 @@ export class OpenAIProvider extends AIProvider {
     );
   }
 
-  #buildRequest(references, prompt, outputSize) {
+  #buildRequest(references, output, outputSize) {
+    this.validateOutputs([output]);
     const request = {
       model: this.model,
       image: references,
-      prompt,
+      prompt: output.prompt,
       n: 1,
-      size: this.#editSize(outputSize),
+      size: output.openAiRequestSize || this.#editSize(outputSize),
       quality: this.imageQuality,
       output_format: "png",
     };

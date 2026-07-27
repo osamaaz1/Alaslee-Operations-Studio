@@ -28,12 +28,18 @@ export async function createMockOutputOne(productId, files = {}, options = {}) {
     return getProductById(productId, options.req);
   }
 
-  setProductGenerating(productId, PROVIDERS.FREE_TEST, { includeModel: outputs.some((output) => output.role === "model"), expectedCount: outputs.length });
+  setProductGenerating(productId, PROVIDERS.FREE_TEST, {
+    generationMode: "gallery",
+    includeModel: outputs.some((output) => output.role === "model"),
+    expectedCount: outputs.length,
+  });
 
   try {
     const sources = hasMockUploads(files, mockOutputRoles) ? await uploadedMockSources(files, mockOutputRoles) : await originalReferenceSources(productId, mockOutputRoles);
     const savedImages = await saveMockOutputs(product, sources, outputs);
-    await replaceGeneratedImages(productId, savedImages);
+    await replaceGeneratedImages(productId, savedImages, {
+      replaceRoles: galleryOutputs.map((output) => output.role),
+    });
     setProductGenerated(productId, PROVIDERS.FREE_TEST);
     console.info(`[output-1] Free Test mock Output 1 saved for product ${productId}`);
     return getProductById(productId, options.req);

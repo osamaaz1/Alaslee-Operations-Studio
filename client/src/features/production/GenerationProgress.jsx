@@ -1,15 +1,22 @@
 import { useEffect, useRef } from "react";
 import { Check, CircleAlert, Clock3, Image, LoaderCircle, RefreshCw, Sparkles, X } from "lucide-react";
 
-const roleLabels = { front: "الصورة الأمامية", side: "الصورة الجانبية", angle: "صورة زاوية 45°", model: "صورة الشخص بالنظارة" };
+const roleLabels = {
+  front: "الصورة الأمامية",
+  side: "الصورة الجانبية",
+  angle: "صورة زاوية 45°",
+  model: "صورة الشخص بالنظارة",
+  "dynamic-ad": "الإعلان الإبداعي",
+};
 
 export function ProductGenerationProgress({ progress, busy, onRetry }) {
   if (!progress) return null;
   const failed = progress.roles?.some((role) => role.state === "failed");
+  const dynamic = progress.generationMode === "dynamic-ad";
   return <section className={`generation-progress ${busy ? "is-active" : "is-settled"}`} aria-live="polite" aria-busy={busy}>
-    <ProgressHeader completed={progress.completedCount || 0} expected={progress.expectedCount || progress.roles?.length || 0} busy={busy} />
+    <ProgressHeader completed={progress.completedCount || 0} expected={progress.expectedCount || progress.roles?.length || 0} busy={busy} dynamic={dynamic} />
     <div className="generation-progress-grid">{progress.roles?.map((role, index) => <GenerationRoleCard role={role} index={index} key={role.role} />)}</div>
-    {failed && !busy && <button className="button secondary retry-missing" type="button" onClick={onRetry}><RefreshCw size={16} />إعادة الصور الناقصة فقط</button>}
+    {failed && !busy && <button className="button secondary retry-missing" type="button" onClick={onRetry}><RefreshCw size={16} />{dynamic ? "إعادة إنشاء الإعلان" : "إعادة الصور الناقصة فقط"}</button>}
   </section>;
 }
 
@@ -37,8 +44,19 @@ export function ProviderFallbackDialog({ open, gptAvailable, onConfirm, onClose 
   return <div className="provider-fallback-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}><section className="provider-fallback-dialog" role="dialog" aria-modal="true" aria-labelledby="provider-fallback-title"><button className="provider-fallback-close" type="button" onClick={onClose} aria-label="إغلاق"><X size={19} /></button><span className="provider-fallback-icon"><Sparkles size={26} /></span><h2 id="provider-fallback-title">Gemini مو جاهز على هذا الجهاز</h2>{gptAvailable ? <><p>ما لقينا مفتاح Gemini، لذلك ما نقدر نبدأ منه. تحب نبدّل إلى GPT ونكمل التوليد بنفس إعداداتك؟</p><div><button className="button secondary" type="button" onClick={onClose}>لا، رجوع</button><button ref={confirmRef} className="button primary" type="button" onClick={onConfirm}>نعم، حوّل إلى GPT</button></div></> : <><p>ما لقينا مفتاح Gemini، ومفتاح GPT غير موجود أيضاً. اطلب من المسؤول إضافة مفتاح صالح ثم جرّب مرة ثانية.</p><div><button ref={confirmRef} className="button primary" type="button" onClick={onClose}>حسناً</button></div></>}</section></div>;
 }
 
-function ProgressHeader({ completed, expected, busy, batch }) {
-  return <header className="generation-progress-head"><span className="generation-orbit"><Sparkles size={20} /></span><div><strong>{busy ? batch ? "جاري توليد صور الدفعة" : "جاري تجهيز صور المنتج" : completed === expected ? "اكتمل التوليد" : "راجع الصور التي لم تكتمل"}</strong><small>{completed} من {expected} صور اكتملت</small></div><b>{expected ? Math.round((completed / expected) * 100) : 0}%</b></header>;
+function ProgressHeader({ completed, expected, busy, batch, dynamic = false }) {
+  const title = busy
+    ? batch
+      ? "جاري توليد صور الدفعة"
+      : dynamic
+        ? "جاري إنشاء الإعلان الإبداعي"
+        : "جاري تجهيز صور المنتج"
+    : completed === expected
+      ? "اكتمل التوليد"
+      : dynamic
+        ? "راجع الإعلان الذي لم يكتمل"
+        : "راجع الصور التي لم تكتمل";
+  return <header className="generation-progress-head"><span className="generation-orbit"><Sparkles size={20} /></span><div><strong>{title}</strong><small>{dynamic ? `${completed} من ${expected} اكتمل` : `${completed} من ${expected} صور اكتملت`}</small></div><b>{expected ? Math.round((completed / expected) * 100) : 0}%</b></header>;
 }
 
 function GenerationRoleCard({ role, index, compact = false }) {

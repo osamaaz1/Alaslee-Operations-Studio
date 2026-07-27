@@ -2,6 +2,8 @@
 
 import { config } from "../config.js";
 import { galleryOutputs } from "../prompts/galleryPrompts.js";
+import { getDynamicAdOutput } from "../prompts/dynamicAdPrompts.js";
+import { GENERATION_MODES, normalizeGenerationSettings } from "../domain/generationSettings.js";
 import { getProductById, getProductRecord } from "./productService.js";
 import { referencesForOutputRole } from "../domain/outputReferencePlan.js";
 import { getCompositionFormat } from "./compositionSettingsService.js";
@@ -25,17 +27,23 @@ const outputTokensByQuality = Object.freeze({
 
 const safetyMultiplier = 2.5;
 
-export function estimateProductOutputOneCost(productId, options = {}) {
+export async function estimateProductOutputOneCost(productId, options = {}) {
   const product = getProductById(productId);
-  const outputs = options.includeModel === false ? galleryOutputs.filter((output) => output.role !== "model") : galleryOutputs;
+  const settings = normalizeGenerationSettings(options);
+  const outputs = settings.generationMode === GENERATION_MODES.DYNAMIC_AD
+    ? [await getDynamicAdOutput(settings)]
+    : settings.includeModel === false
+      ? galleryOutputs.filter((output) => output.role !== "model")
+      : galleryOutputs;
   const estimate = estimateProduct(product, outputs);
   const beforeOptimization = estimateProduct(sourceDimensionProduct(product), outputs);
 
   return {
     provider: "gpt",
     stage: "output_1",
+    generationMode: settings.generationMode,
     quality: config.openai.imageQuality,
-    requestSize: config.openai.imageRequestSize,
+    requestSize: outputs[0]?.openAiRequestSize || config.openai.imageRequestSize,
     pricingUsdPerMillion,
     ...estimate,
     optimizationComparison: optimizationComparison(product, beforeOptimization, estimate),
@@ -44,8 +52,10 @@ export function estimateProductOutputOneCost(productId, options = {}) {
   };
 }
 
-export function estimateBatchOutputOneCost(products) {
-  const perProduct = products.map((product) => estimateProductOutputOneCost(product.id, { includeModel: false }));
+export async function estimateBatchOutputOneCost(products) {
+  const perProduct = await Promise.all(
+    products.map((product) => estimateProductOutputOneCost(product.id, { includeModel: false })),
+  );
   const totals = perProduct.reduce(
     (sum, item) => ({
       requestCount: sum.requestCount + item.requestCount,
@@ -136,13 +146,14 @@ function estimateProduct(product, outputs) {
     const references = referencesForOutputRole(originals, output.role);
     const textInputTokens = estimateTextTokens(output.prompt);
     const imageInputTokens = references.reduce((sum, image) => sum + estimateImageInputTokens(image), 0);
-    const imageOutputTokens = outputTokensByQuality[config.openai.imageQuality] || outputTokensByQuality.medium;
+    const imageOutputTokens = estimateOutputOneImageTokens(output);
 
     return {
       role: output.role,
       label: output.label,
       referenceRoles: references.map((image) => image.role),
       referenceCount: references.length,
+      outputDimensions: output.outputDimensions || null,
       textInputTokens,
       imageInputTokens,
       imageOutputTokens,
@@ -179,6 +190,15 @@ function estimateProduct(product, outputs) {
     ...rounded,
     requestBreakdown: requestBreakdown.map((item) => roundMoney(item)),
   };
+}
+
+function estimateOutputOneImageTokens(output) {
+  const base = outputTokensByQuality[config.openai.imageQuality] || outputTokensByQuality.medium;
+  const requestDimensions = /^(\d+)x(\d+)$/.exec(String(output.openAiRequestSize || ""));
+  const width = Number(requestDimensions?.[1] || output.outputDimensions?.width || 1080);
+  const height = Number(requestDimensions?.[2] || output.outputDimensions?.height || 1080);
+  const ratio = (width * height) / (1080 * 1080);
+  return Math.ceil(base * Math.max(0.5, Math.min(3, ratio)));
 }
 
 function sourceDimensionProduct(product) {

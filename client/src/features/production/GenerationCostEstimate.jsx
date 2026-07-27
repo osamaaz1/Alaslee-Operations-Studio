@@ -6,23 +6,63 @@ const usd = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD",
 const integer = new Intl.NumberFormat("ar-SA-u-nu-latn", { maximumFractionDigits: 0 });
 const decimal = new Intl.NumberFormat("ar-SA-u-nu-latn", { maximumFractionDigits: 1 });
 
-export function GenerationCostEstimate({ productId, batchId, images = [], includeModel = true }) {
+export function GenerationCostEstimate({
+  productId,
+  batchId,
+  images = [],
+  includeModel = true,
+  generationMode = "gallery",
+  outputFormat,
+  creativeStyle,
+  lifestyleScene,
+  modelGender,
+}) {
   const [state, setState] = useState({ loading: false, estimate: null, error: "" });
   const [activeImage, setActiveImage] = useState(null);
   const resource = batchId ? `batches/${encodeURIComponent(batchId)}` : productId ? `products/${encodeURIComponent(productId)}` : "";
 
   useEffect(() => {
     let active = true;
-    if (!resource) {
+    const dynamicPersonIncomplete = generationMode === "dynamic-ad"
+      && creativeStyle === "person"
+      && (!lifestyleScene || !modelGender);
+    const dynamicSelectionIncomplete = generationMode === "dynamic-ad"
+      && (!outputFormat || !creativeStyle || dynamicPersonIncomplete);
+    if (!resource || dynamicSelectionIncomplete) {
       setState({ loading: false, estimate: null, error: "" });
       return () => { active = false; };
     }
+
+    const query = new URLSearchParams();
+    if (!batchId) {
+      query.set("generationMode", generationMode);
+      if (generationMode === "dynamic-ad") {
+        query.set("outputFormat", outputFormat);
+        query.set("creativeStyle", creativeStyle);
+        if (creativeStyle === "person") {
+          query.set("lifestyleScene", lifestyleScene);
+          query.set("modelGender", modelGender);
+        }
+      } else {
+        query.set("includeModel", includeModel ? "1" : "0");
+      }
+    }
+
     setState({ loading: true, estimate: null, error: "" });
-    get(`/${resource}/output-1/estimate${batchId ? "" : `?includeModel=${includeModel ? "1" : "0"}`}`)
+    get(`/${resource}/output-1/estimate${query.size ? `?${query}` : ""}`)
       .then((estimate) => active && setState({ loading: false, estimate, error: "" }))
       .catch((error) => active && setState({ loading: false, estimate: null, error: error.message }));
     return () => { active = false; };
-  }, [resource, batchId, includeModel]);
+  }, [
+    resource,
+    batchId,
+    includeModel,
+    generationMode,
+    outputFormat,
+    creativeStyle,
+    lifestyleScene,
+    modelGender,
+  ]);
 
   useEffect(() => {
     if (!activeImage) return undefined;

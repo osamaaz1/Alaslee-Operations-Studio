@@ -246,6 +246,16 @@ const migrations = [
     },
     down() {},
   },
+  {
+    id: "202607270001_dynamic_ad_generation",
+    up(db) {
+      addColumn(db, "products", "generation_mode", "TEXT NOT NULL DEFAULT 'gallery'");
+      addColumn(db, "products", "generation_output_format", "TEXT");
+      addColumn(db, "products", "generation_creative_style", "TEXT");
+      addColumn(db, "products", "generation_lifestyle_scene", "TEXT");
+    },
+    down() {},
+  },
 ];
 
 export function runMigrations(db) {

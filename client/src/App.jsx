@@ -2,26 +2,35 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Bell,
   Boxes,
+  BriefcaseBusiness,
+  Building2,
   CalendarClock,
   Check,
   ChevronLeft,
   CircleAlert,
   CloudCog,
+  Coffee,
   Download,
   FolderUp,
+  Gem,
+  Hand,
   ImagePlus,
   KeyRound,
+  Landmark,
   LayoutDashboard,
   LoaderCircle,
   Maximize2,
   Palette,
   Plus,
   RefreshCw,
+  RectangleVertical,
   Search,
   Settings2,
+  Square,
   Sparkles,
   Store,
   Upload,
+  UserRound,
   UsersRound,
   WandSparkles,
   X,
@@ -46,6 +55,19 @@ const sections = [
 
 const money = new Intl.NumberFormat("ar-SA-u-nu-latn", { style: "currency", currency: "SAR", maximumFractionDigits: 0 });
 const number = new Intl.NumberFormat("ar-SA-u-nu-latn", { maximumFractionDigits: 0 });
+const galleryRoles = new Set(["front", "side", "angle", "model"]);
+const dynamicAdRole = "dynamic-ad";
+const creativeStyleOptions = [
+  { id: "hand", label: "النظارة في يد شخص", detail: "لقطة إعلانية راقية بيد طبيعية وتفاصيل حادة", icon: Hand },
+  { id: "decor", label: "ديكور مستوحى من الهوية", detail: "ألوان وخامات من تفاصيل النظارة من دون تخمين", icon: Gem },
+  { id: "person", label: "شخص يرتدي النظارة", detail: "صورة أسلوب حياة احترافية بتركيز بصري على النظارة", icon: UserRound },
+];
+const lifestyleSceneOptions = [
+  { id: "cafe", label: "قهوة عصرية", icon: Coffee },
+  { id: "classic-street", label: "كلاسيكي في الشارع", icon: Building2 },
+  { id: "formal-modern", label: "رسمي وعصري", icon: BriefcaseBusiness },
+  { id: "saudi-modern", label: "سعودي عصري مميز", icon: Landmark },
+];
 
 export default function App() {
   const [section, setSection] = useState(() => sectionForPath(window.location.pathname));
@@ -214,83 +236,471 @@ function Production({ product, setProduct, inform, open, health }) {
   const [folder, setFolder] = useState("");
   const [batchResult, setBatchResult] = useState(null);
   const [batchProducts, setBatchProducts] = useState([]);
+  const [generationMode, setGenerationMode] = useState("gallery");
   const [includeModel, setIncludeModel] = useState(true);
   const [modelGender, setModelGender] = useState("");
+  const [outputFormat, setOutputFormat] = useState("portrait");
+  const [creativeStyle, setCreativeStyle] = useState("hand");
+  const [lifestyleScene, setLifestyleScene] = useState("cafe");
   const [generationProgress, setGenerationProgress] = useState(null);
   const [batchProgress, setBatchProgress] = useState(null);
   const [fallbackRequest, setFallbackRequest] = useState(null);
-  const submitUpload = async (event) => { event.preventDefault(); setBusy(true); try { const result = await post("/products/upload", new FormData(event.currentTarget), false); setProduct(result); setGenerationProgress(null); inform("تم حفظ صور مرجع المنتج."); } catch (error) { inform(error.message, "warning"); } finally { setBusy(false); } };
-  const runSingleGeneration = async (payload) => {
+
+  const submitUpload = async (event) => {
+    event.preventDefault();
     setBusy(true);
-    if (!payload.retryMissing) setGenerationProgress(initialProductProgress(product, payload.includeModel, payload.modelGender));
-    const stopPolling = startProgressPolling(`/products/${encodeURIComponent(product.id)}/output-1/progress`, setGenerationProgress);
     try {
-      setProduct(await post("/products/generate", payload));
-      inform("اكتمل إنشاء صور المتجر.");
+      const result = await post("/products/upload", new FormData(event.currentTarget), false);
+      setProduct(result);
+      setGenerationProgress(null);
+      inform("تم حفظ صور مرجع المنتج.");
     } catch (error) {
-      if (error.details?.code === "provider_credentials_missing" && error.details.provider === "gemini") {
-        setFallbackRequest({ kind: "single", payload, gptAvailable: error.details.suggestedProvider === "gpt" });
-      } else inform(error.message, "warning");
+      inform(error.message, "warning");
     } finally {
-      await stopPolling(); setBusy(false);
+      setBusy(false);
     }
   };
+
+  const runSingleGeneration = async (payload) => {
+    setBusy(true);
+    if (!payload.retryMissing) setGenerationProgress(initialProductProgress(product, payload));
+    const stopPolling = startProgressPolling(
+      `/products/${encodeURIComponent(product.id)}/output-1/progress`,
+      setGenerationProgress,
+    );
+    try {
+      setProduct(await post("/products/generate", payload));
+      inform(payload.generationMode === "dynamic-ad"
+        ? "اكتمل إنشاء الإعلان الإبداعي."
+        : "اكتمل إنشاء صور المتجر.");
+    } catch (error) {
+      if (error.details?.code === "provider_credentials_missing" && error.details.provider === "gemini") {
+        setFallbackRequest({
+          kind: "single",
+          payload,
+          gptAvailable: error.details.suggestedProvider === "gpt",
+        });
+      } else {
+        inform(error.message, "warning");
+      }
+    } finally {
+      await stopPolling();
+      setBusy(false);
+    }
+  };
+
   const createOutput = (retryMissing = false) => {
     if (!product?.id) return inform("أضف مرجع المنتج أولاً.", "warning");
-    if (includeModel && !modelGender) return inform("اختر أولاً هل النظارة رجالية أم نسائية.", "warning");
-    const payload = { productId: product.id, provider, includeModel, modelGender: includeModel ? modelGender : undefined, retryMissing };
+    if (generationMode === "gallery" && includeModel && !modelGender) {
+      return inform("اختر أولاً هل النظارة رجالية أم نسائية.", "warning");
+    }
+    if (generationMode === "dynamic-ad" && creativeStyle === "person" && !modelGender) {
+      return inform("اختر هل الشخص رجل أم امرأة قبل بدء الإعلان.", "warning");
+    }
+
+    const payload = {
+      productId: product.id,
+      provider,
+      generationMode,
+      retryMissing,
+      ...(generationMode === "dynamic-ad"
+        ? {
+            outputFormat,
+            creativeStyle,
+            lifestyleScene: creativeStyle === "person" ? lifestyleScene : undefined,
+            modelGender: creativeStyle === "person" ? modelGender : undefined,
+          }
+        : {
+            includeModel,
+            modelGender: includeModel ? modelGender : undefined,
+          }),
+    };
+
     if (!providerReady(health, provider)) {
-      if (provider === "gemini") setFallbackRequest({ kind: "single", payload, gptAvailable: Boolean(health?.aiProviders?.gpt?.configured) });
-      else inform("ما لقينا مفتاح GPT على هذا الجهاز. اطلب من المسؤول إضافة مفتاح OpenAI صالح.", "warning");
+      if (provider === "gemini") {
+        setFallbackRequest({
+          kind: "single",
+          payload,
+          gptAvailable: Boolean(health?.aiProviders?.gpt?.configured),
+        });
+      } else {
+        inform("ما لقينا مفتاح GPT على هذا الجهاز. اطلب من المسؤول إضافة مفتاح OpenAI صالح.", "warning");
+      }
       return;
     }
     runSingleGeneration(payload);
   };
-  const importBatch = async (event) => { event.preventDefault(); setBusy(true); try { const result = await post("/batches/import-folder", { folderPath: folder, provider, brandingEnabled: false }); setBatchResult(result); setBatchProducts([]); setBatchProgress(null); inform(`تم استيراد ${result.products?.length || 0} منتج. راجع الدفعة ثم ابدأ التوليد.`); } catch (error) { inform(error.message, "warning"); } finally { setBusy(false); } };
+
+  const importBatch = async (event) => {
+    event.preventDefault();
+    setBusy(true);
+    try {
+      const result = await post("/batches/import-folder", {
+        folderPath: folder,
+        provider,
+        brandingEnabled: false,
+      });
+      setBatchResult(result);
+      setBatchProducts([]);
+      setBatchProgress(null);
+      inform(`تم استيراد ${result.products?.length || 0} منتج. راجع الدفعة ثم ابدأ التوليد.`);
+    } catch (error) {
+      inform(error.message, "warning");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const runBatchGeneration = async (payload) => {
     const batchId = batchResult?.batch?.id;
     setBusy(true);
-    const stopPolling = startProgressPolling(`/batches/${encodeURIComponent(batchId)}/output-1/progress`, setBatchProgress);
+    const stopPolling = startProgressPolling(
+      `/batches/${encodeURIComponent(batchId)}/output-1/progress`,
+      setBatchProgress,
+    );
     try {
       const result = await post(`/batches/${encodeURIComponent(batchId)}/generate`, payload);
-      const details = await Promise.all((result.products || []).map((item) => get(`/products/${encodeURIComponent(item.id)}`)));
+      const details = await Promise.all(
+        (result.products || []).map((item) => get(`/products/${encodeURIComponent(item.id)}`)),
+      );
       setBatchResult(result);
       setBatchProducts(details);
-      inform(result.results?.failed ? "اكتمل جزء من الدفعة. راجع المنتجات التي تعذر توليدها." : "اكتمل توليد صور الدفعة.", result.results?.failed ? "warning" : "success");
+      inform(
+        result.results?.failed
+          ? "اكتمل جزء من الدفعة. راجع المنتجات التي تعذر توليدها."
+          : "اكتمل توليد صور الدفعة.",
+        result.results?.failed ? "warning" : "success",
+      );
     } catch (error) {
       if (error.details?.code === "provider_credentials_missing" && error.details.provider === "gemini") {
-        setFallbackRequest({ kind: "batch", payload, gptAvailable: error.details.suggestedProvider === "gpt" });
-      } else inform(error.message, "warning");
+        setFallbackRequest({
+          kind: "batch",
+          payload,
+          gptAvailable: error.details.suggestedProvider === "gpt",
+        });
+      } else {
+        inform(error.message, "warning");
+      }
     } finally {
-      await stopPolling(); setBusy(false);
+      await stopPolling();
+      setBusy(false);
     }
   };
+
   const generateBatch = (retryMissing = false) => {
     if (!batchResult?.batch?.id) return inform("استورد مجلد الدفعة أولاً.", "warning");
     const payload = { provider, retryMissing };
     if (!providerReady(health, provider)) {
-      if (provider === "gemini") setFallbackRequest({ kind: "batch", payload, gptAvailable: Boolean(health?.aiProviders?.gpt?.configured) });
-      else inform("ما لقينا مفتاح GPT على هذا الجهاز. اطلب من المسؤول إضافة مفتاح OpenAI صالح.", "warning");
+      if (provider === "gemini") {
+        setFallbackRequest({
+          kind: "batch",
+          payload,
+          gptAvailable: Boolean(health?.aiProviders?.gpt?.configured),
+        });
+      } else {
+        inform("ما لقينا مفتاح GPT على هذا الجهاز. اطلب من المسؤول إضافة مفتاح OpenAI صالح.", "warning");
+      }
       return;
     }
     runBatchGeneration(payload);
   };
+
   const switchToGpt = () => {
-    const request = fallbackRequest; setFallbackRequest(null); setProvider("gpt");
+    const request = fallbackRequest;
+    setFallbackRequest(null);
+    setProvider("gpt");
     if (!request) return;
     const payload = { ...request.payload, provider: "gpt" };
-    if (request.kind === "single") runSingleGeneration(payload); else runBatchGeneration(payload);
+    if (request.kind === "single") runSingleGeneration(payload);
+    else runBatchGeneration(payload);
   };
+
+  const selectGenerationMode = (nextMode) => {
+    setGenerationMode(nextMode);
+    setGenerationProgress(null);
+  };
+
   const images = product?.generatedImages || [];
-  return <section className="section-stack"><PageTitle kicker="المنتجات والإنتاج" title="أنشئ أصولاً دقيقة للمنتج." text="ابدأ بمراجع واضحة، ثم راجع صور المتجر قبل نقل الأفضل إلى الحملة." action={<label className="provider-select">المحرك<select value={provider} onChange={(event) => setProvider(event.target.value)}><option value="gemini">Gemini</option><option value="gpt">GPT</option><option value="free-test">Try Free</option></select></label>} />
-    <div className="production-layout"><article className="panel intake-panel"><div className="segmented" role="tablist"><button type="button" className={mode === "single" ? "selected" : ""} onClick={() => setMode("single")}>منتج واحد</button><button type="button" className={mode === "batch" ? "selected" : ""} onClick={() => setMode("batch")}>دفعة منتجات</button></div>{mode === "single" ? <form onSubmit={submitUpload}><PanelHeading kicker="01 — مراجع المنتج" title="أضف الصور الأصلية" /><p className="panel-copy">يفضّل تصوير النظارة بصورة أفقية للحصول على أكبر قدر من التفاصيل. الصور العمودية والأفقية، بما فيها 16:9 و9:16، تُصغّر تلقائياً دون قص أو تشويه.</p><div className="upload-slots"><FileSlot name="front" label="الواجهة الأمامية" required /><FileSlot name="side" label="الجانب" required /><FileSlot name="angle" label="زاوية 45°" required /><FileSlot name="temple" label="تفاصيل الذراع" /></div><button className="button primary wide" type="submit" disabled={busy}><Upload size={18} />{busy ? "جارٍ التحسين والحفظ…" : "تحسين وحفظ المراجع"}</button></form> : <form className="batch-form" onSubmit={importBatch}><PanelHeading kicker="01 — إنتاج متسلسل" title="استيراد مجلد دفعة" /><p className="panel-copy">يفضّل أن تكون الصور أفقية. يدعم التحسين الصور العمودية والأفقية ونسب 16:9 و9:16 مع الحفاظ على النسبة الأصلية.</p><label className="field-label">مسار المجلد<input value={folder} onChange={(event) => setFolder(event.target.value)} placeholder="E:\\Products\\Batch-01" required /></label><button className="button primary wide" type="submit" disabled={busy}><FolderUp size={18} />استيراد وتحسين الدفعة</button></form>}</article>
-      {mode === "single" ? <article className="panel output-panel"><PanelHeading kicker="02 — صور المتجر" title="معرض المنتج" action={product ? "تجهيز الحملة" : undefined} onAction={() => open("campaigns")} />{product ? <><div className="product-summary"><div><span>معرّف المنتج</span><strong dir="ltr">{product.id}</strong></div><div><span>الحالة</span><strong>{product.status || "جاهز"}</strong></div></div><GenerationCostEstimate productId={product.id} images={product.originalImages} includeModel={includeModel} /><GenerationOptions includeModel={includeModel} setIncludeModel={setIncludeModel} modelGender={modelGender} setModelGender={setModelGender} disabled={busy} /><ProductGenerationProgress progress={generationProgress} busy={busy} onRetry={() => createOutput(true)} />{!busy && images.length ? <GeneratedImageGallery images={images} productId={product.id} inform={inform} /> : !generationProgress ? <EmptyState icon={ImagePlus} title="لم تُنشأ صور بعد" text="أنشئ ثلاث صور للمنتج، وصورة رابعة اختيارية لشخص حقيقي يلبس النظارة." /> : null}<button className="button primary wide" type="button" disabled={busy || provider === "free-test" || (includeModel && !modelGender)} onClick={() => createOutput(false)}><WandSparkles size={18} />{busy ? "جارٍ إنشاء الصور…" : "إنشاء صور المتجر"}</button></> : <EmptyState icon={ImagePlus} title="أضف منتجاً للبدء" text="ستظهر الصور المحسّنة ومقارنة التكلفة هنا بعد رفع المراجع." />}</article> : <BatchOutputPanel batchResult={batchResult} products={batchProducts} progress={batchProgress} busy={busy} onGenerate={generateBatch} inform={inform} />}</div>
-    <ProviderFallbackDialog open={Boolean(fallbackRequest)} gptAvailable={fallbackRequest?.gptAvailable ?? Boolean(health?.aiProviders?.gpt?.configured)} onConfirm={switchToGpt} onClose={() => setFallbackRequest(null)} />
+  const galleryImages = images.filter((image) => galleryRoles.has(image.role));
+  const dynamicImages = images.filter((image) => image.role === dynamicAdRole);
+  const visibleImages = generationMode === "dynamic-ad" ? dynamicImages : galleryImages;
+  const dynamicPresentation = Number(dynamicImages[0]?.height) > Number(dynamicImages[0]?.width)
+    ? "portrait"
+    : "square";
+  const needsGender = generationMode === "gallery"
+    ? includeModel
+    : creativeStyle === "person";
+  const generationDisabled = busy || provider === "free-test" || (needsGender && !modelGender);
+
+  return <section className="section-stack">
+    <PageTitle
+      kicker="المنتجات والإنتاج"
+      title="أنشئ أصولاً دقيقة للمنتج."
+      text="ابدأ بمراجع واضحة، ثم اختر بين معرض المتجر وإعلان إبداعي واحد جاهز للنشر."
+      action={<label className="provider-select">المحرك<select value={provider} onChange={(event) => setProvider(event.target.value)}><option value="gemini">Gemini</option><option value="gpt">GPT</option><option value="free-test">Try Free</option></select></label>}
+    />
+    <div className="production-layout">
+      <article className="panel intake-panel">
+        <div className="segmented" role="tablist">
+          <button type="button" className={mode === "single" ? "selected" : ""} onClick={() => setMode("single")}>منتج واحد</button>
+          <button type="button" className={mode === "batch" ? "selected" : ""} onClick={() => setMode("batch")}>دفعة منتجات</button>
+        </div>
+        {mode === "single" ? <form onSubmit={submitUpload}>
+          <PanelHeading kicker="01 — مراجع المنتج" title="أضف الصور الأصلية" />
+          <p className="panel-copy">يفضّل تصوير النظارة بصورة أفقية للحصول على أكبر قدر من التفاصيل. الصور العمودية والأفقية، بما فيها 16:9 و9:16، تُصغّر تلقائياً دون قص أو تشويه.</p>
+          <div className="upload-slots">
+            <FileSlot name="front" label="الواجهة الأمامية" required />
+            <FileSlot name="side" label="الجانب" required />
+            <FileSlot name="angle" label="زاوية 45°" required />
+            <FileSlot name="temple" label="تفاصيل الذراع" />
+          </div>
+          <button className="button primary wide" type="submit" disabled={busy}><Upload size={18} />{busy ? "جارٍ التحسين والحفظ…" : "تحسين وحفظ المراجع"}</button>
+        </form> : <form className="batch-form" onSubmit={importBatch}>
+          <PanelHeading kicker="01 — إنتاج متسلسل" title="استيراد مجلد دفعة" />
+          <p className="panel-copy">يفضّل أن تكون الصور أفقية. يدعم التحسين الصور العمودية والأفقية ونسب 16:9 و9:16 مع الحفاظ على النسبة الأصلية.</p>
+          <label className="field-label">مسار المجلد<input value={folder} onChange={(event) => setFolder(event.target.value)} placeholder="E:\\Products\\Batch-01" required /></label>
+          <button className="button primary wide" type="submit" disabled={busy}><FolderUp size={18} />استيراد وتحسين الدفعة</button>
+        </form>}
+      </article>
+      {mode === "single" ? <article className="panel output-panel">
+        <PanelHeading
+          kicker={generationMode === "dynamic-ad" ? "02 — إعلان إبداعي" : "02 — صور المتجر"}
+          title={generationMode === "dynamic-ad" ? "صورة إعلانية واحدة" : "معرض المنتج"}
+          action={generationMode === "gallery" && product ? "تجهيز الحملة" : undefined}
+          onAction={() => open("campaigns")}
+        />
+        {product ? <>
+          <div className="product-summary">
+            <div><span>معرّف المنتج</span><strong dir="ltr">{product.id}</strong></div>
+            <div><span>الحالة</span><strong>{product.status || "جاهز"}</strong></div>
+          </div>
+          <GenerationModeOptions
+            value={generationMode}
+            onChange={selectGenerationMode}
+            disabled={busy}
+          />
+          {generationMode === "dynamic-ad"
+            ? <DynamicAdOptions
+                outputFormat={outputFormat}
+                setOutputFormat={setOutputFormat}
+                creativeStyle={creativeStyle}
+                setCreativeStyle={setCreativeStyle}
+                lifestyleScene={lifestyleScene}
+                setLifestyleScene={setLifestyleScene}
+                modelGender={modelGender}
+                setModelGender={setModelGender}
+                disabled={busy}
+              />
+            : <GenerationOptions
+                includeModel={includeModel}
+                setIncludeModel={setIncludeModel}
+                modelGender={modelGender}
+                setModelGender={setModelGender}
+                disabled={busy}
+              />}
+          <GenerationCostEstimate
+            productId={product.id}
+            images={product.originalImages}
+            includeModel={includeModel}
+            generationMode={generationMode}
+            outputFormat={outputFormat}
+            creativeStyle={creativeStyle}
+            lifestyleScene={creativeStyle === "person" ? lifestyleScene : undefined}
+            modelGender={creativeStyle === "person" ? modelGender : undefined}
+          />
+          <ProductGenerationProgress
+            progress={generationProgress}
+            busy={busy}
+            onRetry={() => createOutput(true)}
+          />
+          {!busy && visibleImages.length
+            ? <GeneratedImageGallery
+                images={visibleImages}
+                productId={product.id}
+                inform={inform}
+                presentation={generationMode === "dynamic-ad" ? dynamicPresentation : "square"}
+              />
+            : !generationProgress
+              ? <EmptyState
+                  icon={generationMode === "dynamic-ad" ? Sparkles : ImagePlus}
+                  title={generationMode === "dynamic-ad" ? "الإعلان جاهز للبدء" : "لم تُنشأ صور بعد"}
+                  text={generationMode === "dynamic-ad"
+                    ? "اختر شكل الإعلان وأسلوبه، ثم أنشئ صورة واحدة بطابع عالمي."
+                    : "أنشئ ثلاث صور للمنتج، وصورة رابعة اختيارية لشخص حقيقي يلبس النظارة."}
+                />
+              : null}
+          {provider === "free-test" && generationMode === "dynamic-ad"
+            ? <p className="dynamic-provider-note">الإعلان الإبداعي يحتاج إلى Gemini أو GPT؛ وضع Try Free مخصص لمعاينة صور المتجر.</p>
+            : null}
+          <button
+            className="button primary wide"
+            type="button"
+            disabled={generationDisabled}
+            onClick={() => createOutput(false)}
+          >
+            <WandSparkles size={18} />
+            {busy
+              ? generationMode === "dynamic-ad" ? "جارٍ إنشاء الإعلان…" : "جارٍ إنشاء الصور…"
+              : generationMode === "dynamic-ad"
+                ? dynamicImages.length ? "إعادة إنشاء الإعلان" : "إنشاء الإعلان الإبداعي"
+                : "إنشاء صور المتجر"}
+          </button>
+        </> : <EmptyState icon={ImagePlus} title="أضف منتجاً للبدء" text="ستظهر الصور المحسّنة ومقارنة التكلفة هنا بعد رفع المراجع." />}
+      </article> : <BatchOutputPanel
+        batchResult={batchResult}
+        products={batchProducts}
+        progress={batchProgress}
+        busy={busy}
+        onGenerate={generateBatch}
+        inform={inform}
+      />}
+    </div>
+    <ProviderFallbackDialog
+      open={Boolean(fallbackRequest)}
+      gptAvailable={fallbackRequest?.gptAvailable ?? Boolean(health?.aiProviders?.gpt?.configured)}
+      onConfirm={switchToGpt}
+      onClose={() => setFallbackRequest(null)}
+    />
   </section>;
 }
 
+function GenerationModeOptions({ value, onChange, disabled }) {
+  return <fieldset className="generation-mode-options">
+    <legend>نوع التوليد</legend>
+    <div>
+      <label className={value === "gallery" ? "selected" : ""}>
+        <input type="radio" name="generationMode" value="gallery" checked={value === "gallery"} disabled={disabled} onChange={() => onChange("gallery")} />
+        <ImagePlus size={20} />
+        <span><strong>صور المتجر</strong><small>معرض دقيق للمنتج وصورة شخص اختيارية</small></span>
+      </label>
+      <label className={value === "dynamic-ad" ? "selected" : ""}>
+        <input type="radio" name="generationMode" value="dynamic-ad" checked={value === "dynamic-ad"} disabled={disabled} onChange={() => onChange("dynamic-ad")} />
+        <Sparkles size={20} />
+        <span><strong>إعلان إبداعي</strong><small>صورة واحدة مميزة وجاهزة للنشر</small></span>
+      </label>
+    </div>
+  </fieldset>;
+}
+
+function DynamicAdOptions({
+  outputFormat,
+  setOutputFormat,
+  creativeStyle,
+  setCreativeStyle,
+  lifestyleScene,
+  setLifestyleScene,
+  modelGender,
+  setModelGender,
+  disabled,
+}) {
+  return <section className="dynamic-ad-options">
+    <fieldset>
+      <legend>شكل الصورة المولدة</legend>
+      <div className="format-option-grid">
+        <OptionCard
+          name="outputFormat"
+          value="square"
+          checked={outputFormat === "square"}
+          label="شاشة مربعة"
+          detail="منشور متوازن للحساب والمتجر"
+          icon={Square}
+          disabled={disabled}
+          onChange={() => setOutputFormat("square")}
+        />
+        <OptionCard
+          name="outputFormat"
+          value="portrait"
+          checked={outputFormat === "portrait"}
+          label="شاشة طولية"
+          detail="مساحة كاملة للقصص والريلز"
+          icon={RectangleVertical}
+          disabled={disabled}
+          onChange={() => setOutputFormat("portrait")}
+        />
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend>أسلوب الإعلان</legend>
+      <div className="creative-option-grid">
+        {creativeStyleOptions.map((option) => <OptionCard
+          key={option.id}
+          name="creativeStyle"
+          value={option.id}
+          checked={creativeStyle === option.id}
+          label={option.label}
+          detail={option.detail}
+          icon={option.icon}
+          disabled={disabled}
+          onChange={() => setCreativeStyle(option.id)}
+        />)}
+      </div>
+    </fieldset>
+    {creativeStyle === "person" ? <div className="dynamic-person-options">
+      <GenderOptions
+        legend="اختر الشخص"
+        modelGender={modelGender}
+        setModelGender={setModelGender}
+        disabled={disabled}
+      />
+      <fieldset>
+        <legend>اختر المشهد</legend>
+        <div className="scene-option-grid">
+          {lifestyleSceneOptions.map((option) => <OptionCard
+            key={option.id}
+            name="lifestyleScene"
+            value={option.id}
+            checked={lifestyleScene === option.id}
+            label={option.label}
+            icon={option.icon}
+            compact
+            disabled={disabled}
+            onChange={() => setLifestyleScene(option.id)}
+          />)}
+        </div>
+      </fieldset>
+    </div> : null}
+    <p className="dynamic-safety-note"><Check size={15} />لا تُضاف نصوص أو شعارات مستقلة؛ تُحفظ العلامة الحقيقية فقط إذا ظهرت بوضوح على النظارة نفسها.</p>
+  </section>;
+}
+
+function OptionCard({ name, value, checked, label, detail, icon: Icon, compact = false, disabled, onChange }) {
+  return <label className={`dynamic-option-card ${checked ? "selected" : ""} ${compact ? "compact" : ""}`}>
+    <input type="radio" name={name} value={value} checked={checked} disabled={disabled} onChange={onChange} />
+    <span className="dynamic-option-icon"><Icon size={compact ? 18 : 21} /></span>
+    <span><strong>{label}</strong>{detail ? <small>{detail}</small> : null}</span>
+    <i aria-hidden="true"><Check size={13} /></i>
+  </label>;
+}
+
 function GenerationOptions({ includeModel, setIncludeModel, modelGender, setModelGender, disabled }) {
-  return <section className="model-generation-options"><label className="model-option-toggle"><input type="checkbox" checked={includeModel} disabled={disabled} onChange={(event) => setIncludeModel(event.target.checked)} /><span><strong>توليد صورة لشخص لابس النظارة</strong><small>مفعّل افتراضياً — ينتج صورة رابعة ببورتريه واقعي</small></span></label>{includeModel && <fieldset><legend>هل النظارة رجالية أم نسائية؟</legend><div className="model-gender-options"><label className={modelGender === "male" ? "selected" : ""}><input type="radio" name="modelGender" value="male" checked={modelGender === "male"} disabled={disabled} onChange={() => setModelGender("male")} /><span>رجالية</span></label><label className={modelGender === "female" ? "selected" : ""}><input type="radio" name="modelGender" value="female" checked={modelGender === "female"} disabled={disabled} onChange={() => setModelGender("female")} /><span>نسائية</span></label></div></fieldset>}</section>;
+  return <section className="model-generation-options">
+    <label className="model-option-toggle">
+      <input type="checkbox" checked={includeModel} disabled={disabled} onChange={(event) => setIncludeModel(event.target.checked)} />
+      <span><strong>توليد صورة لشخص لابس النظارة</strong><small>مفعّل افتراضياً — ينتج صورة رابعة ببورتريه واقعي</small></span>
+    </label>
+    {includeModel ? <GenderOptions
+      legend="هل النظارة رجالية أم نسائية؟"
+      modelGender={modelGender}
+      setModelGender={setModelGender}
+      disabled={disabled}
+    /> : null}
+  </section>;
+}
+
+function GenderOptions({ legend, modelGender, setModelGender, disabled }) {
+  return <fieldset className="gender-options-fieldset">
+    <legend>{legend}</legend>
+    <div className="model-gender-options">
+      <label className={modelGender === "male" ? "selected" : ""}>
+        <input type="radio" name="modelGender" value="male" checked={modelGender === "male"} disabled={disabled} onChange={() => setModelGender("male")} />
+        <span>رجل</span>
+      </label>
+      <label className={modelGender === "female" ? "selected" : ""}>
+        <input type="radio" name="modelGender" value="female" checked={modelGender === "female"} disabled={disabled} onChange={() => setModelGender("female")} />
+        <span>امرأة</span>
+      </label>
+    </div>
+  </fieldset>;
 }
 
 function BatchOutputPanel({ batchResult, products, progress, busy, onGenerate, inform }) {
@@ -318,12 +728,26 @@ function batchStatusLabel(status) {
   return ({ imported: "تم الاستيراد", queued: "بانتظار التوليد", generating: "جارٍ التوليد", generated: "مكتملة", completed: "مكتملة", partial: "مكتملة جزئياً", failed: "تعذر التوليد" })[status] || status || "جاهزة";
 }
 
-function initialProductProgress(product, includeModel, modelGender) {
-  const roles = (includeModel ? ["front", "side", "angle", "model"] : ["front", "side", "angle"])
+function initialProductProgress(product, settings = {}) {
+  const generationMode = settings.generationMode || "gallery";
+  const roleNames = generationMode === "dynamic-ad"
+    ? [dynamicAdRole]
+    : settings.includeModel
+      ? ["front", "side", "angle", "model"]
+      : ["front", "side", "angle"];
+  const roles = roleNames
     .map((role, index) => ({ role, state: index === 0 ? "generating" : "pending", durationMs: null }));
   return {
     productId: product.id, productCode: product.sourceProductCode || product.id, status: "generating",
-    includeModel, modelGender, expectedCount: roles.length, completedCount: 0, roles,
+    generationMode,
+    includeModel: generationMode === "gallery" && settings.includeModel !== false,
+    modelGender: settings.modelGender || null,
+    outputFormat: settings.outputFormat || null,
+    creativeStyle: settings.creativeStyle || null,
+    lifestyleScene: settings.lifestyleScene || null,
+    expectedCount: roles.length,
+    completedCount: 0,
+    roles,
   };
 }
 
@@ -350,7 +774,7 @@ function startProgressPolling(path, onProgress) {
   };
 }
 
-function GeneratedImageGallery({ images, productId, inform }) {
+function GeneratedImageGallery({ images, productId, inform, presentation = "square" }) {
   const [activeImage, setActiveImage] = useState(null);
   const [downloadingAll, setDownloadingAll] = useState(false);
 
@@ -392,13 +816,15 @@ function GeneratedImageGallery({ images, productId, inform }) {
     <div className="generated-gallery-toolbar">
       <span>اضغط على أي صورة لعرضها بالحجم الكبير.</span>
       <button className="button secondary" type="button" onClick={downloadAll} disabled={downloadingAll}>
-        <Download size={17} />{downloadingAll ? "جارٍ تحميل الصور…" : "تحميل جميع الصور"}
+        <Download size={17} />{downloadingAll
+          ? images.length === 1 ? "جارٍ تحميل الصورة…" : "جارٍ تحميل الصور…"
+          : images.length === 1 ? "تحميل الصورة" : "تحميل جميع الصور"}
       </button>
     </div>
-    <div className="image-grid">
+    <div className={`image-grid generated-output-grid ${presentation === "portrait" ? "portrait" : "square"}`}>
       {images.map((image, index) => <article className="generated-image-card" key={image.id || image.role || index}>
-        <button className="generated-image-open" type="button" onClick={() => setActiveImage({ image, index })} aria-label={`عرض صورة ${image.role || index + 1} بالحجم الكبير`}>
-          <img src={mediaUrl(image)} alt={`صورة ${image.role || "منتج"}`} loading="lazy" />
+        <button className="generated-image-open" type="button" onClick={() => setActiveImage({ image, index })} aria-label={`عرض ${generatedRoleLabel(image.role, index)} بالحجم الكبير`}>
+          <img src={mediaUrl(image)} alt={generatedRoleLabel(image.role, index)} loading="lazy" />
           <span><Maximize2 size={16} />عرض كبير</span>
         </button>
         <button className="generated-image-download" type="button" onClick={() => downloadOne(image, index)}>
@@ -409,14 +835,24 @@ function GeneratedImageGallery({ images, productId, inform }) {
     {activeImage && <div className="image-lightbox" role="dialog" aria-modal="true" aria-label="عرض الصورة المولدة" onMouseDown={(event) => event.target === event.currentTarget && setActiveImage(null)}>
       <div className="image-lightbox-dialog">
         <header>
-          <div><strong>الصورة المولدة</strong><span>{activeImage.image.role || `الصورة ${activeImage.index + 1}`}</span></div>
+          <div><strong>الصورة المولدة</strong><span>{generatedRoleLabel(activeImage.image.role, activeImage.index)}</span></div>
           <button className="image-lightbox-close" type="button" onClick={() => setActiveImage(null)} aria-label="إغلاق العرض"><X size={22} /></button>
         </header>
-        <div className="image-lightbox-stage"><img src={mediaUrl(activeImage.image)} alt={`صورة ${activeImage.image.role || "منتج"} بالحجم الكبير`} /></div>
+        <div className="image-lightbox-stage"><img src={mediaUrl(activeImage.image)} alt={`${generatedRoleLabel(activeImage.image.role, activeImage.index)} بالحجم الكبير`} /></div>
         <footer><button className="button primary" type="button" onClick={() => downloadOne(activeImage.image, activeImage.index)}><Download size={17} />تحميل الصورة</button></footer>
       </div>
     </div>}
   </>;
+}
+
+function generatedRoleLabel(role, index = 0) {
+  return ({
+    front: "الصورة الأمامية",
+    side: "الصورة الجانبية",
+    angle: "صورة زاوية 45°",
+    model: "صورة الشخص بالنظارة",
+    "dynamic-ad": "الإعلان الإبداعي",
+  })[role] || `الصورة ${index + 1}`;
 }
 
 function mediaUrl(image) {
@@ -470,10 +906,10 @@ function Campaigns({ branding, refreshOverview, inform, product, setProduct }) {
   const [selectedImageId, setSelectedImageId] = useState("");
   const [price, setPrice] = useState("");
   const [sku, setSku] = useState("");
+  const generatedImages = (product?.generatedImages || []).filter((image) => image.role !== dynamicAdRole);
   const saveAssets = async (event) => { event.preventDefault(); setBusy(true); try { await post("/branding/assets", new FormData(event.currentTarget), false); await refreshOverview(); inform("تم حفظ أصول العلامة التجارية."); event.currentTarget.reset(); } catch (error) { inform(error.message, "warning"); } finally { setBusy(false); } };
   const directUpload = async (event) => { event.preventDefault(); setBusy(true); try { const nextProduct = await post("/instagram/uploads", new FormData(event.currentTarget), false); setProduct(nextProduct); setSelectedImageId(""); inform("أُضيفت الصور الجاهزة إلى اختيار الحملة."); event.currentTarget.reset(); } catch (error) { inform(error.message, "warning"); } finally { setBusy(false); } };
-  const createCampaign = async (event) => { event.preventDefault(); const image = product?.generatedImages?.find((item) => String(item.id) === selectedImageId); if (!product?.id || !image?.id) return inform("اختر صورة منتج واحدة لإعدادها.", "warning"); setBusy(true); try { const result = await post("/instagram/generate", { profileId: profile, items: [{ productId: product.id, generatedImageId: image.id }], products: { [product.id]: { price, sku } } }); const nextProduct = await get(`/products/${encodeURIComponent(product.id)}`); setProduct(nextProduct); inform(result.failed ? "اكتمل جزء من الطلب. راجع حالة المخرج." : "اكتمل إعداد الصورة للحملة."); } catch (error) { inform(error.message, "warning"); } finally { setBusy(false); } };
-  const generatedImages = product?.generatedImages || [];
+  const createCampaign = async (event) => { event.preventDefault(); const image = generatedImages.find((item) => String(item.id) === selectedImageId); if (!product?.id || !image?.id) return inform("اختر صورة منتج واحدة لإعدادها.", "warning"); setBusy(true); try { const result = await post("/instagram/generate", { profileId: profile, items: [{ productId: product.id, generatedImageId: image.id }], products: { [product.id]: { price, sku } } }); const nextProduct = await get(`/products/${encodeURIComponent(product.id)}`); setProduct(nextProduct); inform(result.failed ? "اكتمل جزء من الطلب. راجع حالة المخرج." : "اكتمل إعداد الصورة للحملة."); } catch (error) { inform(error.message, "warning"); } finally { setBusy(false); } };
   const selectedImage = generatedImages.find((item) => String(item.id) === selectedImageId);
   return <section className="section-stack"><PageTitle kicker="الحملات" title="اجعل كل منشور يحمل بصمة الأصلي." text="ثبّت أصول الحملة ثم انقل الصورة المختارة من مخرجات المنتج لإعدادها للنشر." />
     <div className="campaign-layout"><article className="panel brand-kit"><PanelHeading kicker="01 — أصول الحملة" title="حزمة العلامة التجارية" /><p className="panel-copy">تُحفظ الأصول محلياً وتُفحص قبل كل عملية إنتاج.</p><form onSubmit={saveAssets} className="asset-form"><AssetField name="background" title="خلفية الحملة" meta="مطلوب · 1080 × 1350 موصى به" /><AssetField name="logo" title="شعار الزاوية" meta="مطلوب · PNG شفاف موصى به" /><AssetField name="footer" title="تذييل الحملة" meta="مطلوب" /><AssetField name="priceLabelReference" title="مرجع بطاقة السعر" meta="مطلوب للصورة النهائية" /><button className="button primary wide" type="submit" disabled={busy}><Palette size={18} />{busy ? "جارٍ الحفظ…" : "حفظ أصول الحملة"}</button></form><div className="direct-upload"><span>أو استخدم صوراً جاهزة للحملة</span><form onSubmit={directUpload}><label className="button secondary"><Upload size={16} />رفع صور جاهزة<input type="file" name="images" multiple accept="image/jpeg,image/png,image/webp" /></label><button type="submit" className="text-button" disabled={busy}>إضافة</button></form></div></article>

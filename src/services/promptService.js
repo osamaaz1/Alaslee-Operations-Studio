@@ -30,6 +30,25 @@ Output: ${outputTitle}.
 ${instructions}`.trim();
 }
 
+function dynamicAdPrompt(id, label, text) {
+  return {
+    id,
+    label,
+    role: "dynamic-ad",
+    category: "dynamic-ad",
+    fileSuffix: id.replace(/^dynamic-/, "dynamic-"),
+    text: text.trim(),
+    metadata: {
+      sentTo: "GeminiProvider or OpenAIProvider",
+      provider: "Gemini or GPT image model",
+      apiMethod: "Single reference-driven image generation/edit request",
+      referenceImages: "All available product references",
+      promptRole: "Creates one premium creative advertisement in the selected format",
+      outputFormat: "1080×1080 square or 1080×1920 portrait PNG",
+    },
+  };
+}
+
 const defaults = Object.freeze([
   {
     id: "gallery-front",
@@ -124,6 +143,60 @@ The runtime gender instruction appended to this prompt is mandatory. Return exac
       outputFormat: "2048×2048 PNG (normalized with sharp)",
     },
   },
+  dynamicAdPrompt(
+    "dynamic-hand",
+    "Creative Ad — Eyeglasses in Hand",
+    `Create exactly one photorealistic premium eyewear advertising photograph.
+
+Show the exact eyeglasses held naturally and confidently by one elegant adult hand. Use a refined gesture that supports the frame at a safe point such as the bridge or one temple without covering the lenses, hinges, important construction details, or any genuine visible mark. Keep the eyeglasses as the unmistakable hero of the image and make them tack-sharp, correctly exposed, and large enough to inspect.
+
+Use sophisticated commercial lighting, realistic skin texture, anatomically correct fingers and joints, and a shallow professional depth of field. The result should feel like an original campaign photographed for a leading international eyewear house: restrained, distinctive, luxurious, contemporary, and believable. Do not show malformed fingers, extra fingers, duplicated hands, a distracting face, or casual phone-photo styling.`,
+  ),
+  dynamicAdPrompt(
+    "dynamic-decor",
+    "Creative Ad — Identity-Inspired Decor",
+    `Create exactly one photorealistic premium eyewear advertising still life.
+
+Place the exact eyeglasses as the sharp hero object within a restrained, art-directed set of sculptural props and refined surfaces. Derive the palette, materials, finish, and visual mood only from colors, textures, materials, and genuine brand details that are clearly observable in the supplied product references. If those references do not establish a reliable brand identity, use a neutral luxury palette that harmonizes with the real frame instead of guessing official brand colors or motifs.
+
+Use balanced negative space, precise commercial lighting, realistic contact shadows and reflections, and a polished editorial composition associated with leading international eyewear campaigns. Keep every prop secondary to the glasses. Avoid clutter, invented brand patterns, unrelated packaging, flowers covering the product, or generic marketplace styling.`,
+  ),
+  dynamicAdPrompt(
+    "dynamic-person-cafe",
+    "Creative Ad — Modern Cafe",
+    `Create exactly one photorealistic premium lifestyle eyewear advertisement.
+
+Show one real adult person of the required gender naturally wearing the exact eyeglasses in an upscale contemporary cafe. Use modest, fashion-forward clothing, a relaxed professional expression, elegant posture, soft natural window light, and subtle editorial styling. Keep the full visible front of the glasses and the person's face clear, realistic, and tack-sharp while tables, architecture, people, and other background details fall into a smooth optical blur.
+
+The photograph must look art-directed by a professional fashion photographer for a leading international eyewear campaign, never like a casual snapshot, influencer selfie, stock photo, or synthetic beauty render.`,
+  ),
+  dynamicAdPrompt(
+    "dynamic-person-classic-street",
+    "Creative Ad — Classic Street",
+    `Create exactly one photorealistic premium lifestyle eyewear advertisement.
+
+Show one real adult person of the required gender naturally wearing the exact eyeglasses on a refined classic urban street with timeless architecture and understated character. Use elegant, modest, contemporary-classic styling, confident natural posture, and cinematic daylight. Keep the full visible front of the glasses and the person's face clear, realistic, and tack-sharp while the street, architecture, traffic, signs, and passersby remain softly blurred and visually secondary.
+
+The result should feel timeless and globally editorial, photographed by a specialist eyewear campaign photographer. Avoid tourist clichés, readable shop signs, street-brand logos, exaggerated poses, or ordinary phone photography.`,
+  ),
+  dynamicAdPrompt(
+    "dynamic-person-formal-modern",
+    "Creative Ad — Modern Formal",
+    `Create exactly one photorealistic premium lifestyle eyewear advertisement.
+
+Show one real adult person of the required gender naturally wearing the exact eyeglasses in a polished modern formal setting. Use modest contemporary tailoring, a composed but approachable expression, confident posture, architectural or studio-quality surroundings, and precise soft commercial light. Keep the full visible front of the glasses and the person's face clear, realistic, and tack-sharp while the environment falls into a controlled professional blur.
+
+The image should communicate quiet authority and modern luxury at the level of a leading international eyewear campaign. Avoid stiff corporate stock-photo poses, excessive jewelry, visible third-party branding, or artificial-looking skin.`,
+  ),
+  dynamicAdPrompt(
+    "dynamic-person-saudi-modern",
+    "Creative Ad — Modern Saudi",
+    `Create exactly one photorealistic premium lifestyle eyewear advertisement for a Saudi audience.
+
+Show one real adult person of the required gender naturally wearing the exact eyeglasses with culturally respectful, modest, contemporary Saudi styling. Use an elegant modern Saudi interior or architectural setting, confident natural posture, authentic details, and sophisticated commercial light. Keep the full visible front of the glasses and the person's face clear, realistic, and tack-sharp while the environment remains softly blurred and secondary.
+
+Make the result distinctive, aspirational, and globally editorial without turning Saudi identity into a costume or stereotype. Avoid theatrical poses, cultural caricatures, excessive luxury clichés, unrelated logos, or casual phone-photo styling.`,
+  ),
   {
     id: "price-label",
     label: "Instagram Price Label Insertion",

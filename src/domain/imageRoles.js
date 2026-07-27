@@ -15,6 +15,7 @@ export const GENERATED_ROLE_ORDER = Object.freeze({
   side: 2,
   angle: 3,
   model: 4,
+  "dynamic-ad": 5,
   hero: 5,
   "instagram-front": 5,
   "instagram-angle": 6,

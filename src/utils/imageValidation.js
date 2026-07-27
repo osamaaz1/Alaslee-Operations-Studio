@@ -102,8 +102,9 @@ function encodeLikeSource(pipeline, mimeType) {
 }
 
 export async function normalizeGeneratedPng(buffer, outputSize) {
+  const target = normalizeOutputDimensions(outputSize);
   const normalized = await sharp(buffer, { failOn: "error" })
-    .resize(outputSize, outputSize, {
+    .resize(target.width, target.height, {
       // Providers may return a landscape or portrait image when request size is
       // `auto`. `cover` silently removed the long edges while forcing that image
       // into our square ecommerce canvas. Eyewear is especially wide, so this
@@ -122,4 +123,16 @@ export async function normalizeGeneratedPng(buffer, outputSize) {
     height: normalized.info.height,
     mimeType: "image/png",
   };
+}
+
+function normalizeOutputDimensions(outputSize) {
+  if (Number.isInteger(outputSize) && outputSize > 0) {
+    return { width: outputSize, height: outputSize };
+  }
+  const width = Number(outputSize?.width);
+  const height = Number(outputSize?.height);
+  if (!Number.isInteger(width) || width <= 0 || !Number.isInteger(height) || height <= 0) {
+    throw new AppError("Generated image output dimensions must be positive integers.", 500);
+  }
+  return { width, height };
 }

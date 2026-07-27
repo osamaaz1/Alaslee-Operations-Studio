@@ -61,3 +61,31 @@ test("generated portrait images are contained without cropping their top or bott
   assert.deepEqual(pixel(150, 299), [20, 80, 220], "the bottom source edge must survive");
   assert.deepEqual(pixel(299, 150), [255, 255, 255], "right padding should be white");
 });
+
+test("dynamic portrait output is normalized to a rectangular canvas without cropping", async () => {
+  const source = await sharp({
+    create: {
+      width: 80,
+      height: 200,
+      channels: 3,
+      background: { r: 30, g: 120, b: 90 },
+    },
+  })
+    .png()
+    .toBuffer();
+
+  const result = await normalizeGeneratedPng(source, { width: 108, height: 192 });
+  const { data, info } = await sharp(result.buffer)
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  const pixel = (x, y) => {
+    const offset = (y * info.width + x) * info.channels;
+    return [...data.subarray(offset, offset + 3)];
+  };
+
+  assert.deepEqual([result.width, result.height], [108, 192]);
+  assert.deepEqual(pixel(0, 96), [255, 255, 255], "left padding should be white");
+  assert.deepEqual(pixel(54, 0), [30, 120, 90], "the source top edge must survive");
+  assert.deepEqual(pixel(54, 191), [30, 120, 90], "the source bottom edge must survive");
+  assert.deepEqual(pixel(107, 96), [255, 255, 255], "right padding should be white");
+});

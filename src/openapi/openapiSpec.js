@@ -1,5 +1,33 @@
 // Provides a compact OpenAPI document for the local API surface.
 
+const outputOneGenerationProperties = {
+  provider: { type: "string", enum: ["gemini", "gpt"] },
+  generationMode: { type: "string", enum: ["gallery", "dynamic-ad"], default: "gallery" },
+  includeModel: { type: "boolean", description: "Gallery mode only." },
+  modelGender: { type: "string", enum: ["male", "female"], description: "Required for a gallery model image or dynamic person style." },
+  outputFormat: { type: "string", enum: ["square", "portrait"], description: "Dynamic-ad mode only." },
+  creativeStyle: { type: "string", enum: ["hand", "decor", "person"], description: "Dynamic-ad mode only." },
+  lifestyleScene: {
+    type: "string",
+    enum: ["cafe", "classic-street", "formal-modern", "saudi-modern"],
+    description: "Required when creativeStyle is person.",
+  },
+  force: { type: "boolean" },
+  retryMissing: { type: "boolean" },
+};
+
+const outputOneGenerationRequest = {
+  required: true,
+  content: {
+    "application/json": {
+      schema: {
+        type: "object",
+        properties: outputOneGenerationProperties,
+      },
+    },
+  },
+};
+
 export const openapiSpec = {
   openapi: "3.0.3",
   info: {
@@ -145,10 +173,30 @@ export const openapiSpec = {
       post: { summary: "Upload a single product reference image set" },
     },
     "/v1/products/generate": {
-      post: { summary: "Output 1: generate three product images and an optional fourth real-person image" },
+      post: {
+        summary: "Output 1: generate a product gallery or one dynamic creative advertisement",
+        requestBody: {
+          ...outputOneGenerationRequest,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["productId"],
+                properties: {
+                  productId: { type: "string" },
+                  ...outputOneGenerationProperties,
+                },
+              },
+            },
+          },
+        },
+      },
     },
     "/v1/products/{id}/output-1/generate": {
-      post: { summary: "Generate or retry real AI Output 1 for one product" },
+      post: {
+        summary: "Generate or retry a product gallery or one dynamic creative advertisement",
+        requestBody: outputOneGenerationRequest,
+      },
     },
     "/v1/products/{id}/output-1/mock": {
       post: { summary: "Create Free Test / Mock Output 1 without AI" },
@@ -160,7 +208,21 @@ export const openapiSpec = {
       get: { summary: "Get live per-image Output 1 progress and generation durations" },
     },
     "/v1/products/{id}/output-1/estimate": {
-      get: { summary: "Estimate GPT Output 1 cost before paid generation" },
+      get: {
+        summary: "Estimate GPT gallery or dynamic-ad Output 1 cost before paid generation",
+        parameters: [
+          { name: "generationMode", in: "query", schema: { type: "string", enum: ["gallery", "dynamic-ad"], default: "gallery" } },
+          { name: "includeModel", in: "query", schema: { type: "boolean", default: true } },
+          { name: "modelGender", in: "query", schema: { type: "string", enum: ["male", "female"] } },
+          { name: "outputFormat", in: "query", schema: { type: "string", enum: ["square", "portrait"] } },
+          { name: "creativeStyle", in: "query", schema: { type: "string", enum: ["hand", "decor", "person"] } },
+          {
+            name: "lifestyleScene",
+            in: "query",
+            schema: { type: "string", enum: ["cafe", "classic-street", "formal-modern", "saudi-modern"] },
+          },
+        ],
+      },
     },
     "/v1/products/{id}/output-2": {
       get: { summary: "Get Output 2 metadata" },

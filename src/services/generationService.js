@@ -4,10 +4,17 @@ import path from "node:path";
 import { config } from "../config.js";
 import { createAIProvider } from "../providers/index.js";
 import { getGalleryOutputs } from "../prompts/galleryPrompts.js";
+import { getDynamicAdOutput } from "../prompts/dynamicAdPrompts.js";
 import { writeFileEnsured, fileSize } from "../utils/files.js";
 import { normalizeGeneratedPng } from "../utils/imageValidation.js";
 import { requireSupportedProvider } from "../utils/providerValidation.js";
 import { isFreeTestProvider, normalizeProviderName } from "../domain/providers.js";
+import {
+  DYNAMIC_AD_ROLE,
+  GALLERY_ROLES,
+  GENERATION_MODES,
+  normalizeGenerationSettings,
+} from "../domain/generationSettings.js";
 import { AppError, isAppError } from "../utils/errors.js";
 import { generatedDirForProduct } from "./productStorage.js";
 import {
@@ -17,7 +24,6 @@ import {
   getProductById,
   getProductRecord,
   hasCompleteGallery,
-  retainGeneratedRoles,
   setProductFailed,
   setProductGenerated,
   setProductGenerating,
@@ -32,35 +38,55 @@ export async function generateProductGallery(productId, options = {}) {
     throw new AppError("Free Test Output 1 must use the mock Output 1 endpoint.", 400);
   }
 
-  const includeModel = options.includeModel !== false;
-  const modelGender = includeModel ? requireModelGender(options.modelGender) : null;
-  const allOutputs = await getGalleryOutputs({ includeModel, modelGender });
+  const normalized = normalizeGenerationSettings(options);
+  const settings = normalized.generationMode === GENERATION_MODES.GALLERY
+    ? {
+        ...normalized,
+        modelGender: normalized.includeModel ? requireModelGender(normalized.modelGender) : null,
+      }
+    : normalized;
+  const allOutputs = settings.generationMode === GENERATION_MODES.DYNAMIC_AD
+    ? [await getDynamicAdOutput(settings)]
+    : await getGalleryOutputs({
+        includeModel: settings.includeModel,
+        modelGender: settings.modelGender,
+      });
   const expectedRoles = allOutputs.map((output) => output.role);
   const retryMissing = options.retryMissing === true;
 
-  if (!retryMissing && canUseExistingGallery(productId, product, selectedProvider, expectedRoles, {
-    force: options.force, includeModel, modelGender,
-  })) {
+  if (!retryMissing && canUseExistingGeneration(
+    productId,
+    product,
+    selectedProvider,
+    expectedRoles,
+    { ...settings, force: options.force },
+  )) {
     return getProductById(productId, options.req);
   }
 
-  if (retryMissing) await retainGeneratedRoles(productId, expectedRoles);
   const completedRoles = new Set(getGeneratedRoles(productId));
   const outputs = retryMissing ? allOutputs.filter((output) => !completedRoles.has(output.role)) : allOutputs;
   if (outputs.length === 0) {
     setProductGenerating(productId, selectedProvider, {
-      includeModel, modelGender, expectedCount: expectedRoles.length,
+      ...settings,
+      expectedCount: expectedRoles.length,
     });
     setProductGenerated(productId, selectedProvider);
     return getProductById(productId, options.req);
   }
 
-  // Validate credentials before clearing an existing gallery.
+  // Validate provider setup and output support before clearing saved roles.
   const provider = createAIProvider(selectedProvider);
+  provider.validateOutputs(allOutputs);
   const originals = getOriginalImagesForGeneration(productId);
   const generatedDir = generatedDirForProduct(product);
   await beginProductGeneration(productId, provider.name, {
-    includeModel, modelGender, expectedCount: expectedRoles.length, preserveExisting: retryMissing,
+    ...settings,
+    expectedCount: expectedRoles.length,
+    preserveExisting: retryMissing,
+    replaceRoles: settings.generationMode === GENERATION_MODES.DYNAMIC_AD
+      ? [DYNAMIC_AD_ROLE]
+      : GALLERY_ROLES,
   });
   console.info(`[output-1] ${provider.name} generation started for product ${productId}`);
 
@@ -108,7 +134,11 @@ export async function generateProductGallery(productId, options = {}) {
 
 export function getProductOutputProgress(productId, req = undefined) {
   const product = getProductById(productId, req);
-  const expectedRoles = product.generation.includeModel ? ["front", "side", "angle", "model"] : ["front", "side", "angle"];
+  const expectedRoles = product.generation.mode === GENERATION_MODES.DYNAMIC_AD
+    ? [DYNAMIC_AD_ROLE]
+    : product.generation.includeModel
+      ? ["front", "side", "angle", "model"]
+      : ["front", "side", "angle"];
   const byRole = new Map(product.generatedImages.map((image) => [image.role, image]));
   return {
     productId: product.id,
@@ -116,8 +146,12 @@ export function getProductOutputProgress(productId, req = undefined) {
     provider: product.provider,
     status: product.status,
     errorMessage: product.errorMessage,
+    generationMode: product.generation.mode,
     includeModel: product.generation.includeModel,
     modelGender: product.generation.modelGender,
+    outputFormat: product.generation.outputFormat,
+    creativeStyle: product.generation.creativeStyle,
+    lifestyleScene: product.generation.lifestyleScene,
     startedAt: product.generation.startedAt,
     expectedCount: expectedRoles.length,
     completedCount: expectedRoles.filter((role) => byRole.has(role)).length,
@@ -126,7 +160,10 @@ export function getProductOutputProgress(productId, req = undefined) {
 }
 
 async function saveGeneratedImage(product, generatedDir, image) {
-  const normalized = await normalizeGeneratedPng(image.buffer, config.outputImageSize);
+  const normalized = await normalizeGeneratedPng(
+    image.buffer,
+    image.outputDimensions || config.outputImageSize,
+  );
   const filename = `${outputPrefix(product)}-${image.fileSuffix}.png`;
   const filePath = path.join(generatedDir, filename);
   await writeFileEnsured(filePath, normalized.buffer);
@@ -148,9 +185,17 @@ function progressRole(role, image, product) {
   return { role, state: "pending", durationMs: null };
 }
 
-function canUseExistingGallery(productId, product, selectedProvider, expectedRoles, settings) {
+function canUseExistingGeneration(productId, product, selectedProvider, expectedRoles, settings) {
   if (settings.force) return false;
   if (product.provider && normalizeProviderName(product.provider) !== selectedProvider) return false;
+  if ((product.generation_mode || GENERATION_MODES.GALLERY) !== settings.generationMode) return false;
+  if (settings.generationMode === GENERATION_MODES.DYNAMIC_AD) {
+    if (product.generation_output_format !== settings.outputFormat) return false;
+    if (product.generation_creative_style !== settings.creativeStyle) return false;
+    if ((product.generation_lifestyle_scene || null) !== (settings.lifestyleScene || null)) return false;
+    if ((product.generation_model_gender || null) !== (settings.modelGender || null)) return false;
+    return hasCompleteGallery(productId, expectedRoles);
+  }
   if (product.generation_include_model !== (settings.includeModel ? 1 : 0)) return false;
   if (settings.includeModel && product.generation_model_gender !== settings.modelGender) return false;
   return hasCompleteGallery(productId, expectedRoles);

@@ -34,8 +34,12 @@ productsRouter.post(
     const product = await generateProductGallery(productId, {
       force: req.body?.force === true,
       provider: req.body?.provider,
+      generationMode: req.body?.generationMode,
       includeModel: req.body?.includeModel !== false,
       modelGender: req.body?.modelGender,
+      outputFormat: req.body?.outputFormat,
+      creativeStyle: req.body?.creativeStyle,
+      lifestyleScene: req.body?.lifestyleScene,
       retryMissing: req.body?.retryMissing === true,
       req,
     });
@@ -50,8 +54,12 @@ productsRouter.post(
     const product = await generateProductGallery(req.params.id, {
       force: req.body?.force === true,
       provider: req.body?.provider,
+      generationMode: req.body?.generationMode,
       includeModel: req.body?.includeModel !== false,
       modelGender: req.body?.modelGender,
+      outputFormat: req.body?.outputFormat,
+      creativeStyle: req.body?.creativeStyle,
+      lifestyleScene: req.body?.lifestyleScene,
       retryMissing: req.body?.retryMissing === true,
       req,
     });
@@ -70,7 +78,14 @@ productsRouter.get(
 productsRouter.get(
   "/:id/output-1/estimate",
   asyncHandler(async (req, res) => {
-    sendSuccess(res, estimateProductOutputOneCost(req.params.id, { includeModel: req.query.includeModel !== "0" }));
+    sendSuccess(res, await estimateProductOutputOneCost(req.params.id, {
+      generationMode: req.query.generationMode,
+      includeModel: req.query.includeModel !== "0",
+      modelGender: req.query.modelGender,
+      outputFormat: req.query.outputFormat,
+      creativeStyle: req.query.creativeStyle,
+      lifestyleScene: req.query.lifestyleScene,
+    }));
   }),
 );
 

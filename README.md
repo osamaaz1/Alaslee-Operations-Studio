@@ -71,7 +71,7 @@ npm run import:v1 -- --source "D:\\Codex\\originalEye Tool" --apply
 
 ---
 
-Professional production workspace for uploading eyeglass references, importing product folders, generating Output 1 ecommerce images with Gemini or GPT, and explicitly preparing Output 2 Instagram images with a price label.
+Professional production workspace for uploading eyeglass references, importing product folders, generating Output 1 ecommerce galleries or single creative advertisements with Gemini or GPT, and explicitly preparing Output 2 Instagram images with a price label.
 
 V2 presents this work as a single Arabic-first operations studio:
 
@@ -181,12 +181,20 @@ curl -X POST http://localhost:3000/v1/products/upload \
   -F "temple=@temple.jpg"
 ```
 
-Generate Output 1 ecommerce images:
+Generate an Output 1 ecommerce gallery:
 
 ```bash
 curl -X POST http://localhost:3000/v1/products/generate \
   -H "Content-Type: application/json" \
-  -d "{\"productId\":\"PRODUCT_ID\",\"provider\":\"gemini\"}"
+  -d "{\"productId\":\"PRODUCT_ID\",\"provider\":\"gemini\",\"generationMode\":\"gallery\",\"includeModel\":true,\"modelGender\":\"female\"}"
+```
+
+Generate one dynamic portrait advertisement:
+
+```bash
+curl -X POST http://localhost:3000/v1/products/generate \
+  -H "Content-Type: application/json" \
+  -d "{\"productId\":\"PRODUCT_ID\",\"provider\":\"gemini\",\"generationMode\":\"dynamic-ad\",\"outputFormat\":\"portrait\",\"creativeStyle\":\"person\",\"lifestyleScene\":\"cafe\",\"modelGender\":\"female\"}"
 ```
 
 Create a backend-only mock Output 1 without AI:
@@ -256,7 +264,7 @@ The unified workspace keeps the production sequence visible throughout the app:
 
 1. Upload or import a product in `المنتجات والإنتاج`.
 2. Review the Brand Kit assets in `الحملات`.
-3. Generate Output 1 ecommerce images.
+3. Choose an ecommerce gallery or one dynamic creative advertisement, then generate Output 1.
 4. Select an output (or upload a ready source), enter Price and SKU, and create Output 2.
 5. Review sales, products, customers, and data quality in `البيانات` without leaving the tool.
 
@@ -264,16 +272,20 @@ The `Try Free` generation mode disables paid Output 1 and batch actions, then op
 
 ## Output Layers
 
-Output 1 is independent. Each ecommerce run creates four square product images:
+Output 1 is independent. A gallery run creates three square product images and can add one optional real-person image:
 
 - `product-id-front.png`
 - `product-id-side.png`
 - `product-id-angle.png`
-- `product-id-hero.png`
+- `product-id-model.png` (optional)
+
+A dynamic-ad run creates one `dynamic-ad` image in either a clear square-screen or portrait-screen format. Square output is normalized to `1080x1080`; portrait output is normalized to `1080x1920`. Gallery and dynamic-ad records replace only their own roles, so generating either one does not delete the other.
+
+Dynamic prompts are English and enforce exact eyewear fidelity, premium professional photography, modest adult styling, and no invented text or branding. A genuine product mark is preserved only where it is clearly visible on the eyewear reference; the system never synthesizes or places a standalone logo.
 
 Instagram generation is an explicit final step that never runs automatically during Output 1 generation. The user selects one or more saved Output 1 images, chooses a saved social profile, enters one Price and one SKU per product, and the app creates one Output 2 image per selected source image.
 
-Output 1 images are normalized to PNG at 2048x2048. Instagram outputs use the selected saved format profile, local Brand Kit composition, and a backend OpenAI image edit that adds only the price label using the uploaded price-label reference image. Try Free Instagram outputs use local composition only and are labeled as local previews.
+Gallery Output 1 images are normalized to square PNG files at the configured gallery size. Dynamic advertisements use their selected final dimensions without cropping. Instagram outputs use the selected saved format profile, local Brand Kit composition, and a backend OpenAI image edit that adds only the price label using the uploaded price-label reference image. Try Free Instagram outputs use local composition only and are labeled as local previews.
 
 ## Provider Notes
 

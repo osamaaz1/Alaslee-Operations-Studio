@@ -58,6 +58,26 @@ test("Free Test creates mock Output 1 and local-preview Output 2 without AI cred
   assert.equal(missingGender.status, 422);
   assert.equal(missingGender.error.details.code, "model_gender_required");
 
+  const missingDynamicFormat = await postJsonError("/v1/products/generate", {
+    productId: product.id,
+    provider: "gemini",
+    generationMode: "dynamic-ad",
+    creativeStyle: "hand",
+  });
+  assert.equal(missingDynamicFormat.status, 422);
+  assert.equal(missingDynamicFormat.error.details.code, "dynamic_output_format_required");
+
+  const missingDynamicGender = await postJsonError("/v1/products/generate", {
+    productId: product.id,
+    provider: "gemini",
+    generationMode: "dynamic-ad",
+    outputFormat: "portrait",
+    creativeStyle: "person",
+    lifestyleScene: "cafe",
+  });
+  assert.equal(missingDynamicGender.status, 422);
+  assert.equal(missingDynamicGender.error.details.code, "dynamic_person_gender_required");
+
   const missingGemini = await postJsonError("/v1/products/generate", {
     productId: product.id, provider: "gemini", includeModel: true, modelGender: "female",
   });
@@ -78,6 +98,25 @@ test("Free Test creates mock Output 1 and local-preview Output 2 without AI cred
   const threeImageEstimate = await getJson(`/v1/products/${product.id}/output-1/estimate?includeModel=0`);
   assert.equal(threeImageEstimate.requestCount, 3);
   assert.equal(threeImageEstimate.outputCount, 3);
+  const dynamicEstimate = await getJson(
+    `/v1/products/${product.id}/output-1/estimate?generationMode=dynamic-ad&outputFormat=portrait&creativeStyle=hand`,
+  );
+  assert.equal(dynamicEstimate.generationMode, "dynamic-ad");
+  assert.equal(dynamicEstimate.requestCount, 1);
+  assert.equal(dynamicEstimate.outputCount, 1);
+  assert.equal(dynamicEstimate.requestSize, "1152x2048");
+  assert.deepEqual(
+    dynamicEstimate.requestBreakdown[0].outputDimensions,
+    { width: 1080, height: 1920 },
+  );
+  const squareDynamicEstimate = await getJson(
+    `/v1/products/${product.id}/output-1/estimate?generationMode=dynamic-ad&outputFormat=square&creativeStyle=decor`,
+  );
+  assert.equal(squareDynamicEstimate.requestSize, "1088x1088");
+  assert.equal(
+    dynamicEstimate.imageOutputTokens > squareDynamicEstimate.imageOutputTokens,
+    true,
+  );
 
   const mockOutput = new FormData();
   mockOutput.append("front", await fileBlob(240, 180, "#244f45"), "front-mock.png");

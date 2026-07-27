@@ -20,6 +20,37 @@ test("production exposes optional model generation, live per-image progress, and
   assert.match(styles, /prefers-reduced-motion\s*:\s*reduce/);
 });
 
+test("single-product production exposes progressive dynamic advertising controls", () => {
+  const app = fs.readFileSync("client/src/App.jsx", "utf8");
+  const progress = fs.readFileSync("client/src/features/production/GenerationProgress.jsx", "utf8");
+  const estimate = fs.readFileSync("client/src/features/production/GenerationCostEstimate.jsx", "utf8");
+  const styles = fs.readFileSync("client/src/product-upload.css", "utf8");
+
+  assert.match(app, /إعلان إبداعي/);
+  assert.match(app, /label="شاشة مربعة"/);
+  assert.match(app, /label="شاشة طولية"/);
+  assert.doesNotMatch(app, /label="شاشة مربعة[^"]*\d/);
+  assert.doesNotMatch(app, /label="شاشة طولية[^"]*\d/);
+  assert.match(app, /النظارة في يد شخص/);
+  assert.match(app, /ديكور مستوحى من الهوية/);
+  assert.match(app, /شخص يرتدي النظارة/);
+  assert.match(app, /creativeStyle === "person" \? <div className="dynamic-person-options">/);
+  assert.match(app, /قهوة عصرية/);
+  assert.match(app, /كلاسيكي في الشارع/);
+  assert.match(app, /رسمي وعصري/);
+  assert.match(app, /سعودي عصري مميز/);
+  assert.match(app, /generationMode === "dynamic-ad"\s*\?\s*\[dynamicAdRole\]/);
+  assert.match(app, /image\.role !== dynamicAdRole/);
+  assert.match(app, /provider === "free-test" && generationMode === "dynamic-ad"/);
+  assert.match(app, /وضع Try Free مخصص لمعاينة صور المتجر/);
+  assert.match(progress, /"dynamic-ad": "الإعلان الإبداعي"/);
+  assert.match(estimate, /query\.set\("outputFormat"/);
+  assert.match(estimate, /query\.set\("creativeStyle"/);
+  assert.match(styles, /\.generated-output-grid\.portrait/);
+  assert.match(styles, /aspect-ratio:\s*9\s*\/\s*16/);
+  assert.match(styles, /prefers-reduced-motion:\s*reduce/);
+});
+
 test("generation failures render a warning without crashing the workspace", () => {
   const app = fs.readFileSync("client/src/App.jsx", "utf8");
   const main = fs.readFileSync("client/src/main.jsx", "utf8");

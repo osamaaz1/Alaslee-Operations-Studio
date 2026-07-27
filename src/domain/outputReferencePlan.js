@@ -5,6 +5,7 @@ const referencePlan = Object.freeze({
   side: Object.freeze(["side", "temple", "angle"]),
   angle: Object.freeze(["angle", "front"]),
   model: Object.freeze(["front", "angle", "side"]),
+  "dynamic-ad": Object.freeze(["front", "side", "angle", "temple"]),
   hero: Object.freeze(["front", "angle"]),
 });
 

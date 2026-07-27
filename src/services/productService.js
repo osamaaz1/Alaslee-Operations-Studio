@@ -138,15 +138,32 @@ export function getOriginalImagesForGeneration(productId) {
 
 export function setProductGenerating(productId, provider, settings = {}) {
   const includeModel = settings.includeModel === true;
-  const expectedCount = Number(settings.expectedCount || (includeModel ? 4 : 3));
+  const generationMode = settings.generationMode || "gallery";
+  const expectedCount = Number(settings.expectedCount || (
+    generationMode === "dynamic-ad" ? 1 : includeModel ? 4 : 3
+  ));
   const now = new Date().toISOString();
   db.prepare(`
     UPDATE products
     SET status = 'generating', provider = ?, error_message = NULL, updated_at = ?,
-        generation_include_model = ?, generation_model_gender = ?, generation_started_at = ?,
+        generation_mode = ?, generation_include_model = ?, generation_model_gender = ?,
+        generation_output_format = ?, generation_creative_style = ?, generation_lifestyle_scene = ?,
+        generation_started_at = ?,
         generation_current_role = NULL, generation_expected_count = ?
     WHERE id = ?
-  `).run(provider, now, includeModel ? 1 : 0, settings.modelGender || null, now, expectedCount, productId);
+  `).run(
+    provider,
+    now,
+    generationMode,
+    includeModel ? 1 : 0,
+    settings.modelGender || null,
+    settings.outputFormat || null,
+    settings.creativeStyle || null,
+    settings.lifestyleScene || null,
+    now,
+    expectedCount,
+    productId,
+  );
 }
 
 export async function beginProductGeneration(productId, provider, settings = {}) {
@@ -154,7 +171,13 @@ export async function beginProductGeneration(productId, provider, settings = {})
   if (product.status === "generating") throw new AppError("توليد صور هذا المنتج جارٍ بالفعل.", 409);
   setProductGenerating(productId, provider, settings);
   try {
-    if (!settings.preserveExisting) await clearGeneratedImages(productId);
+    if (!settings.preserveExisting) {
+      if (Array.isArray(settings.replaceRoles)) {
+        await clearGeneratedRoles(productId, settings.replaceRoles);
+      } else {
+        await clearGeneratedImages(productId);
+      }
+    }
   } catch (error) {
     setProductFailed(productId, error);
     throw error;
@@ -194,17 +217,19 @@ export async function clearGeneratedImages(productId) {
   await removeFilesBestEffort(existingPaths, []);
 }
 
-export async function retainGeneratedRoles(productId, expectedRoles) {
-  const placeholders = expectedRoles.map(() => "?").join(",");
-  const unexpected = db.prepare(`
+export async function clearGeneratedRoles(productId, roles) {
+  const uniqueRoles = [...new Set((roles || []).filter(Boolean))];
+  if (uniqueRoles.length === 0) return;
+  const placeholders = uniqueRoles.map(() => "?").join(",");
+  const existingPaths = db.prepare(`
     SELECT path FROM product_generated_images
-    WHERE product_id=? AND role NOT IN (${placeholders})
-  `).all(productId, ...expectedRoles);
+    WHERE product_id=? AND role IN (${placeholders})
+  `).all(productId, ...uniqueRoles).map((row) => row.path);
   db.prepare(`
     DELETE FROM product_generated_images
-    WHERE product_id=? AND role NOT IN (${placeholders})
-  `).run(productId, ...expectedRoles);
-  await removeFilesBestEffort(unexpected.map((row) => row.path), []);
+    WHERE product_id=? AND role IN (${placeholders})
+  `).run(productId, ...uniqueRoles);
+  await removeFilesBestEffort(existingPaths, []);
 }
 
 export async function upsertGeneratedImage(productId, image) {
@@ -226,13 +251,34 @@ export async function upsertGeneratedImage(productId, image) {
   if (existing?.path && existing.path !== image.path) await removeFilesBestEffort([existing.path], [image.path]);
 }
 
-export async function replaceGeneratedImages(productId, generatedImages) {
+export async function replaceGeneratedImages(productId, generatedImages, options = {}) {
   const now = new Date().toISOString();
-  const existingPaths = db
-    .prepare("SELECT path FROM product_generated_images WHERE product_id = ?")
-    .all(productId)
-    .map((row) => row.path);
-  const deleteExisting = db.prepare("DELETE FROM product_generated_images WHERE product_id = ?");
+  const scopedReplacement = Array.isArray(options.replaceRoles);
+  const replaceRoles = scopedReplacement
+    ? [...new Set(options.replaceRoles.filter(Boolean))]
+    : null;
+  if (scopedReplacement && replaceRoles.length === 0) {
+    if (generatedImages.length === 0) return;
+    throw new AppError("Scoped generated-image replacement requires at least one role.", 500);
+  }
+  if (replaceRoles && generatedImages.some((image) => !replaceRoles.includes(image.role))) {
+    throw new AppError("Generated image role is outside the requested replacement scope.", 500);
+  }
+  const placeholders = replaceRoles?.map(() => "?").join(",");
+  const existingPaths = replaceRoles
+    ? db.prepare(`
+        SELECT path FROM product_generated_images
+        WHERE product_id = ? AND role IN (${placeholders})
+      `).all(productId, ...replaceRoles).map((row) => row.path)
+    : db.prepare("SELECT path FROM product_generated_images WHERE product_id = ?")
+      .all(productId)
+      .map((row) => row.path);
+  const deleteExisting = replaceRoles
+    ? db.prepare(`
+        DELETE FROM product_generated_images
+        WHERE product_id = ? AND role IN (${placeholders})
+      `)
+    : db.prepare("DELETE FROM product_generated_images WHERE product_id = ?");
   const insertGenerated = db.prepare(`
     INSERT INTO product_generated_images
       (product_id, role, filename, path, mime_type, size_bytes, width, height, provider, prompt,
@@ -243,7 +289,8 @@ export async function replaceGeneratedImages(productId, generatedImages) {
   `);
 
   db.transaction(() => {
-    deleteExisting.run(productId);
+    if (replaceRoles) deleteExisting.run(productId, ...replaceRoles);
+    else deleteExisting.run(productId);
     for (const image of generatedImages) {
       insertGenerated.run({
         productId,
@@ -274,7 +321,7 @@ export function hasCompleteGallery(productId, expectedRoles) {
     .all(productId);
   const actualRoles = new Set(rows.map((row) => row.role));
 
-  return rows.length === expectedRoles.length && expectedRoles.every((role) => actualRoles.has(role));
+  return expectedRoles.every((role) => actualRoles.has(role));
 }
 
 function validateUploadFields(files) {
@@ -306,8 +353,12 @@ function serializeProduct(product, originals, generated, instagram, req) {
     generatedAt: product.generated_at,
     errorMessage: product.error_message,
     generation: {
+      mode: product.generation_mode || "gallery",
       includeModel: Boolean(product.generation_include_model),
       modelGender: product.generation_model_gender,
+      outputFormat: product.generation_output_format,
+      creativeStyle: product.generation_creative_style,
+      lifestyleScene: product.generation_lifestyle_scene,
       startedAt: product.generation_started_at,
       currentRole: product.generation_current_role,
       expectedCount: Number(product.generation_expected_count || 3),

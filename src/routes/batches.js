@@ -67,7 +67,7 @@ batchesRouter.get(
   "/:id/output-1/estimate",
   asyncHandler(async (req, res) => {
     getBatchOrThrow(req.params.id);
-    sendSuccess(res, estimateBatchOutputOneCost(listBatchProducts(req.params.id)));
+    sendSuccess(res, await estimateBatchOutputOneCost(listBatchProducts(req.params.id)));
   }),
 );
 
