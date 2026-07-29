@@ -12,6 +12,7 @@ import { productsRouter } from "./routes/products.js";
 import { batchesRouter } from "./routes/batches.js";
 import { brandingRouter } from "./routes/branding.js";
 import { instagramRouter } from "./routes/instagram.js";
+import { brandOverlayRouter } from "./routes/brandOverlay.js";
 import { promptsRouter } from "./routes/prompts.js";
 import { dataWorkspaceRouter } from "./routes/dataWorkspace.js";
 import { sallaRouter } from "./routes/salla.js";
@@ -85,6 +86,7 @@ export function createApp() {
         brandingPreview: "POST /v1/branding/preview",
         instagramUploads: "POST /v1/instagram/uploads",
         instagramGenerate: "POST /v1/instagram/generate",
+        brandOverlay: "GET /v1/brand-overlay/catalog | POST /v1/brand-overlay/render",
         prompts: "GET|PUT /v1/prompts",
       },
     });
@@ -128,6 +130,7 @@ export function createApp() {
   app.use("/v1/batches", batchesRouter);
   app.use("/v1/branding", brandingRouter);
   app.use("/v1/instagram", instagramRouter);
+  app.use("/v1/brand-overlay", brandOverlayRouter);
   app.use("/v1/prompts", promptsRouter);
   app.get("/{*clientPath}", (req, res, next) => {
     const clientIndex = path.join(clientDir, "index.html");

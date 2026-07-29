@@ -31,6 +31,30 @@ export const post = (path, body, json = true) =>
 export const put = (path, body) =>
   api(path, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
 export const remove = (path) => api(path, { method: "DELETE" });
+export async function postBlob(path, body) {
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  const response = await fetch(`${apiBase}${normalizedPath}`, withSecurityHeaders({
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  }));
+  if (!response.ok) {
+    const contentType = response.headers.get("content-type") || "";
+    const payload = contentType.includes("application/json") ? await response.json() : null;
+    const errorPayload = payload?.errors?.[0] || payload?.error || {};
+    const error = new Error(errorPayload.message || "تعذر إنشاء المعاينة.");
+    error.status = response.status;
+    error.details = errorPayload.details;
+    throw error;
+  }
+  return {
+    blob: await response.blob(),
+    width: Number(response.headers.get("x-preview-width")) || null,
+    height: Number(response.headers.get("x-preview-height")) || null,
+    brandTone: response.headers.get("x-resolved-brand-tone"),
+    supportingTone: response.headers.get("x-resolved-supporting-tone"),
+  };
+}
 
 function withSecurityHeaders(options) {
   const headers = new Headers(options.headers || {});

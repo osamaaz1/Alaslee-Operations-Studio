@@ -197,6 +197,66 @@ test("Free Test creates mock Output 1 and local-preview Output 2 without AI cred
   assert.equal(output2[0].priceLabelReferencePath, null);
   assert.equal(output2[0].width, 1080);
   assert.equal(output2[0].height, 1080);
+
+  const overlayCatalog = await getJson("/v1/brand-overlay/catalog");
+  assert.equal(overlayCatalog.brands.length, 27);
+  assert.equal(overlayCatalog.alasleeVariants.length, 3);
+  const overlaySettings = await getJson("/v1/brand-overlay/settings?brandId=ray-ban");
+  assert.equal(overlaySettings.effectiveLayout.brandLogo.widthPercent > 0, true);
+
+  const logoResponse = await fetch(`${baseUrl}/v1/brand-overlay/assets/brands/ray-ban?tone=dark`);
+  assert.equal(logoResponse.status, 200);
+  assert.match(logoResponse.headers.get("content-type"), /image\/png/);
+  const logoMetadata = await sharp(Buffer.from(await logoResponse.arrayBuffer())).metadata();
+  assert.equal(Boolean(logoMetadata.width && logoMetadata.height), true);
+
+  const overlayRequest = {
+    items: [{ productId: product.id, generatedImageId: output1.generatedImages[0].id }],
+    brandId: "ray-ban",
+    brandTone: "auto",
+    alasleeVariant: "golden",
+    ctaText: "Available now\nOrder it",
+  };
+  const previewResponse = await fetch(`${baseUrl}/v1/brand-overlay/preview`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(overlayRequest),
+  });
+  assert.equal(previewResponse.status, 200);
+  const overlayPreview = await sharp(Buffer.from(await previewResponse.arrayBuffer())).metadata();
+  assert.deepEqual(
+    { width: overlayPreview.width, height: overlayPreview.height },
+    { width: output1.generatedImages[0].width, height: output1.generatedImages[0].height },
+  );
+
+  const renderedOverlay = await postJson("/v1/brand-overlay/render", {
+    ...overlayRequest,
+    items: [
+      overlayRequest.items[0],
+      { productId: product.id, generatedImageId: output1.generatedImages[1].id },
+      { productId: product.id, generatedImageId: 999_999_999 },
+    ],
+  });
+  assert.equal(renderedOverlay.total, 3);
+  assert.equal(renderedOverlay.succeeded, 2);
+  assert.equal(renderedOverlay.failed, 1);
+  assert.equal(renderedOverlay.outputs[0].outputKind, "brand_overlay");
+  assert.equal(renderedOverlay.outputs[0].width, output1.generatedImages[0].width);
+  assert.equal(renderedOverlay.outputs[0].height, output1.generatedImages[0].height);
+  assert.equal(renderedOverlay.outputs[0].overlayBrandId, "ray-ban");
+
+  const outputWithOverlay = await getJson(`/v1/products/${product.id}/output-2`);
+  const storedOverlay = outputWithOverlay.find((image) => image.outputKind === "brand_overlay");
+  assert.equal(storedOverlay.overlayBrandId, "ray-ban");
+  assert.equal(storedOverlay.overlayAlasleeVariant, "golden");
+  assert.equal(storedOverlay.sourceGeneratedImageId, output1.generatedImages[0].id);
+
+  const unauthorizedSettings = await fetch(`${baseUrl}/v1/brand-overlay/settings`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ scope: "global", layout: overlaySettings.globalLayout }),
+  });
+  assert.equal(unauthorizedSettings.status, 401);
 });
 
 test("large uploaded references use optimized files and reduce the GPT input estimate", async () => {

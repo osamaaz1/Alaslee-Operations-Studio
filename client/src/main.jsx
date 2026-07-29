@@ -6,6 +6,7 @@ import "./design-tokens.css";
 import "./crm.css";
 import "./sales.css";
 import "./feedback.css";
+import "./brand-overlay.css";
 import App from "./App.jsx";
 import { ErrorBoundary } from "./ErrorBoundary.jsx";
 

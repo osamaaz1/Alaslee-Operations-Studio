@@ -32,7 +32,7 @@ export async function replaceInstagramImages(productId, images) {
 
 export function insertInstagramImage(productId, image) {
   const now = new Date().toISOString();
-  db.prepare(explicitInsertSql).run({
+  const result = db.prepare(explicitInsertSql).run({
     ...image,
     productId,
     providerMode: image.providerMode || null,
@@ -45,10 +45,17 @@ export function insertInstagramImage(productId, image) {
     priceLabelModel: image.priceLabelModel || null,
     priceLabelPrompt: image.priceLabelPrompt || null,
     errorMessage: image.errorMessage || null,
+    overlayBrandId: image.overlayBrandId || null,
+    overlayBrandTone: image.overlayBrandTone || null,
+    overlayResolvedBrandTone: image.overlayResolvedBrandTone || null,
+    overlayAlasleeVariant: image.overlayAlasleeVariant || null,
+    overlayCtaText: image.overlayCtaText || null,
+    overlayLayoutJson: image.overlayLayoutJson || null,
     now,
     completedAt: image.completedAt || now,
     actor: "system",
   });
+  return Number(result.lastInsertRowid);
 }
 
 const insertSql = `
@@ -67,6 +74,8 @@ const explicitInsertSql = `
      local_path, price_label_reference_path, price_label_provider, price_label_model,
      price_label_prompt, provider_mode, output_stage, output_kind, is_mock, is_final,
      status, error_message, completed_at,
+     overlay_brand_id, overlay_brand_tone, overlay_resolved_brand_tone,
+     overlay_alaslee_variant, overlay_cta_text, overlay_layout_json,
      created_at, updated_at, created_by, updated_by)
   VALUES
     (@productId, @role, @filename, @path, @mimeType, @sizeBytes, @width, @height,
@@ -74,5 +83,7 @@ const explicitInsertSql = `
      @localPath, @priceLabelReferencePath, @priceLabelProvider, @priceLabelModel,
      @priceLabelPrompt, @providerMode, @outputStage, @outputKind, @isMock, @isFinal,
      @status, @errorMessage, @completedAt,
+     @overlayBrandId, @overlayBrandTone, @overlayResolvedBrandTone,
+     @overlayAlasleeVariant, @overlayCtaText, @overlayLayoutJson,
      @now, @now, @actor, @actor)
 `;

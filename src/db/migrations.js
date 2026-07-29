@@ -256,6 +256,24 @@ const migrations = [
     },
     down() {},
   },
+  {
+    id: "202607290001_native_brand_overlay",
+    up(db) {
+      addColumn(db, "product_instagram_images", "overlay_brand_id", "TEXT");
+      addColumn(db, "product_instagram_images", "overlay_brand_tone", "TEXT");
+      addColumn(db, "product_instagram_images", "overlay_resolved_brand_tone", "TEXT");
+      addColumn(db, "product_instagram_images", "overlay_alaslee_variant", "TEXT");
+      addColumn(db, "product_instagram_images", "overlay_cta_text", "TEXT");
+      addColumn(db, "product_instagram_images", "overlay_layout_json", "TEXT");
+      db.exec(`
+        CREATE INDEX IF NOT EXISTS idx_product_instagram_overlay_brand
+          ON product_instagram_images(overlay_brand_id);
+      `);
+    },
+    down(db) {
+      db.exec("DROP INDEX IF EXISTS idx_product_instagram_overlay_brand;");
+    },
+  },
 ];
 
 export function runMigrations(db) {

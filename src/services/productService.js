@@ -416,7 +416,23 @@ function serializeImage(image, req, product = undefined) {
     createdAt: image.created_at,
     updatedAt: image.updated_at,
     completedAt: image.completed_at,
+    overlayBrandId: image.overlay_brand_id,
+    overlayBrandTone: image.overlay_brand_tone,
+    overlayResolvedBrandTone: image.overlay_resolved_brand_tone,
+    overlayAlasleeVariant: image.overlay_alaslee_variant,
+    overlayCtaText: image.overlay_cta_text,
+    overlayLayout: parseJsonObject(image.overlay_layout_json),
   };
+}
+
+function parseJsonObject(value) {
+  if (!value) return undefined;
+  try {
+    const parsed = JSON.parse(value);
+    return parsed && typeof parsed === "object" ? parsed : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 function generatedImageRow(productId, image, now) {

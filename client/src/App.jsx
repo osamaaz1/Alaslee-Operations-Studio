@@ -42,6 +42,7 @@ import { AccountVault } from "./features/accounts/AccountVault.jsx";
 import { FeedbackWidget } from "./features/feedback/FeedbackWidget.jsx";
 import { GenerationCostEstimate } from "./features/production/GenerationCostEstimate.jsx";
 import { BatchGenerationProgress, ProductGenerationProgress, ProviderFallbackDialog } from "./features/production/GenerationProgress.jsx";
+import { BrandOverlayEditor } from "./features/production/BrandOverlayEditor.jsx";
 import logoEyesUrl from "../../Logo Eyes.png";
 
 const sections = [
@@ -129,14 +130,14 @@ export default function App() {
   }, [navigatePath]);
 
   const content = useMemo(() => {
-    const props = { workspace, health, salla, branding, product, setProduct, refreshOverview, inform, open, navigatePath };
+    const props = { workspace, health, salla, branding, product, setProduct, refreshOverview, inform, open, navigatePath, isSuperuser };
     if (section === "production") return <Production {...props} />;
     if (section === "campaigns") return <Campaigns {...props} />;
     if (section === "crm") return <CrmWorkspace inform={inform} navigatePath={navigatePath} />;
     if (section === "accounts") return <AccountVault inform={inform} />;
     if (section === "settings") return <Settings {...props} />;
     return <Home {...props} />;
-  }, [section, workspace, health, salla, branding, product, refreshOverview, inform, open, navigatePath]);
+  }, [section, workspace, health, salla, branding, product, refreshOverview, inform, open, navigatePath, isSuperuser]);
 
   return (
     <div className="app-frame">
@@ -229,7 +230,7 @@ function WorkflowRow({ number, title, text, active }) { return <div className={`
 function Readiness({ label, ready, value }) { return <div className="readiness"><span>{label}</span><div><i className={ready ? "ready" : ""}></i><strong>{value}</strong></div></div>; }
 function PanelHeading({ kicker, title, action, onAction }) { return <header className="panel-heading"><div><p className="eyebrow">{kicker}</p><h2>{title}</h2></div>{action && <button className="text-button" type="button" onClick={onAction}>{action}<ChevronLeft size={16} /></button>}</header>; }
 
-function Production({ product, setProduct, inform, open, health }) {
+function Production({ product, setProduct, inform, open, health, isSuperuser }) {
   const [mode, setMode] = useState("single");
   const [provider, setProvider] = useState("gemini");
   const [busy, setBusy] = useState(false);
@@ -245,6 +246,22 @@ function Production({ product, setProduct, inform, open, health }) {
   const [generationProgress, setGenerationProgress] = useState(null);
   const [batchProgress, setBatchProgress] = useState(null);
   const [fallbackRequest, setFallbackRequest] = useState(null);
+
+  const refreshAfterOverlay = async (outputs) => {
+    const productIds = [...new Set((outputs || []).map((output) => output.productId).filter(Boolean))];
+    if (!productIds.length) return;
+    try {
+      const refreshed = await Promise.all(productIds.map((id) => get(`/products/${encodeURIComponent(id)}`)));
+      const currentProduct = refreshed.find((item) => item.id === product?.id);
+      if (currentProduct) setProduct(currentProduct);
+      setBatchProducts((current) => {
+        const replacements = new Map(refreshed.map((item) => [item.id, item]));
+        return current.map((item) => replacements.get(item.id) || item);
+      });
+    } catch {
+      // The rendered result remains available in the editor even if metadata refresh fails.
+    }
+  };
 
   const submitUpload = async (event) => {
     event.preventDefault();
@@ -424,6 +441,7 @@ function Production({ product, setProduct, inform, open, health }) {
   const galleryImages = images.filter((image) => galleryRoles.has(image.role));
   const dynamicImages = images.filter((image) => image.role === dynamicAdRole);
   const visibleImages = generationMode === "dynamic-ad" ? dynamicImages : galleryImages;
+  const identityImages = (product?.instagramImages || []).filter((image) => image.outputKind === "brand_overlay");
   const dynamicPresentation = Number(dynamicImages[0]?.height) > Number(dynamicImages[0]?.width)
     ? "portrait"
     : "square";
@@ -518,6 +536,8 @@ function Production({ product, setProduct, inform, open, health }) {
                 images={visibleImages}
                 productId={product.id}
                 inform={inform}
+                isSuperuser={isSuperuser}
+                onOverlayRendered={refreshAfterOverlay}
                 presentation={generationMode === "dynamic-ad" ? dynamicPresentation : "square"}
               />
             : !generationProgress
@@ -529,6 +549,9 @@ function Production({ product, setProduct, inform, open, health }) {
                     : "أنشئ ثلاث صور للمنتج، وصورة رابعة اختيارية لشخص حقيقي يلبس النظارة."}
                 />
               : null}
+          {!busy && identityImages.length
+            ? <IdentityOutputGallery images={identityImages} inform={inform} />
+            : null}
           {provider === "free-test" && generationMode === "dynamic-ad"
             ? <p className="dynamic-provider-note">الإعلان الإبداعي يحتاج إلى Gemini أو GPT؛ وضع Try Free مخصص لمعاينة صور المتجر.</p>
             : null}
@@ -553,6 +576,8 @@ function Production({ product, setProduct, inform, open, health }) {
         busy={busy}
         onGenerate={generateBatch}
         inform={inform}
+        isSuperuser={isSuperuser}
+        onOverlayRendered={refreshAfterOverlay}
       />}
     </div>
     <ProviderFallbackDialog
@@ -703,10 +728,12 @@ function GenderOptions({ legend, modelGender, setModelGender, disabled }) {
   </fieldset>;
 }
 
-function BatchOutputPanel({ batchResult, products, progress, busy, onGenerate, inform }) {
+function BatchOutputPanel({ batchResult, products, progress, busy, onGenerate, inform, isSuperuser, onOverlayRendered }) {
   const batch = batchResult?.batch;
   const rows = batchResult?.products || [];
   const images = products.flatMap((product) => product.generatedImages || []);
+  const identityImages = products.flatMap((product) =>
+    (product.instagramImages || []).filter((image) => image.outputKind === "brand_overlay"));
   return <article className="panel output-panel batch-output-panel">
     <PanelHeading kicker="02 — صور الدفعة" title="نتائج المنتجات" />
     {batch ? <>
@@ -718,7 +745,8 @@ function BatchOutputPanel({ batchResult, products, progress, busy, onGenerate, i
       <GenerationCostEstimate batchId={batch.id} />
       {rows.length ? <div className="batch-product-list">{rows.map((item) => <div key={item.id} className={item.error_message ? "has-error" : ""}><span>{item.source_product_code || item.id}</span><strong>{batchStatusLabel(item.status)}</strong></div>)}</div> : null}
       <BatchGenerationProgress progress={progress} busy={busy} onRetry={() => onGenerate(true)} />
-      {!busy && images.length ? <GeneratedImageGallery images={images} productId={batch.id} inform={inform} /> : !progress ? <EmptyState icon={ImagePlus} title="الدفعة جاهزة للتوليد" text="تولّد الدفعات ثلاث صور لكل منتج، وتظهر حالة كل صورة هنا فور اكتمالها." /> : null}
+      {!busy && images.length ? <GeneratedImageGallery images={images} productId={batch.id} inform={inform} isSuperuser={isSuperuser} onOverlayRendered={onOverlayRendered} /> : !progress ? <EmptyState icon={ImagePlus} title="الدفعة جاهزة للتوليد" text="تولّد الدفعات ثلاث صور لكل منتج، وتظهر حالة كل صورة هنا فور اكتمالها." /> : null}
+      {!busy && identityImages.length ? <IdentityOutputGallery images={identityImages} inform={inform} /> : null}
       <button className="button primary wide" type="button" disabled={busy} onClick={() => onGenerate(false)}><WandSparkles size={18} />{busy ? "جارٍ توليد صور الدفعة…" : images.length ? "إعادة توليد الدفعة" : "توليد صور الدفعة"}</button>
     </> : <EmptyState icon={FolderUp} title="استورد مجلد المنتجات" text="بعد الاستيراد ستظهر تفاصيل الدفعة هنا، ويمكنك تشغيل التوليد ومراجعة كل الصور." />}
   </article>;
@@ -774,9 +802,16 @@ function startProgressPolling(path, onProgress) {
   };
 }
 
-function GeneratedImageGallery({ images, productId, inform, presentation = "square" }) {
+function GeneratedImageGallery({ images, productId, inform, presentation = "square", isSuperuser = false, onOverlayRendered }) {
   const [activeImage, setActiveImage] = useState(null);
   const [downloadingAll, setDownloadingAll] = useState(false);
+  const [selectedImages, setSelectedImages] = useState(() => new Set());
+  const [editorItems, setEditorItems] = useState(null);
+
+  useEffect(() => {
+    const available = new Set(images.map((image) => generatedSelectionKey(image, productId)));
+    setSelectedImages((current) => new Set([...current].filter((key) => available.has(key))));
+  }, [images, productId]);
 
   useEffect(() => {
     if (!activeImage) return undefined;
@@ -812,25 +847,66 @@ function GeneratedImageGallery({ images, productId, inform, presentation = "squa
     inform(failed ? `تم تحميل ${images.length - failed} من ${images.length} صور.` : "تم تحميل جميع الصور المولدة.", failed ? "warning" : "success");
   };
 
+  const toggleSelection = (image) => {
+    const key = generatedSelectionKey(image, productId);
+    setSelectedImages((current) => {
+      const next = new Set(current);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
+  const openEditor = (selected) => {
+    const eligible = selected
+      .filter((image) => Number.isSafeInteger(Number(image.id)) && Number(image.id) > 0)
+      .map((image) => ({ image, productId: image.productId || productId }));
+    if (!eligible.length) {
+      inform("تعذر تحديد سجل الصورة المولدة. أعد تحميل الصفحة ثم حاول مجدداً.", "warning");
+      return;
+    }
+    setEditorItems(eligible);
+  };
+
+  const selectedForEditor = images.filter((image) => selectedImages.has(generatedSelectionKey(image, productId)));
+
   return <>
     <div className="generated-gallery-toolbar">
-      <span>اضغط على أي صورة لعرضها بالحجم الكبير.</span>
-      <button className="button secondary" type="button" onClick={downloadAll} disabled={downloadingAll}>
-        <Download size={17} />{downloadingAll
-          ? images.length === 1 ? "جارٍ تحميل الصورة…" : "جارٍ تحميل الصور…"
-          : images.length === 1 ? "تحميل الصورة" : "تحميل جميع الصور"}
-      </button>
+      <span>{selectedImages.size ? `تم تحديد ${selectedImages.size} ${selectedImages.size === 1 ? "صورة" : "صور"}.` : "اعرض الصورة أو اختر إضافة الهوية كخطوة اختيارية."}</span>
+      <div>
+        <button className="button identity" type="button" onClick={() => openEditor(selectedForEditor)} disabled={!selectedImages.size}>
+          <Sparkles size={17} />إضافة الهوية للمحدد
+        </button>
+        <button className="button secondary" type="button" onClick={downloadAll} disabled={downloadingAll}>
+          <Download size={17} />{downloadingAll
+            ? images.length === 1 ? "جارٍ تحميل الصورة…" : "جارٍ تحميل الصور…"
+            : images.length === 1 ? "تحميل الصورة" : "تحميل جميع الصور"}
+        </button>
+      </div>
     </div>
     <div className={`image-grid generated-output-grid ${presentation === "portrait" ? "portrait" : "square"}`}>
-      {images.map((image, index) => <article className="generated-image-card" key={image.id || image.role || index}>
+      {images.map((image, index) => {
+        const selectionKey = generatedSelectionKey(image, productId);
+        const selected = selectedImages.has(selectionKey);
+        return <article className={`generated-image-card ${selected ? "selected" : ""}`} key={image.id || image.role || index}>
+        <label className="generated-image-select">
+          <input type="checkbox" checked={selected} onChange={() => toggleSelection(image)} />
+          <span><Check size={14} />{selected ? "محددة" : "تحديد"}</span>
+        </label>
         <button className="generated-image-open" type="button" onClick={() => setActiveImage({ image, index })} aria-label={`عرض ${generatedRoleLabel(image.role, index)} بالحجم الكبير`}>
           <img src={mediaUrl(image)} alt={generatedRoleLabel(image.role, index)} loading="lazy" />
           <span><Maximize2 size={16} />عرض كبير</span>
         </button>
-        <button className="generated-image-download" type="button" onClick={() => downloadOne(image, index)}>
-          <Download size={15} />تحميل الصورة
-        </button>
-      </article>)}
+        <div className="generated-image-actions">
+          <button className="generated-image-identity" type="button" onClick={() => openEditor([image])}>
+            <Sparkles size={15} />إضافة الهوية
+          </button>
+          <button className="generated-image-download" type="button" onClick={() => downloadOne(image, index)}>
+            <Download size={15} />تحميل
+          </button>
+        </div>
+      </article>;
+      })}
     </div>
     {activeImage && <div className="image-lightbox" role="dialog" aria-modal="true" aria-label="عرض الصورة المولدة" onMouseDown={(event) => event.target === event.currentTarget && setActiveImage(null)}>
       <div className="image-lightbox-dialog">
@@ -842,7 +918,76 @@ function GeneratedImageGallery({ images, productId, inform, presentation = "squa
         <footer><button className="button primary" type="button" onClick={() => downloadOne(activeImage.image, activeImage.index)}><Download size={17} />تحميل الصورة</button></footer>
       </div>
     </div>}
+    {editorItems ? <BrandOverlayEditor
+      items={editorItems}
+      isSuperuser={isSuperuser}
+      inform={inform}
+      onClose={() => setEditorItems(null)}
+      onRendered={onOverlayRendered}
+    /> : null}
   </>;
+}
+
+function generatedSelectionKey(image, fallbackProductId) {
+  return `${image?.productId || fallbackProductId || "product"}:${image?.id || image?.role || image?.filename}`;
+}
+
+function IdentityOutputGallery({ images, inform }) {
+  const [activeImage, setActiveImage] = useState(null);
+
+  useEffect(() => {
+    if (!activeImage) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    const closeOnEscape = (event) => event.key === "Escape" && setActiveImage(null);
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [activeImage]);
+
+  const download = async (image, index) => {
+    try {
+      await downloadGeneratedImage(image, image.productId, index);
+    } catch {
+      inform("تعذر تحميل النسخة النهائية. تأكد من أن الملف ما زال متاحاً.", "warning");
+    }
+  };
+
+  return <section className="identity-output-section" aria-label="الصور النهائية بالهوية">
+    <header>
+      <div><span><Check size={16} /></span><div><strong>الصور النهائية بالهوية</strong><small>نسخ PNG مستقلة بنفس أبعاد الصور الأصلية</small></div></div>
+      <b>{images.length}</b>
+    </header>
+    <div className="identity-output-grid">
+      {images.map((image, index) => <article key={image.id || image.filename}>
+        <button type="button" onClick={() => setActiveImage({ image, index })} aria-label={`عرض النسخة النهائية ${index + 1}`}>
+          <img src={mediaUrl(image)} alt={`النسخة النهائية ${index + 1}`} loading="lazy" />
+          <span><Maximize2 size={15} />استعراض</span>
+        </button>
+        <div>
+          <span><strong>{identityBrandLabel(image.overlayBrandId)}</strong><small dir="ltr">{image.width} × {image.height} px</small></span>
+          <button type="button" onClick={() => download(image, index)} aria-label={`تحميل النسخة النهائية ${index + 1}`}><Download size={15} /></button>
+        </div>
+      </article>)}
+    </div>
+    {activeImage ? <div className="image-lightbox" role="dialog" aria-modal="true" aria-label="استعراض النسخة النهائية بالهوية" onMouseDown={(event) => event.target === event.currentTarget && setActiveImage(null)}>
+      <div className="image-lightbox-dialog">
+        <header>
+          <div><strong>النسخة النهائية بالهوية</strong><span>{activeImage.image.width} × {activeImage.image.height} px · {identityBrandLabel(activeImage.image.overlayBrandId)}</span></div>
+          <button className="image-lightbox-close" type="button" onClick={() => setActiveImage(null)} aria-label="إغلاق العرض"><X size={22} /></button>
+        </header>
+        <div className="image-lightbox-stage"><img src={mediaUrl(activeImage.image)} alt="النسخة النهائية بالحجم الكبير" /></div>
+        <footer><button className="button primary" type="button" onClick={() => download(activeImage.image, activeImage.index)}><Download size={17} />تحميل النسخة النهائية</button></footer>
+      </div>
+    </div> : null}
+  </section>;
+}
+
+function identityBrandLabel(brandId) {
+  return String(brandId || "هوية معتمدة").split("-").map((part) =>
+    part ? `${part[0].toUpperCase()}${part.slice(1)}` : "").join(" ");
 }
 
 function generatedRoleLabel(role, index = 0) {
