@@ -13,7 +13,9 @@ try {
       console.log(JSON.stringify({ status: "skipped", reason: "cache-usable", freshness: before.freshness }));
     } else {
       const sync = await syncDaftra();
-      const after = await daftraSyncStatus();
+      const after = sync.status === "already_running"
+        ? await waitForUsableSnapshot()
+        : await daftraSyncStatus();
       console.log(JSON.stringify({
         status: sync.status,
         products: sync.products,
@@ -27,4 +29,14 @@ try {
   }
 } finally {
   await closeCrmPool();
+}
+
+async function waitForUsableSnapshot(timeoutMilliseconds = 120_000) {
+  const deadline = Date.now() + timeoutMilliseconds;
+  let status = await daftraSyncStatus();
+  while (!status.usable && Date.now() < deadline) {
+    await new Promise((resolve) => setTimeout(resolve, 1_000));
+    status = await daftraSyncStatus();
+  }
+  return status;
 }

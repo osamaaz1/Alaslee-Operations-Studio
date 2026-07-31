@@ -42,7 +42,7 @@ try {
   if (checks.crm.migrationCount < 8) failures.push("crm: not all required migrations are applied.");
 
   checks.readiness = await readinessStatus();
-  if (!checks.readiness.ready) failures.push("readiness: one or more required production dependencies are not ready.");
+  if (!checks.readiness.ready) failures.push(readinessFailure(checks.readiness));
 
   checks.secretHygiene = trackedSecretStatus();
   if (!checks.secretHygiene.ok) failures.push(`secrets: sensitive environment files are tracked by Git (${checks.secretHygiene.files.join(", ")}).`);
@@ -131,6 +131,14 @@ async function crmStatus() {
   } catch {
     return { connected: false, privileged: null, migrationCount: 0, latestMigration: null };
   }
+}
+
+function readinessFailure(status) {
+  const failed = Object.entries(status.checks || {}).filter(([, ready]) => !ready).map(([name]) => name);
+  if (failed.length === 1 && failed[0] === "daftra") {
+    return `readiness: the Daftra catalog is ${status.daftra?.freshness || "unavailable"}; run npm run daftra:ensure-ready.`;
+  }
+  return `readiness: required checks are not ready (${failed.join(", ") || "unknown"}).`;
 }
 
 function trackedSecretStatus() {

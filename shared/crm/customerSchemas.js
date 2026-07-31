@@ -18,6 +18,11 @@ export const phoneInputSchema = z.object({
   }
 });
 
+const optionalPhoneInputSchema = z.preprocess(
+  (value) => isEmptyPhoneInput(value) ? null : value,
+  phoneInputSchema.optional().nullable(),
+);
+
 export const addressSchema = z.object({
   buildingNumber: numericString(4, "رقم المبنى"),
   streetName: z.string().trim().min(2, "اسم الشارع مطلوب.").max(120),
@@ -33,7 +38,7 @@ export const customerCreateSchema = z.object({
   name: z.string().trim().min(2, "اسم العميل مطلوب.").max(160),
   primaryPhone: phoneInputSchema,
   hasWhatsapp: z.boolean().default(true),
-  whatsappPhone: phoneInputSchema.optional().nullable(),
+  whatsappPhone: optionalPhoneInputSchema,
   identityNumber: optionalText(10).refine((value) => !value || validateSaudiIdentity(value), "رقم الهوية أو الإقامة غير صالح."),
   birthYear: optionalNumber(1900, CURRENT_YEAR, "سنة الميلاد غير صالحة."),
   sourceCode: z.string().trim().min(1, "مصدر العميل مطلوب.").max(50),
@@ -61,4 +66,9 @@ function optionalNumber(min, max, message) {
     (value) => value === "" || value === null || value === undefined ? undefined : Number(value),
     z.number().int().min(min, message).max(max, message).optional(),
   );
+}
+
+function isEmptyPhoneInput(value) {
+  return value && typeof value === "object" && !Array.isArray(value)
+    && String(value.number ?? "").trim() === "";
 }

@@ -6,6 +6,16 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $productionTaskName = 'Alaslee Operations Studio Production'
+$productionServiceName = 'AlasleeOperationsStudio'
+
+function Stop-AlasleeProductionService {
+    $service = Get-Service -Name $productionServiceName -ErrorAction SilentlyContinue
+    if (-not $service -or $service.Status -eq 'Stopped') { return }
+
+    Write-Host 'Stopping the Alaslee background service gracefully...' -ForegroundColor Yellow
+    Stop-Service -Name $productionServiceName -ErrorAction Stop
+    $service.WaitForStatus([ServiceProcess.ServiceControllerStatus]::Stopped, [TimeSpan]::FromSeconds(35))
+}
 
 function Get-AlasleeServerProcesses([string]$ServerEntryPoint, [int]$Port) {
     $listenerProcessIds = @(
@@ -24,6 +34,7 @@ function Get-AlasleeServerProcesses([string]$ServerEntryPoint, [int]$Port) {
 
 function Stop-PreviousProductionSessions([string]$ServerEntryPoint, [int]$Port, [switch]$StopScheduledTask) {
     if ($StopScheduledTask) {
+        Stop-AlasleeProductionService
         $task = Get-ScheduledTask -TaskName $productionTaskName -ErrorAction SilentlyContinue
         if ($task -and $task.State -eq 'Running') {
             Write-Host 'Stopping the previous Alaslee scheduled production session...' -ForegroundColor Yellow
@@ -76,7 +87,7 @@ $isSystemSession = $identity.IsSystem
 
 if ($CleanupOnly) {
     Stop-PreviousProductionSessions -ServerEntryPoint $serverEntryPoint -Port $port -StopScheduledTask
-    exit 0
+    return
 }
 
 if (-not $isSystemSession) {
@@ -134,6 +145,9 @@ if ($LASTEXITCODE -ne 0) { throw "The production client build failed. The server
 
 & npm.cmd run crm:import-history
 if ($LASTEXITCODE -ne 0) { throw "The analyzed customer history could not be imported. The server was not started." }
+
+& npm.cmd run daftra:ensure-ready
+if ($LASTEXITCODE -ne 0) { throw "The Daftra catalog could not be refreshed. The server was not started." }
 
 & npm.cmd run production:preflight
 if ($LASTEXITCODE -ne 0) { throw "Production preflight failed. The server was not started." }

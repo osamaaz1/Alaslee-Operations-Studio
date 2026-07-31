@@ -29,7 +29,7 @@ npm run production:test
 .\scripts\install-production-windows.ps1 -EnvironmentFile .env
 ```
 
-ينشئ المثبّت نسخة احتياطية، يقيد PostgreSQL، يسمح بالمنفذ 3000 لأجهزة `LocalSubnet` على شبكة Windows الخاصة فقط، ويسجل مهمة تشغيل تلقائي. لعرض عنوان IPv4 الحالي:
+ينشئ المثبّت نسخة احتياطية، يقيد PostgreSQL، ويسمح بالمنفذ 3000 لأجهزة `LocalSubnet` على شبكة Windows الخاصة فقط. كما يسجل خدمة Windows خفيفة وصامتة باسم `AlasleeOperationsStudio`: تبدأ تلقائياً مع Windows بلا نافذة CMD أو PowerShell، يعيدها Windows بعد الأعطال، وتغلق طلبات HTTP واتصالات PostgreSQL وSQLite تدريجياً قبل إيقاف الخدمة أو إغلاق Windows. تحفظ الخدمة السجلات اليومية فقط داخل `diagnostics/logs/server-service-YYYYMMDD*.log` وتحذف سجلاتها الأقدم من 14 يوماً. لعرض عنوان IPv4 الحالي:
 
 ```powershell
 .\scripts\show-lan-url.ps1
@@ -41,6 +41,8 @@ npm run production:test
 npm run production:preflight
 npm run production:backup
 npm run production:restore:verify
+Get-Service AlasleeOperationsStudio
+Restart-Service AlasleeOperationsStudio
 ```
 
 النشر الحالي يستخدم HTTP وعنوان IPv4 متغير حسب قرار المتجر؛ لا تفتح المنفذ للإنترنت، وقد يلزم تحديث رابط الأجهزة إذا غيّر الراوتر العنوان.

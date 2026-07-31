@@ -32,6 +32,19 @@ test("customer validation dynamically requires an alternate WhatsApp number", ()
   assert.equal(valid.success, true);
 });
 
+test("customer validation ignores the form's hidden empty WhatsApp field", () => {
+  const result = customerCreateSchema.safeParse({
+    name: "عميل واتساب",
+    primaryPhone: { countryCode: "SA", number: "0501234567" },
+    hasWhatsapp: true,
+    whatsappPhone: { countryCode: "SA", number: "" },
+    sourceCode: "in_store",
+  });
+
+  assert.equal(result.success, true);
+  assert.equal(result.data.whatsappPhone, null);
+});
+
 test("Saudi national address validates fixed numeric and short-address formats", () => {
   const input = {
     name: "عميل العنوان", primaryPhone: { countryCode: "SA", number: "0501234567" }, hasWhatsapp: true,

@@ -5,7 +5,7 @@ import { daftraConfigured, fetchDaftraProducts, fetchDaftraStores, fetchDaftraTr
 
 const advisoryLockId = 734_519;
 
-export async function syncDaftra() {
+export async function syncDaftra({ signal } = {}) {
   if (!daftraConfigured()) return { configured: false, status: "not_configured" };
   const client = await getCrmPool().connect();
   let runId;
@@ -15,15 +15,21 @@ export async function syncDaftra() {
     runId = await startRun(client);
     const dateFrom = await transactionDateFrom(client);
     const [products, stores, transactions] = await Promise.all([
-      fetchDaftraProducts(), fetchDaftraStores(), fetchDaftraTransactions(dateFrom),
+      fetchDaftraProducts({ signal }), fetchDaftraStores({ signal }), fetchDaftraTransactions(dateFrom, { signal }),
     ]);
+    throwIfAborted(signal);
     const syncedAt = new Date().toISOString();
     await client.query("BEGIN");
     await upsertProducts(client, products, syncedAt);
+    throwIfAborted(signal);
     await upsertStores(client, stores, syncedAt);
+    throwIfAborted(signal);
     await upsertTransactions(client, transactions, syncedAt);
+    throwIfAborted(signal);
     await rebuildStockLevels(client, syncedAt);
+    throwIfAborted(signal);
     await completeRun(client, runId, products.length, stores.length, transactions.length, dateFrom);
+    throwIfAborted(signal);
     await client.query("COMMIT");
     return { configured: true, status: "completed", products: products.length, stores: stores.length, transactions: transactions.length };
   } catch (error) {
@@ -173,3 +179,7 @@ function text(value) { return value == null ? null : String(value).trim() || nul
 function decimal(value) { const parsed = Number(value); return Number.isFinite(parsed) ? parsed : 0; }
 function nullableDecimal(value) { if (value === null || value === undefined || value === "") return null; return decimal(value); }
 function dateValue(value) { const date = value ? new Date(value) : null; return date && !Number.isNaN(date.getTime()) ? date.toISOString() : null; }
+
+function throwIfAborted(signal) {
+  if (signal?.aborted) throw new Error("Daftra synchronization was stopped safely.");
+}

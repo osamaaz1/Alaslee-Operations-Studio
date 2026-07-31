@@ -35,6 +35,14 @@ test("Daftra product reads follow API2 pagination without write requests", async
     await fetchDaftraProducts();
     assert.equal(calls[0].options.headers.apikey, "api-key-test");
     assert.equal(calls[0].options.headers.Authorization, undefined);
+
+    const controller = new AbortController();
+    globalThis.fetch = async (url, options) => new Promise((resolve, reject) => {
+      options.signal.addEventListener("abort", () => reject(new DOMException("stopped", "AbortError")), { once: true });
+    });
+    const stopped = fetchDaftraProducts({ signal: controller.signal });
+    controller.abort();
+    await assert.rejects(stopped, /تم إيقاف مزامنة دفترة بأمان/);
   } finally {
     globalThis.fetch = originalFetch;
   }

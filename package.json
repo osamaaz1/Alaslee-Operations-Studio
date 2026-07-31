@@ -19,6 +19,7 @@
     "crm:rotate-encryption": "node src/infra/crm/cli.js rotate-encryption",
     "crm:rollback": "node src/infra/crm/cli.js rollback",
     "crm:status": "node src/infra/crm/cli.js status",
+    "daftra:ensure-ready": "node scripts/ensure-daftra-ready.js",
     "import:v1": "node scripts/import-v1.js",
     "production:preflight": "node scripts/production-preflight.js",
     "production:smoke": "node scripts/production-http-smoke.js",

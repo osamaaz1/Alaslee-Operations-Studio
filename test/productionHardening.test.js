@@ -22,7 +22,9 @@ test("interactive production startup replaces prior sessions and opens the healt
   const browser = startup.indexOf("Start-Process -FilePath $browserUrl");
 
   assert.match(startup, /Get-CimInstance Win32_Process[\s\S]+Name = 'node\.exe'/);
+  assert.match(startup, /Stop-Service -Name \$productionServiceName/);
   assert.match(startup, /Stop-ScheduledTask -TaskName \$productionTaskName/);
+  assert.match(startup, /if \(\$CleanupOnly\)[\s\S]+return/);
   assert.match(startup, /Stop-PreviousProductionSessions -ServerEntryPoint \$serverEntryPoint -Port \$port/);
   assert.notEqual(launch, -1);
   assert.equal(launch < healthWait, true);
@@ -30,6 +32,59 @@ test("interactive production startup replaces prior sessions and opens the healt
   assert.match(startup, /-not \$NoBrowser -and -not \$isSystemSession/);
   assert.match(startup, /\$values\.ContainsKey\('PORT'\)[\s\S]+else \{ '3000' \}/);
   assert.doesNotMatch(startup, /\$values\.(?:PORT|HOST)/);
+});
+
+test("production startup refreshes an expired Daftra cache before preflight", () => {
+  for (const scriptPath of ["scripts/start-production.ps1", "scripts/install-production-windows.ps1"]) {
+    const script = fsSync.readFileSync(scriptPath, "utf8");
+    const refresh = script.indexOf("npm.cmd run daftra:ensure-ready");
+    const preflight = script.indexOf("npm.cmd run production:preflight");
+    assert.notEqual(refresh, -1, scriptPath);
+    assert.notEqual(preflight, -1, scriptPath);
+    assert.equal(refresh < preflight, true, scriptPath);
+  }
+});
+
+test("Windows production uses a silent, recoverable service with graceful shutdown", () => {
+  const installer = fsSync.readFileSync("scripts/install-production-windows.ps1", "utf8");
+  const serviceHost = fsSync.readFileSync("scripts/windows-service/AlasleeService.cs", "utf8");
+  const server = fsSync.readFileSync("src/server.js", "utf8");
+  const scheduler = fsSync.readFileSync("src/jobs/daftraScheduler.js", "utf8");
+
+  assert.match(installer, /New-Service[\s\S]+StartupType Automatic/);
+  assert.match(installer, /failure[\s\S]+restart\/60000/);
+  assert.match(installer, /Unregister-ScheduledTask/);
+  assert.doesNotMatch(installer, /Register-ScheduledTask/);
+  assert.match(serviceHost, /CanShutdown = true/);
+  assert.match(serviceHost, /NamedPipeClientStream/);
+  assert.match(serviceHost, /CreateNoWindow = true/);
+  assert.match(serviceHost, /RedirectStandardOutput = true/);
+  assert.doesNotMatch(serviceHost, /powershell|cmd\.exe/i);
+  assert.match(server, /ALASLEE_SERVICE_PIPE/);
+  assert.match(server, /closeHttpServer\(server\)/);
+  assert.match(server, /closeCrmPool\(\)/);
+  assert.match(server, /closeDatabase\(\)/);
+  assert.match(server, /scheduleCrmRecovery/);
+  assert.match(scheduler, /activeController\?\.abort\(\)/);
+  assert.match(scheduler, /if \(running\) await running/);
+});
+
+test("the lightweight Windows service host compiles", (context) => {
+  if (process.platform !== "win32") return context.skip("Windows-only compiler check");
+  const compiler = path.join(process.env.WINDIR, "Microsoft.NET", "Framework64", "v4.0.30319", "csc.exe");
+  if (!fsSync.existsSync(compiler)) return context.skip(".NET Framework compiler unavailable");
+  const output = path.join(os.tmpdir(), `AlasleeService-${process.pid}.exe`);
+  const source = path.join(process.cwd(), "scripts", "windows-service", "AlasleeService.cs");
+  try {
+    const result = spawnSync(compiler, [
+      "/nologo", "/target:exe", "/optimize+", `/out:${output}`,
+      "/reference:System.ServiceProcess.dll", source,
+    ], { cwd: process.cwd(), encoding: "utf8" });
+    assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
+    assert.ok(fsSync.statSync(output).size < 100_000);
+  } finally {
+    fsSync.rmSync(output, { force: true });
+  }
 });
 
 test("production configuration accepts dynamic LAN URLs and rejects mismatched PostgreSQL ports", async () => {
